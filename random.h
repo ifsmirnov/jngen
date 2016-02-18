@@ -35,16 +35,29 @@ public:
         return ((randomEngine() << 32) ^ randomEngine()) % n;
     }
 
+    size_t next(size_t n) {
+        // TODO(ifsmirnov): make random more uniform
+        return ((randomEngine() << 32) ^ randomEngine()) % n;
+    }
+
+    double next(double n) {
+        return (double)randomEngine() / randomEngine.max() * n;
+    }
+
     int next(int l, int r) {
         return l + next(r-l+1);
     }
 
-    int next(size_t l, size_t r) {
-        return l + next(static_cast<int>(r-l+1));
-    }
-
     long long next(long long l, long long r) {
         return r + next(r-l+1);
+    }
+
+    size_t next(size_t l, size_t r) {
+        return l + next(r-l+1);
+    }
+
+    double next(double l, double r) {
+        return l + next(r-l);
     }
 
     template<typename T>
