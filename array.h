@@ -25,6 +25,17 @@ public:
         Base(args...)
     {  }
 
+    // syntaxic sugar for the god of C++
+    size_t size() const {
+        return Base::size();
+    }
+    T& at(size_t idx) {
+        return Base::at(idx);
+    }
+    const T& at(size_t idx) const {
+        return Base::at(idx);
+    }
+
     static GenericArray<T> random(size_t size, T max);
     static GenericArray<T> random(size_t size, T min, T max);
     static GenericArray<T> random(const Range& size, T max);
@@ -62,6 +73,48 @@ GenericArray<T> GenericArray<T>::random(const Range& size, T min, T max) {
     return GenericArray<T>::random(rnd.next(size.first, size.second), min, max);
 }
 
+template<typename T>
+GenericArray<T>& GenericArray<T>::reverse() {
+    std::reverse(this->begin(), this->end());
+    return *this;
+}
+
+template<typename T>
+GenericArray<T>& GenericArray<T>::shuffle() {
+    for (size_t i = 1; i < size(); ++i) {
+        std::swap(at(i), at(rnd.next(i + 1)));
+    }
+    return *this;
+}
+
+template<typename T>
+const T& choice(const GenericArray<T>& array) {
+    return array[rnd.next(array.size())];
+}
+
+template<typename T, typename... Traits>
+const GenericArray<T> choice(
+        const GenericArray<T>& array,
+        size_t count,
+        Traits... traits)
+{
+    TraitMap map = collectTraits(traits...);
+    GenericArray<T> result(count);
+
+    if (map.count("allowRepeats") && (int)map.at("allowRepeats")) {
+        for (size_t i = 0; i < count; ++i) {
+            result[i] = choice(array);
+        }
+    } else {
+        ensure(count <= array.size());
+        std::vector<size_t> indices = rnd.combination(array.size(), count);
+        for (size_t i = 0; i < count; ++i) {
+            result[i] = array[indices[i]];
+        }
+    }
+
+    return result;
+}
 
 template<typename T>
 using ArrayRepresentation = std::pair<GenericArray<T>, TraitMap>;
@@ -114,4 +167,4 @@ using impl::Arrayf;
 DECLARE_NAMED_PARAMETER(printSize);
 DECLARE_NAMED_PARAMETER(sep);
 DECLARE_NAMED_PARAMETER(addOne);
-
+DECLARE_NAMED_PARAMETER(allowRepeats);
