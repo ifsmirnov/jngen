@@ -2,6 +2,7 @@
 #include <bits/stdc++.h>
 
 void ensure(bool cond) {
+    // TODO(ifsmirnov): make more readable asserts
     assert(cond);
 }
 

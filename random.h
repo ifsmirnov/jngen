@@ -5,32 +5,34 @@
 
 namespace impl {
 
-class Random {
-private:
-    RandomEngine engine_;
-    bool hasEngine_;
+std::mt19937 randomEngine;
 
-    RandomEngine& engine() {
-        return hasEngine_ ? engine_ : randomEngine;
+__attribute__((constructor))
+static void assertRandomEngineConsistency() {
+    std::mt19937 engine(1234);
+    ensure(engine() == 822569775);
+    ensure(engine() == 2137449171);
+    ensure(engine() == 2671936806);
+}
+
+class Random {
+public:
+    Random() {
+        randomEngine.seed(std::random_device{}());
     }
 
-public:
-    Random() : hasEngine_(false)
-    {  }
-
-    /* implicit */ Random(RandomEngine engine) :
-            engine_(std::move(engine)),
-            hasEngine_(true)
-    {  }
-
-    // Think about signed/unsigned types
+    void seed(size_t val) {
+        randomEngine.seed(val);
+    }
 
     int next(int n) {
-        return engine().next(static_cast<uint32_t>(n));
+        // TODO(ifsmirnov): make random more uniform
+        return randomEngine() % n;
     }
 
     long long next(long long n) {
-        return engine().next(static_cast<uint64_t>(n));
+        // TODO(ifsmirnov): make random more uniform
+        return ((randomEngine() << 32) ^ randomEngine()) % n;
     }
 
     int next(int l, int r) {
@@ -49,10 +51,9 @@ public:
     std::vector<T> combination(T n, size_t k) {
         ensure(k <= n);
         std::unordered_map<T, T> used;
-        std::vector<int> res;
+        std::vector<T> res;
         for (size_t i = 0; i < k; ++i) {
             T oldValue = used.count(n-i-1) ? used[n-i-1] : n-i-1;
-            // TODO
             T index = next((T)(n-i));
             res.push_back(used.count(index) ? used[index] : index);
             used[index] = oldValue;
@@ -62,3 +63,15 @@ public:
 };
 
 } // namespace impl
+
+impl::Random rnd;
+
+void registerGen(int argc, char *argv[]) {
+    size_t val = 0;
+    for (int i = 0; i < argc; ++i) {
+        for (char *s = argv[i]; *s; ++s) {
+            val = val * 10099 + *s;
+        }
+    }
+    rnd.seed(val);
+}

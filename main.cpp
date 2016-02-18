@@ -1,6 +1,7 @@
 #include <bits/stdc++.h>
 
 #include "named_arguments.h"
+#include "random.h"
 
 using namespace std;
 
@@ -20,5 +21,7 @@ void func(Traits... traits) {
 
 
 int main() {
-    func($needParent=123, $sep="_", $another="hello");
+    for (int i = 0; i < 10; ++i) {
+        cout << rnd.next(10) << endl;
+    }
 }
