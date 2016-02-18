@@ -15,8 +15,8 @@ public:
     Any(Any&& other) : s(other.s), i(other.i) {}
     Any(const Any& other) : s(other.s), i(other.i) {}
 
-    operator std::string() { return s; }
-    operator int() { return i; }
+    operator std::string() const { return s; }
+    operator int() const { return i; }
 
     template<typename T> T as() const {
         return (T)(*this);
