@@ -8,8 +8,6 @@
 
 namespace impl {
 
-typedef std::pair<size_t, size_t> Range;
-
 template<typename T>
 class GenericArray : public Repr<GenericArray<T>>, public std::vector<T>  {
 public:
@@ -36,10 +34,10 @@ public:
     using Base::begin;
     using Base::end;
 
-    static GenericArray<T> random(size_t size, T max);
-    static GenericArray<T> random(size_t size, T min, T max);
-    static GenericArray<T> random(const Range& size, T max);
-    static GenericArray<T> random(const Range& size, T min, T max);
+    template<typename ...Args>
+    static GenericArray<T> random(size_t size, const Args& ... args);
+    template<typename ...Args>
+    static GenericArray<T> randomUnique(size_t size, const Args& ... args);
 
     static GenericArray<T> id(size_t size, T start = T{});
 
@@ -69,57 +67,63 @@ public:
 };
 
 template<typename T>
-GenericArray<T> GenericArray<T>::random(size_t size, T max) {
+template<typename ...Args>
+GenericArray<T> GenericArray<T>::random(size_t size, const Args& ... args) {
     GenericArray<T> result(size);
     for (T& x: result) {
-        x = rnd.next(max);
+        x = rnd.next(args...);
     }
     return result;
 }
 
+namespace detail {
+
+template<typename T, typename Enable = std::size_t>
+struct DictContainer {
+    typedef std::set<T> type;
+};
+
 template<typename T>
-GenericArray<T> GenericArray<T>::random(size_t size, T min, T max) {
-    GenericArray<T> result(size);
-    for (T& x: result) {
-        x = rnd.next(min, max);
+struct DictContainer<T, typename std::hash<T>::result_type>
+{
+    typedef std::unordered_set<T> type;
+};
+
+} // namespace detail
+
+template<typename T>
+template<typename ...Args>
+GenericArray<T> GenericArray<T>::randomUnique(
+        size_t size, const Args& ... args)
+{
+    typename detail::DictContainer<T>::type set;
+    std::cerr << "using " << typeid(set).name() << std::endl;
+    GenericArray<T> result;
+    result.reserve(size);
+
+    while (result.size() != size) {
+        T t = rnd.next(args...);
+        if (!set.count(t)) {
+            set.insert(t);
+            result.push_back(t);
+        }
     }
+
     return result;
-}
-
-template<typename T>
-GenericArray<T> GenericArray<T>::random(const Range& size, T max) {
-    return random(rnd.next(size.first, size.second), max);
-}
-
-template<typename T>
-GenericArray<T> GenericArray<T>::random(const Range& size, T min, T max) {
-    return random(rnd.next(size.first, size.second), min, max);
-}
-
-template<typename T>
-auto genericArrayIdHelper(size_t size, T start)
-    -> typename std::enable_if<
-        std::is_integral<T>::value, GenericArray<T>
-    >::type
-{
-    GenericArray<T> result(size);
-    std::iota(result.begin(), result.end(), start);
-    return result;
-}
-
-template<typename T>
-auto genericArrayIdHelper(size_t size, const T& start)
-    -> typename std::enable_if<
-        !std::is_integral<T>::value, GenericArray<T>
-    >::type
-{
-    ensure("Cannot take GenericArray<T>::id() when T is non-integral");
-    return {};
 }
 
 template<typename T>
 GenericArray<T> GenericArray<T>::id(size_t size, T start) {
-    return genericArrayIdHelper<T>(size, start);
+    constexpr bool enable = std::is_integral<T>::value;
+    static_assert(enable, "Cannot call Array<T>::id with non-integral T");
+
+    if (enable) {
+        GenericArray<T> result(size);
+        std::iota(result.begin(), result.end(), start);
+        return result;
+    } else {
+        return {};
+    }
 }
 
 template<typename T>
@@ -237,6 +241,7 @@ typedef GenericArray<double> Arrayf;
 
 } // namespace impl
 
+using impl::GenericArray;
 using impl::Array;
 using impl::Array64;
 using impl::Arrayf;

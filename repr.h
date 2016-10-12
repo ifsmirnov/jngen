@@ -20,16 +20,7 @@ class Repr {
         return out;
     }
 
-    friend T;
-
-    // not sure if it would be needed ever
-    /*
-    friend Repr<T> repr(const T& t) {
-        return Repr<T>(t);
-    }
-    */
-
-private:
+protected:
     Repr() :
         object_(nullptr)
     {  }
@@ -83,14 +74,23 @@ class Has ## name ## Helper<T,\
     detail::Has ## name ## Helper<T>::value
 
 JNGEN_DEFINE_FUNCTION_CHECKER(
-    Ostream,
+    OstreamMethod,
     std::declval<std::ostream&>().operator<< (std::declval<T>())
+)
+
+JNGEN_DEFINE_FUNCTION_CHECKER(
+    OstreamFreeFunction,
+    std::operator<<(std::declval<std::ostream&>(), std::declval<T>())
 )
 
 JNGEN_DEFINE_FUNCTION_CHECKER(
     Plus,
     std::declval<T>() + 1
 )
+
+#define JNGEN_HAS_OSTREAM()\
+    (JNGEN_HAS_FUNCTION(OstreamMethod) ||\
+        JNGEN_HAS_FUNCTION(OstreamFreeFunction))
 
 template<typename T>
 struct VectorDepth {
@@ -114,20 +114,20 @@ auto printValue(\
     std::ostream& out, const T& t, const OutputModifier& mod, PTag<priority>)\
     -> typename std::enable_if<constraint, void>::type
 
-JNGEN_DECLARE_PRINTER(!JNGEN_HAS_FUNCTION(Ostream), 0)
+JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
     // can't just write 'false' here because assertion always fails
     static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
 }
 
-JNGEN_DECLARE_PRINTER(JNGEN_HAS_FUNCTION(Ostream), 1)
+JNGEN_DECLARE_PRINTER(JNGEN_HAS_OSTREAM(), 1)
 {
     (void)mod;
     out << t;
 }
 
 JNGEN_DECLARE_PRINTER(
-    JNGEN_HAS_FUNCTION(Ostream) && JNGEN_HAS_FUNCTION(Plus), 2)
+    JNGEN_HAS_OSTREAM() && JNGEN_HAS_FUNCTION(Plus), 2)
 {
     out << t + mod.addition;
 }

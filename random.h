@@ -6,7 +6,6 @@ namespace impl {
 
 std::mt19937 randomEngine;
 
-__attribute__((constructor))
 static void assertRandomEngineConsistency() {
     std::mt19937 engine(1234);
     ensure(engine() == 822569775);
@@ -17,6 +16,7 @@ static void assertRandomEngineConsistency() {
 class Random {
 public:
     Random() {
+        assertRandomEngineConsistency();
         randomEngine.seed(std::random_device{}());
     }
 
