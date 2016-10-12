@@ -1,24 +1,14 @@
+#define GLIBCXX_DEBUG
 #include <bits/stdc++.h>
 
-#include "named_arguments.h"
-#include "random.h"
 #include "array.h"
-#include "perm.h"
+
+#define forn(i, n) for (int i = 0; i < n; ++i)
 
 using namespace std;
 
 int main() {
-    impl::randomEngine.seed(1235);
+    rnd.seed(123);
 
-    auto a = Array::random({5, 10}, 10, 50);
-    cout << a << endl;
-
-    Perm p(a.size());
-    p.apply(a);
-    cout << a << endl;
-
-    a.shuffle();
-    cout << a << endl;
-
-    cout << choice(a, 50, $allowRepeats = true) << endl;
+    cout << Array::id(10).shuffled().add1().printN() << endl;
 }

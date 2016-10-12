@@ -1,5 +1,4 @@
 #pragma once
-#include <bits/stdc++.h>
 
 #include "common.h"
 
@@ -23,6 +22,10 @@ public:
 
     void seed(size_t val) {
         randomEngine.seed(val);
+    }
+
+    uint32_t next() {
+        return randomEngine();
     }
 
     int next(int n) {
@@ -58,20 +61,6 @@ public:
 
     double next(double l, double r) {
         return l + next(r-l);
-    }
-
-    template<typename T>
-    std::vector<T> combination(T n, size_t k) {
-        ensure(k <= n);
-        std::unordered_map<T, T> used;
-        std::vector<T> res;
-        for (size_t i = 0; i < k; ++i) {
-            T oldValue = used.count(n-i-1) ? used[n-i-1] : n-i-1;
-            T index = next((T)(n-i));
-            res.push_back(used.count(index) ? used[index] : index);
-            used[index] = oldValue;
-        }
-        return res;
     }
 };
 
