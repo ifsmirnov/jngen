@@ -50,6 +50,8 @@ public:
     GenericArray<T>& sort();
     GenericArray<T> sorted() const;
 
+    GenericArray<T> inverse() const;
+
     // TODO(ifsmirnov): think about naming
     GenericArray<T>& add(T value);
     GenericArray<T> added(T value) const;
@@ -168,6 +170,29 @@ GenericArray<T> GenericArray<T>::sorted() const {
 }
 
 template<typename T>
+GenericArray<T> GenericArray<T>::inverse() const {
+    static_assert(
+        std::is_integral<T>::value,
+        "Can only take inverse permutation of integral array");
+    int n = size();
+
+    // sanity check
+    ensure(*max_element(begin(), end()) == n-1 &&
+        *min_element(begin(), end()) == 0,
+        "Trying to take inverse of the array which is not a permutation");
+
+    const static T NONE = static_cast<T>(-1);
+    GenericArray<T> result(n, NONE);
+    for (int i = 0; i < n; ++i) {
+        ensure(result[at(i)] == NONE,
+            "Trying to take inverse of the array which is not a permutation");
+        result[at(i)] = i;
+    }
+
+    return result;
+}
+
+template<typename T>
 GenericArray<T>& GenericArray<T>::add(T value) {
     for (T& x: *this) {
         x += value;
@@ -245,6 +270,11 @@ using impl::GenericArray;
 using impl::Array;
 using impl::Array64;
 using impl::Arrayf;
+
+template<typename T>
+using GenericArray2 = GenericArray<GenericArray<T>>;
+
+using Array2 = GenericArray<Array>;
 
 template<typename T>
 impl::GenericArray<T> makeArray(const std::vector<T>& values) {

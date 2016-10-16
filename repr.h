@@ -11,6 +11,9 @@ struct PTagMax : PTag<20> {};
 struct OutputModifier {
     int addition = 0;
     bool printN = false;
+
+    bool printParents = false;
+    bool printEdges = true;
 };
 
 template<typename T>
@@ -40,6 +43,18 @@ public:
 
     Repr<T>& printN(bool value = true) {
         mod_.printN = value;
+        return *this;
+    }
+
+    Repr<T>& printParents(bool value = true) {
+        mod_.printParents = value;
+        mod_.printEdges = !value;
+        return *this;
+    }
+
+    Repr<T>& printEdges(bool value = true) {
+        mod_.printEdges = value;
+        mod_.printParents = !value;
         return *this;
     }
 
@@ -113,6 +128,11 @@ template<typename T>\
 auto printValue(\
     std::ostream& out, const T& t, const OutputModifier& mod, PTag<priority>)\
     -> typename std::enable_if<constraint, void>::type
+
+#define JNGEN_DECLARE_SIMPLE_PRINTER(type)\
+template<typename T>\
+void printValue(std::ostream& out, const type& t,\
+    const OutputModifier& mod, PTag<0>)
 
 JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
