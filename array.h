@@ -4,12 +4,12 @@
 
 #include "common.h"
 #include "random.h"
-#include "repr.h"
+#include "printers.h"
 
 namespace impl {
 
 template<typename T>
-class GenericArray : public Repr<GenericArray<T>>, public std::vector<T>  {
+class GenericArray : public ReprProxy<GenericArray<T>>, public std::vector<T> {
 public:
     typedef std::vector<T> Base;
 
