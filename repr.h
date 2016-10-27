@@ -23,17 +23,22 @@ class Repr {
         return out;
     }
 
-protected:
-    Repr() :
-        object_(nullptr)
-    {  }
+    template<typename P>
+    friend Repr<P> repr(const P& t);
 
+    template<typename P>
+    friend class ReprProxy;
+
+private:
+    Repr() = delete;
     Repr(const Repr<T>&) = default;
+    Repr<T>& operator=(const Repr<T>&) = default;
     Repr(Repr<T>&&) = default;
+    Repr<T>& operator=(Repr<T>&&) = default;
 
 public:
     Repr(const T& object) :
-        object_(&object)
+        object_(object)
     {  }
 
     Repr<T>& add1() {
@@ -60,16 +65,53 @@ public:
 
 private:
     void print(std::ostream& out) const {
-        if (object_) {
-            printValue(out, *object_, mod_, PTagMax{});
-        } else {
-            printValue(out, static_cast<const T&>(*this), mod_, PTagMax{});
-        }
+        printValue(out, object_, mod_, PTagMax{});
     }
 
-    const T* object_;
+    const T& object_;
     OutputModifier mod_;
 };
+
+template<typename T>
+class ReprProxy {
+    friend std::ostream& operator<<(std::ostream& out, const ReprProxy& proxy) {
+        Repr<T> repr(static_cast<const T&>(proxy));
+        return out << repr;
+    }
+
+public:
+    Repr<T> add1() {
+        Repr<T> repr(static_cast<const T&>(*this));
+        repr.add1();
+        return repr;
+    }
+
+    Repr<T> printN(bool value = true) {
+        Repr<T> repr(static_cast<const T&>(*this));
+        repr.printN(value);
+        return repr;
+    }
+
+    Repr<T> printParents(bool value = true) {
+        Repr<T> repr(static_cast<const T&>(*this));
+        repr.printParents(value);
+        return repr;
+    }
+
+    Repr<T> printEdges(bool value = true) {
+        Repr<T> repr(static_cast<const T&>(*this));
+        repr.printEdges(value);
+        return repr;
+    }
+
+protected:
+    ReprProxy() {
+        static_assert(
+            std::is_base_of<ReprProxy<T>, T>::value,
+            "ReprProxy<T> must be inherited by T");
+    }
+};
+
 
 
 namespace detail {
@@ -129,10 +171,12 @@ auto printValue(\
     std::ostream& out, const T& t, const OutputModifier& mod, PTag<priority>)\
     -> typename std::enable_if<constraint, void>::type
 
-#define JNGEN_DECLARE_SIMPLE_PRINTER(type)\
-template<typename T>\
+#define JNGEN_DECLARE_SIMPLE_PRINTER(type, priority)\
 void printValue(std::ostream& out, const type& t,\
-    const OutputModifier& mod, PTag<0>)
+    const OutputModifier& mod, PTag<priority>)
+
+#define JNGEN_PRINT(value)\
+printValue(out, value, mod, PTagMax{})
 
 JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
@@ -165,7 +209,19 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1, 3)
         } else {
             out << " ";
         }
-        printValue(out, x, mod, PTagMax{});
+        JNGEN_PRINT(x);
+    }
+}
+
+JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1 &&
+    std::tuple_size<T>::value == 1, 4)
+{
+    if (mod.printN) {
+        out << t.size() << "\n";
+    }
+
+    for (const auto& x: t) {
+        JNGEN_PRINT(x);
     }
 }
 
@@ -175,9 +231,29 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 2, 4)
         out << t.size() << "\n";
     }
     for (const auto& x: t) {
-        printValue(out, x, mod, PTagMax{});
+        JNGEN_PRINT(x);
         out << "\n";
     }
 }
 
+template<typename T>
+Repr<T> repr(const T& t) {
+    return Repr<T>(t);
+}
+
+// http://stackoverflow.com/a/19841470/2159939
+#define JNGEN_COMMA ,
+
+template<typename Lhs, typename Rhs>
+JNGEN_DECLARE_SIMPLE_PRINTER(std::pair<Lhs JNGEN_COMMA Rhs>, 3)
+{
+    JNGEN_PRINT(t.first);
+    out << " ";
+    JNGEN_PRINT(t.second);
+}
+
+#undef JNGEN_COMMA
+
 } // namespace impl
+
+using impl::repr;

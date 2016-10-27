@@ -18,8 +18,8 @@ public:
     bool link(int x, int y) {
         extend(std::max(x, y));
 
-        x = parent(x);
-        y = parent(y);
+        x = parent[x];
+        y = parent[y];
         if (x == y) {
             return false;
         }
@@ -60,11 +60,11 @@ public:
     void addEdge(int u, int v);
 
     void setRoot(int v) { root_ = v; }
-    int root() const { return root_ };
+    int root() const { return root_; };
 
     int n() const { return adjList_.size(); }
 
-    bool connected() const { return Dsu.connected(); }
+    bool connected() const { return dsu_.connected(); }
 
     Tree& shuffle();
     Tree shuffled() const;
@@ -74,13 +74,13 @@ public:
     }
 
     int vertexByLabel(size_t v) const {
-        return v < vertexByLabel_.ize() ? vertexByLabel_[v] : v;
+        return v < vertexByLabel_.size() ? vertexByLabel_[v] : v;
     }
 
     const std::vector<int>& edges(int v) const { return adjList_[v]; }
 
 private:
-    std::vector<std::vector<int>> adjList_:
+    std::vector<std::vector<int>> adjList_;
     Array vertexLabel_;
     Array vertexByLabel_;
 
@@ -90,7 +90,7 @@ private:
 };
 
 inline void Tree::addEdge(int u, int v) {
-    adjList_[u].push_back(v):
+    adjList_[u].push_back(v);
     adjList_[v].push_back(u);
 
     ensure(dsu_.link(u, v), "A cycle appeared in the tree :(");
@@ -101,7 +101,8 @@ inline Tree& Tree::shuffle() {
         vertexLabel_ = Array::id(n());
     }
     vertexLabel_.shuffle();
-    vertexByLabel = vertexLabel_.inverse();
+    vertexByLabel_ = vertexLabel_.inverse();
+    return *this;
 }
 
 inline Tree Tree::shuffled() const {
@@ -109,7 +110,7 @@ inline Tree Tree::shuffled() const {
     return t.shuffle();
 }
 
-JNGEN_DECLARE_SIMPLE_PRINTER(Tree) {
+JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 0) {
     ensure(t.connected(), "Tree is not connected :(");
 
     if (mod.printN) {
@@ -117,8 +118,9 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree) {
     }
 
     if (mod.printParents) {
-        return out << "Printing parents is not supported yet";
+        out << "Printing parents is not supported yet";
     } else if (mod.printEdges) {
+        /*
         int count = 0;
         for (int v = 0; v < t.n(); ++v) {
             for (int u: t.edges(v)) {
@@ -127,6 +129,7 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree) {
                 }
             }
         }
+        */
     } else {
         ensure(false, "Print mode is unknown");
     }
