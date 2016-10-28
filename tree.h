@@ -3,7 +3,7 @@
 #include <bits/stdc++.h>
 
 #include "array.h"
-#include "repr.h"
+#include "printers.h"
 
 namespace impl {
 
@@ -55,7 +55,7 @@ private:
     }
 };
 
-class Tree : public Repr<Tree> {
+class Tree : public ReprProxy<Tree> {
 public:
     void addEdge(int u, int v);
 
@@ -80,6 +80,10 @@ public:
     const std::vector<int>& edges(int v) const { return adjList_[v]; }
 
 private:
+    void extend(size_t vertexNum) {
+        adjList_.resize(std::max(vertexNum + 1, adjList_.size()));
+    }
+
     std::vector<std::vector<int>> adjList_;
     Array vertexLabel_;
     Array vertexByLabel_;
@@ -90,6 +94,8 @@ private:
 };
 
 inline void Tree::addEdge(int u, int v) {
+    extend(std::max(u, v));
+
     adjList_[u].push_back(v);
     adjList_[v].push_back(u);
 
@@ -120,19 +126,23 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 0) {
     if (mod.printParents) {
         out << "Printing parents is not supported yet";
     } else if (mod.printEdges) {
-        /*
         int count = 0;
         for (int v = 0; v < t.n(); ++v) {
             for (int u: t.edges(v)) {
                 if (v < u) {
-                    printValue(
+                    JNGEN_PRINT(std::make_pair(
+                        t.vertexLabel(v), t.vertexLabel(u)));
+                    if (++count != t.n() - 1) {
+                        out << "\n";
+                    }
                 }
             }
         }
-        */
     } else {
         ensure(false, "Print mode is unknown");
     }
 }
 
 } // namespace impl
+
+using impl::Tree;
