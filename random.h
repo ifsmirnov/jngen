@@ -13,11 +13,18 @@ static void assertRandomEngineConsistency() {
     ensure(engine() == 2671936806);
 }
 
+template<typename T>
+struct TypedRandom;
+
 class Random {
 public:
     Random() {
         assertRandomEngineConsistency();
         randomEngine.seed(std::random_device{}());
+
+        static bool created = false;
+        ensure(!created, "impl::Random should be created only once");
+        created = true;
     }
 
     void seed(size_t val) {
@@ -62,11 +69,42 @@ public:
     double next(double l, double r) {
         return l + next(r-l);
     }
+
+    template<typename T, typename ... Args>
+    T tnext(Args... args) {
+        return TypedRandom<T>::next(args...);
+    }
+};
+
+Random rnd;
+
+template<>
+struct TypedRandom<int> {
+    static int next(int n) { return rnd.next(n); }
+    static int next(int l, int r) { return rnd.next(l, r); }
+};
+
+template<>
+struct TypedRandom<double> {
+    static double next(double n) { return rnd.next(n); }
+    static double next(double l, double r) { return rnd.next(l, r); }
+};
+
+template<>
+struct TypedRandom<long long> {
+    static long long next(long long n) { return rnd.next(n); }
+    static long long next(long long l, long long r) { return rnd.next(l, r); }
+};
+
+template<>
+struct TypedRandom<size_t> {
+    static size_t next(size_t n) { return rnd.next(n); }
+    static size_t next(size_t l, size_t r) { return rnd.next(l, r); }
 };
 
 } // namespace impl
 
-impl::Random rnd;
+using impl::rnd;
 
 void registerGen(int argc, char *argv[]) {
     size_t val = 0;

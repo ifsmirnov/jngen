@@ -73,7 +73,7 @@ template<typename ...Args>
 GenericArray<T> GenericArray<T>::random(size_t size, const Args& ... args) {
     GenericArray<T> result(size);
     for (T& x: result) {
-        x = rnd.next(args...);
+        x = rnd.tnext<T>(args...);
     }
     return result;
 }
@@ -104,7 +104,7 @@ GenericArray<T> GenericArray<T>::randomUnique(
     result.reserve(size);
 
     while (result.size() != size) {
-        T t = rnd.next(args...);
+        T t = rnd.tnext<T>(args...);
         if (!set.count(t)) {
             set.insert(t);
             result.push_back(t);
@@ -244,7 +244,7 @@ GenericArray<T> GenericArray<T>::choice(size_t count) const {
     std::vector<size_t> res;
     for (size_t i = 0; i < count; ++i) {
         size_t oldValue = used.count(n-i-1) ? used[n-i-1] : n-i-1;
-        size_t index = rnd.next(static_cast<size_t>(n-i));
+        size_t index = rnd.tnext<size_t>(n-i);
         res.push_back(used.count(index) ? used[index] : index);
         used[index] = oldValue;
     }
