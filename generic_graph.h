@@ -25,6 +25,9 @@ public:
 
     void printEdges(std::ostream& out, const OutputModifier& mod) const;
 
+    bool operator==(const GenericGraph& other) const;
+    bool operator<(const GenericGraph& other) const;
+
 protected:
     void doShuffle() {
         if (vertexLabel_.size() < static_cast<size_t>(n())) {
@@ -47,6 +50,8 @@ protected:
         adjList_[u].push_back(v);
         adjList_[v].push_back(u);
     }
+
+    int compareTo(const GenericGraph& other) const;
 
     int numEdges_ = 0;
 
@@ -75,6 +80,34 @@ inline void GenericGraph::printEdges(
     }
 
     JNGEN_PRINT(edges);
+}
+
+inline bool GenericGraph::operator==(const GenericGraph& other) const {
+    return compareTo(other) == 0;
+}
+
+inline bool GenericGraph::operator<(const GenericGraph& other) const {
+    return compareTo(other) == -1;
+}
+
+inline int GenericGraph::compareTo(const GenericGraph& other) const {
+    if (n() < other.n()) {
+        return -1;
+    }
+    if (n() > other.n()) {
+        return 1;
+    }
+    for (int i = 0; i < n(); ++i) {
+        std::set<int> edges1(edges(i).begin(), edges(i).end());
+        std::set<int> edges2(other.edges(i).begin(), other.edges(i).end());
+        if (edges1 < edges2) {
+            return -1;
+        }
+        if (edges1 > edges2) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 } // namespace impl
