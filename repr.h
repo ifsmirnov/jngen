@@ -14,7 +14,16 @@ struct OutputModifier {
 
     bool printParents = false;
     bool printEdges = true;
+
+    OutputModifier() :
+        addition(0),
+        printN(false),
+        printParents(false),
+        printEdges(true)
+    {  }
 };
+
+OutputModifier defaultMod;
 
 template<typename T>
 class Repr {
@@ -29,7 +38,7 @@ class Repr {
     template<typename P>
     friend class ReprProxy;
 
-private:
+protected:
     Repr() = delete;
     Repr(const Repr<T>&) = default;
     Repr<T>& operator=(const Repr<T>&) = default;
@@ -38,7 +47,8 @@ private:
 
 public:
     Repr(const T& object) :
-        object_(object)
+        object_(object),
+        mod_(defaultMod)
     {  }
 
     Repr<T>& add1() {
@@ -69,6 +79,8 @@ private:
     }
 
     const T& object_;
+
+protected:
     OutputModifier mod_;
 };
 
@@ -117,6 +129,31 @@ Repr<T> repr(const T& t) {
     return Repr<T>(t);
 }
 
+class DefaultModSetter : public Repr<int> {
+    friend DefaultModSetter setMod();
+
+private:
+    DefaultModSetter(int val) :
+        Repr<int>(val)
+    {  }
+
+public:
+    ~DefaultModSetter() {
+        defaultMod = mod_;
+    }
+
+    Repr<int>& reset() {
+        mod_ = OutputModifier();
+        return *this;
+    }
+};
+
+DefaultModSetter setMod() {
+    static int dummy = 0;
+    return DefaultModSetter(dummy);
+}
+
 } // namespace impl
 
 using impl::repr;
+using impl::setMod;
