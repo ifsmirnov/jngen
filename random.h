@@ -108,7 +108,7 @@ template<>
 struct TypedRandom<std::pair<int, int>> {
     static std::pair<int, int> next(int n) {
         // can't write 'return {rnd.next(n), rnd.next(n)}' because order of
-        // operations is unspecified
+        // evaluation of function arguments is unspecified.
         int first = rnd.next(n);
         int second = rnd.next(n);
         return {first, second};
