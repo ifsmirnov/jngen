@@ -33,6 +33,8 @@ public:
     using Base::size;
     using Base::begin;
     using Base::end;
+    using Base::insert;
+    using Base::clear;
 
     template<typename ...Args>
     static GenericArray<T> random(size_t size, const Args& ... args);
@@ -52,10 +54,6 @@ public:
 
     GenericArray<T> inverse() const;
 
-    // TODO(ifsmirnov): think about naming
-    GenericArray<T>& add(T value);
-    GenericArray<T> added(T value) const;
-
     template<typename Integer>
     GenericArray<T> subseq(const std::vector<Integer>& indices) const;
 
@@ -66,6 +64,12 @@ public:
     const T& choice() const;
     GenericArray<T> choice(size_t count) const;
     GenericArray<T> choiceWithRepetition(size_t count) const;
+
+    GenericArray<T>& operator+=(const GenericArray<T>& other);
+    GenericArray<T> operator+(const GenericArray<T>& other) const;
+
+    GenericArray<T>& operator*=(int k);
+    GenericArray<T> operator*(int k) const;
 };
 
 template<typename T>
@@ -198,21 +202,6 @@ GenericArray<T> GenericArray<T>::inverse() const {
 }
 
 template<typename T>
-GenericArray<T>& GenericArray<T>::add(T value) {
-    for (T& x: *this) {
-        x += value;
-    }
-    return *this;
-}
-
-template<typename T>
-GenericArray<T> GenericArray<T>::added(T value) const {
-    auto res = *this;
-    res.add(value);
-    return res;
-}
-
-template<typename T>
 template<typename Integer>
 GenericArray<T> GenericArray<T>::subseq(
         const std::vector<Integer>& indices) const
@@ -257,13 +246,37 @@ GenericArray<T> GenericArray<T>::choice(size_t count) const {
     return subseq(res);
 }
 
-// not sure if it would be needed ever
-/*
 template<typename T>
-std::ostream& operator<<(std::ostream& out, const GenericArray<T>& array) {
-    return out << repr(array);
+GenericArray<T>& GenericArray<T>::operator+=(const GenericArray<T>& other) {
+    insert(end(), other.begin(), other.end());
+    return *this;
 }
-*/
+
+template<typename T>
+GenericArray<T> GenericArray<T>::operator+(const GenericArray<T>& other) const {
+    GenericArray<T> copy(*this);
+    return copy += other;
+}
+
+template<typename T>
+GenericArray<T>& GenericArray<T>::operator*=(int k) {
+    if (k == 0) {
+        clear();
+        return *this;
+    }
+
+    size_t size = this->size();
+    while (k-- > 1) {
+        insert(end(), begin(), begin() + size);
+    }
+    return *this;
+}
+
+template<typename T>
+GenericArray<T> GenericArray<T>::operator*(int k) const {
+    GenericArray<T> copy(*this);
+    return copy *= k;
+}
 
 } // namespace impl
 
