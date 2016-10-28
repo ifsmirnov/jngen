@@ -106,13 +106,19 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1, 3)
 }
 
 JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1 &&
-    std::tuple_size<T>::value == 1, 4)
+    std::tuple_size<typename T::value_type>::value == 2, 4)
 {
     if (mod.printN) {
         out << t.size() << "\n";
     }
 
+    bool first = true;
     for (const auto& x: t) {
+        if (first) {
+            first = false;
+        } else {
+            out << "\n";
+        }
         JNGEN_PRINT(x);
     }
 }

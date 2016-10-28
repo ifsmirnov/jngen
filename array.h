@@ -99,11 +99,16 @@ GenericArray<T> GenericArray<T>::randomUnique(
         size_t size, const Args& ... args)
 {
     typename detail::DictContainer<T>::type set;
-    std::cerr << "using " << typeid(set).name() << std::endl;
     GenericArray<T> result;
     result.reserve(size);
 
+    size_t retries = (size + 10) * log(size + 10) * 2;
+
     while (result.size() != size) {
+        if (--retries == 0) {
+            ensure(false, "There are not enough unique elements");
+        }
+
         T t = rnd.tnext<T>(args...);
         if (!set.count(t)) {
             set.insert(t);
@@ -260,21 +265,15 @@ std::ostream& operator<<(std::ostream& out, const GenericArray<T>& array) {
 }
 */
 
-typedef GenericArray<int> Array;
-typedef GenericArray<long long> Array64;
-typedef GenericArray<double> Arrayf;
-
 } // namespace impl
 
-using impl::GenericArray;
-using impl::Array;
-using impl::Array64;
-using impl::Arrayf;
-
 template<typename T>
-using GenericArray2 = GenericArray<GenericArray<T>>;
+using TArray = impl::GenericArray<T>;
 
-using Array2 = GenericArray<Array>;
+using Array = impl::GenericArray<int>;
+using Array64 = impl::GenericArray<long long>;
+using Arrayf = impl::GenericArray<double>;
+using Arrayp = impl::GenericArray<std::pair<int, int>>;
 
 template<typename T>
 impl::GenericArray<T> makeArray(const std::vector<T>& values) {

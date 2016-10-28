@@ -102,9 +102,43 @@ struct TypedRandom<size_t> {
     static size_t next(size_t l, size_t r) { return rnd.next(l, r); }
 };
 
+struct OrderedPairTag {} opair;
+
+template<>
+struct TypedRandom<std::pair<int, int>> {
+    static std::pair<int, int> next(int n) {
+        // can't write 'return {rnd.next(n), rnd.next(n)}' because order of
+        // operations is unspecified
+        int first = rnd.next(n);
+        int second = rnd.next(n);
+        return {first, second};
+    }
+    static std::pair<int, int> next(int l, int r) {
+        int first = rnd.next(l, r);
+        int second = rnd.next(l, r);
+        return {first, second};
+    }
+
+    static std::pair<int, int> next(int n, OrderedPairTag) {
+        return ordered(next(n));
+    }
+    static std::pair<int, int> next(int l, int r, OrderedPairTag) {
+        return ordered(next(l, r));
+    }
+
+private:
+    static std::pair<int, int> ordered(std::pair<int, int> pair) {
+        if (pair.first > pair.second) {
+            std::swap(pair.first, pair.second);
+        }
+        return pair;
+    }
+};
+
 } // namespace impl
 
 using impl::rnd;
+using impl::opair;
 
 void registerGen(int argc, char *argv[]) {
     size_t val = 0;
