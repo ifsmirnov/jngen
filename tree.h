@@ -10,10 +10,18 @@ namespace impl {
 
 class Tree : public ReprProxy<Tree>, public GenericGraph {
 public:
+    Tree() {
+        extend(1);
+    }
+
     void addEdge(int u, int v);
 
     Tree& shuffle();
     Tree shuffled() const;
+
+    static Tree bamboo(size_t size);
+    static Tree randomPrufer(size_t size);
+    static Tree random(size_t size, double elongation = 1.0);
 };
 
 inline void Tree::addEdge(int u, int v) {
@@ -45,6 +53,60 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 0) {
     } else {
         ensure(false, "Print mode is unknown");
     }
+}
+
+// Tree generators go here
+
+inline Tree Tree::bamboo(size_t size) {
+    Tree t;
+    for (size_t i = 0; i + 1 < size; ++i) {
+        t.addEdge(i, i+1);
+    }
+    return t;
+}
+
+inline Tree Tree::randomPrufer(size_t size) {
+    if (size == 1) {
+        return Tree();
+    }
+
+    Array code = Array::random(size - 2, size);
+    std::vector<int> degree(size, 1);
+    for (int v: code) {
+        ++degree[v];
+    }
+
+    std::set<int> leaves;
+    for (size_t v = 0; v < size; ++v) {
+        if (degree[v] == 1) {
+            leaves.insert(v);
+        }
+    }
+
+    Tree t;
+    for (int v: code) {
+        ensure(!leaves.empty());
+        int to = *leaves.begin();
+        leaves.erase(leaves.begin());
+        if (--degree[v] == 1) {
+            leaves.insert(v);
+        }
+
+        t.addEdge(v, to);
+    }
+
+    ensure(leaves.size() == 2u);
+    t.addEdge(*leaves.begin(), *leaves.rbegin());
+    return t;
+}
+
+inline Tree Tree::random(size_t size, double elongation) {
+    Tree t;
+    for (size_t v = 1; v < size; ++v) {
+        int parent = rnd.tnext<int>(v-1 - (v-1) * elongation, v-1);
+        t.addEdge(parent, v);
+    }
+    return t;
 }
 
 } // namespace impl
