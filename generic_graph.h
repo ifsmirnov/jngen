@@ -10,23 +10,38 @@ namespace impl {
 
 class GenericGraph {
 public:
-    int n() const { return adjList_.size(); }
-    int m() const { return numEdges_; }
+    virtual ~GenericGraph() {}
 
-    void addEdge(int u, int v);
-    bool connected() const { return dsu_.connected(); }
+    virtual int n() const { return adjList_.size(); }
+    virtual int m() const { return numEdges_; }
 
-    int vertexLabel(int v) const { return vertexLabel_[v]; }
-    int vettexByLabel(int v) const { return vertexByLabel_[v]; }
+    virtual void addEdge(int u, int v);
+    virtual bool connected() const { return dsu_.connected(); }
 
-    const std::vector<int>& edges(int v) const {
+    virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
+    virtual int vertexByLabel(int v) const { return vertexByLabel_[v]; }
+
+    virtual const std::vector<int>& edges(int v) const {
         return adjList_[v];
     }
 
-    void printEdges(std::ostream& out, const OutputModifier& mod) const;
+    virtual std::vector<std::pair<int, int>> edges() const {
+        std::vector<std::pair<int, int>> result;
+        for (int v = 0; v < n(); ++v) {
+            for (int to: edges(v)) {
+                if (v <= to) {
+                    result.emplace_back(vertexLabel(v), vertexLabel(to));
+                }
+            }
+        }
+        return result;
+    }
 
-    bool operator==(const GenericGraph& other) const;
-    bool operator<(const GenericGraph& other) const;
+    virtual void doPrintEdges(
+        std::ostream& out, const OutputModifier& mod) const;
+
+    virtual bool operator==(const GenericGraph& other) const;
+    virtual bool operator<(const GenericGraph& other) const;
 
 protected:
     void doShuffle() {
@@ -48,7 +63,9 @@ protected:
 
     void addEdgeUnsafe(int u, int v) {
         adjList_[u].push_back(v);
-        adjList_[v].push_back(u);
+        if (u != v) {
+            adjList_[v].push_back(u);
+        }
     }
 
     int compareTo(const GenericGraph& other) const;
@@ -65,21 +82,37 @@ inline void GenericGraph::addEdge(int u, int v) {
     extend(std::max(u, v) + 1);
     dsu_.link(u, v);
     addEdgeUnsafe(u, v);
+    ++numEdges_;
 }
 
-inline void GenericGraph::printEdges(
+inline void GenericGraph::doPrintEdges(
     std::ostream& out, const OutputModifier& mod) const
 {
     Arrayp edges;
     for (int v = 0; v < n(); ++v) {
         for (int to: this->edges(v)) {
-            if (v < to) {
+            if (v <= to) {
                 edges.emplace_back(vertexLabel(v), vertexLabel(to));
             }
         }
     }
 
-    JNGEN_PRINT(edges);
+    if (mod.printN) {
+        out << n();
+        if (mod.printM) {
+            out << " " << m();
+        }
+        out << "\n";
+    } else if (mod.printM) {
+        out << m() << "\n";
+    }
+
+    auto t(mod);
+    {
+        auto mod(t);
+        mod.printN = false;
+        JNGEN_PRINT(edges);
+    }
 }
 
 inline bool GenericGraph::operator==(const GenericGraph& other) const {

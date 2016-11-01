@@ -13,6 +13,9 @@ public:
     Tree() {
         extend(1);
     }
+    Tree(const GenericGraph& gg) : GenericGraph(gg) {
+        extend(1);
+    }
 
     void addEdge(int u, int v);
 
@@ -49,7 +52,7 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 0) {
     if (mod.printParents) {
         out << "Printing parents is not supported yet";
     } else if (mod.printEdges) {
-        t.GenericGraph::printEdges(out, mod);
+        t.doPrintEdges(out, mod);
     } else {
         ensure(false, "Print mode is unknown");
     }

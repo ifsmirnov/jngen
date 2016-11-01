@@ -11,16 +11,10 @@ struct PTagMax : PTag<20> {};
 struct OutputModifier {
     int addition = 0;
     bool printN = false;
+    bool printM = false;
 
     bool printParents = false;
     bool printEdges = true;
-
-    OutputModifier() :
-        addition(0),
-        printN(false),
-        printParents(false),
-        printEdges(true)
-    {  }
 };
 
 OutputModifier defaultMod;
@@ -58,6 +52,11 @@ public:
 
     Repr<T>& printN(bool value = true) {
         mod_.printN = value;
+        return *this;
+    }
+
+    Repr<T>& printM(bool value = true) {
+        mod_.printM = value;
         return *this;
     }
 
@@ -101,6 +100,12 @@ public:
     Repr<T> printN(bool value = true) {
         Repr<T> repr(static_cast<const T&>(*this));
         repr.printN(value);
+        return repr;
+    }
+
+    Repr<T> printM(bool value = true) {
+        Repr<T> repr(static_cast<const T&>(*this));
+        repr.printM(value);
         return repr;
     }
 

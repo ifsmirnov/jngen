@@ -74,6 +74,9 @@ JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
     // can't just write 'false' here because assertion always fails
     static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
+//     (void)out;
+//     (void)mod;
+//     (void)t;
 }
 
 JNGEN_DECLARE_PRINTER(JNGEN_HAS_OSTREAM(), 1)
