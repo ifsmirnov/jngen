@@ -152,25 +152,10 @@ inline void GraphBuilder::build() {
         return true;
     };
 
-    int edgesNeeded = m;
-    if (!loops_) {
-        edgesNeeded += n;
-    }
-    if (!multiEdges_) {
-        edgesNeeded = std::min<long long>(
-            edgesNeeded, static_cast<long long>(n * (n+1) / 2));
-    }
-
     Arrayp result(usedEdges.begin(), usedEdges.end());
 
-    Arrayp candidates = multiEdges_ ?
-        Arrayp::random(edgesNeeded, n, opair) :
-        Arrayp::randomUnique(edgesNeeded, n, opair);
-
-    for (const auto& edge: candidates) {
-        if (result.size() == static_cast<size_t>(m)) {
-            break;
-        }
+    while (result.size() < static_cast<size_t>(m)) {
+        auto edge = rnd.tnext<std::pair<int, int>>(n, opair);
         if (edgeIsGood(edge)) {
             usedEdges.insert(edge);
             result.push_back(edge);

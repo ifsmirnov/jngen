@@ -46,7 +46,7 @@ inline Tree Tree::shuffled() const {
     return t.shuffle();
 }
 
-JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 0) {
+JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
     ensure(t.connected(), "Tree is not connected :(");
 
     if (mod.printParents) {
