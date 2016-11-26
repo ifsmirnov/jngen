@@ -17,6 +17,49 @@ while (false)
 #define ensure(...) JNGEN_GET_MACRO(__VA_ARGS__, JNGEN_ENSURE2, JNGEN_ENSURE1)\
     (__VA_ARGS__)
 
+
+#include <bits/stdc++.h>
+
+namespace impl {
+
+namespace detail {
+
+template<typename T>
+void readVariable(T& var, const std::string& value) {
+    std::istringstream ss(value);
+    ss >> var;
+
+    ensure(ss, "Failed to parse a value from a command line argument");
+}
+
+typedef std::vector<std::string>::const_iterator OptionIterator;
+
+void getopts(OptionIterator)
+{  }
+
+template<typename T, typename ... Args>
+void getopts(OptionIterator iter, T& var, Args& ...args) {
+    readVariable(var, *iter);
+    getopts(++iter, args...);
+}
+
+} // namespace detail
+
+template<typename ... Args>
+void getopts(const std::vector<std::string>& options, Args& ...args) {
+    ensure(options.size() >= sizeof...(args), "Too few command-line arguments");
+    detail::getopts(options.cbegin(), args...);
+}
+
+template<typename ... Args>
+void getopts(int argc, char *argv[], Args& ...args) {
+    return getopts(std::vector<std::string>(argv + 1, argv + argc), args...);
+}
+
+} // namespace impl
+
+using impl::getopts;
+
 #include <bits/stdc++.h>
 
 
@@ -1018,7 +1061,7 @@ inline Tree Tree::shuffled() const {
     return t.shuffle();
 }
 
-JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 0) {
+JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
     ensure(t.connected(), "Tree is not connected :(");
 
     if (mod.printParents) {
@@ -1237,25 +1280,10 @@ inline void GraphBuilder::build() {
         return true;
     };
 
-    int edgesNeeded = m;
-    if (!loops_) {
-        edgesNeeded += n;
-    }
-    if (!multiEdges_) {
-        edgesNeeded = std::min<long long>(
-            edgesNeeded, static_cast<long long>(n * (n+1) / 2));
-    }
-
     Arrayp result(usedEdges.begin(), usedEdges.end());
 
-    Arrayp candidates = multiEdges_ ?
-        Arrayp::random(edgesNeeded, n, opair) :
-        Arrayp::randomUnique(edgesNeeded, n, opair);
-
-    for (const auto& edge: candidates) {
-        if (result.size() == static_cast<size_t>(m)) {
-            break;
-        }
+    while (result.size() < static_cast<size_t>(m)) {
+        auto edge = rnd.tnext<std::pair<int, int>>(n, opair);
         if (edgeIsGood(edge)) {
             usedEdges.insert(edge);
             result.push_back(edge);
