@@ -234,7 +234,7 @@ GenericArray<T> GenericArray<T>::choice(size_t count) const {
 
     size_t n = size();
 
-    std::unordered_map<T, T> used;
+    std::unordered_map<size_t, size_t> used;
     std::vector<size_t> res;
     for (size_t i = 0; i < count; ++i) {
         size_t oldValue = used.count(n-i-1) ? used[n-i-1] : n-i-1;
@@ -244,6 +244,15 @@ GenericArray<T> GenericArray<T>::choice(size_t count) const {
     }
 
     return subseq(res);
+}
+
+template<typename T>
+GenericArray<T> GenericArray<T>::choiceWithRepetition(size_t count) const {
+    GenericArray<T> res(count);
+    for (T& t: res) {
+        t = choice();
+    }
+    return res;
 }
 
 template<typename T>
