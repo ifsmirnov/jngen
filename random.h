@@ -61,7 +61,7 @@ public:
     }
 
     long long next(long long l, long long r) {
-        return r + next(r-l+1);
+        return l + next(r-l+1);
     }
 
     size_t next(size_t l, size_t r) {
