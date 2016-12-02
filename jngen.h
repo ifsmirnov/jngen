@@ -120,7 +120,7 @@ public:
     }
 
     long long next(long long l, long long r) {
-        return r + next(r-l+1);
+        return l + next(r-l+1);
     }
 
     size_t next(size_t l, size_t r) {
@@ -210,6 +210,124 @@ void registerGen(int argc, char *argv[]) {
     }
     rnd.seed(val);
 }
+
+#include <bits/stdc++.h>
+
+namespace impl {
+
+namespace pattern {
+
+/*
+    Here we go with patterns of kind 'ab{2-10}[c-f][^1-9]{16}'. The grammar is
+    described further.
+
+    Pattern ::= Block | Block Pattern
+    Block   ::= Set | Set Count
+    Count   ::= {int} | {int-int}                   // int - regular integer
+    Set     ::= [PosSet] | [NegSet] | Char
+    NegSet  ::= ^ Subset
+    PosSet  ::= x Subset                            // x -- any char except ^
+    Subset  ::= Range | Range Set
+    Range   ::= Char | Char-Char
+    Char    ::= c | \ Special                      // c -- any non-special
+    Special ::= [ ] \ - { }
+*/
+
+struct Set {
+    static const char MIN = 32;
+    static const char MAX = 127;
+
+    std::vector<char> allowed; // should be bool but <s>int is faster</s> who cares
+
+    void negate() {
+        std::vector<char> all(MAX - MIN + 1);
+        std::iota(all.begin(), all.end(), MIN);
+        std::vector<char> result;
+        set_symmetric_difference(
+            allowed.begin(), allowed.end(),
+            all.begin(), all.end(),
+            std::back_inserter(result));
+        allowed = result;
+    }
+
+    Set() {}
+
+    Set(const std::bitset<256>& bitset) {
+        for (int i = MIN; i <= MAX; ++i) {
+            if (bitset[i]) {
+                allowed.push_back(i);
+            }
+        }
+    }
+};
+
+typedef std:pair<int, int> Range;
+
+struct Block {
+    Set set;
+    Range range;
+};
+
+struct Pattern {
+    std::vector<Block> blocks;
+
+    std::string generate(std::function<size_t>(size_t)&& randomEngine);
+};
+
+class Parser {
+public:
+    Parser(const std::string& pattern) : pattern_(pattern) {}
+
+    Pattern parse();
+
+private:
+    Block parseBlock();
+
+    int next() const {
+        return position_ < pattern_.size() ? pattern_[position_] : -1;
+    }
+
+    std::string pattern_;
+    size_t position_;
+};
+
+struct ParsingException : public std::logic_error {};
+
+Pattern Parser::parse() {
+    ensure(position_ == 0, "Cannot parse the same pattern more than once");
+
+    Pattern result;
+
+    try {
+        while (position_ != pattern_.size()) {
+            result.blocks.push_back(parseBlock());
+        }
+        return resut;
+    } catch (ParsingException& e) {
+        std::string msg = "Failed to parse the pattern: '" + pattern_ + "'";
+        ensure(false, msg);
+    }
+
+    return resut;
+}
+
+Block Parser::parseBlock() {
+    // 1) parse set
+
+    int first = next();
+    if (first == -1) {
+        throw ParsingException();
+    }
+
+    std::bitset<256> allowed;
+    bool negate = first == '^';
+    if (!negate) {
+        allowed[first] = true;
+    }
+
+} // namespace detail
+
+} // namespace impl
 
 #include <bits/stdc++.h>
 
@@ -580,6 +698,163 @@ JNGEN_DECLARE_SIMPLE_PRINTER(std::pair<Lhs JNGEN_COMMA Rhs>, 3)
 
 } // namespace impl
 
+
+namespace impl {
+
+class EpsHolder {
+private:
+    EpsHolder() : eps(1e-9) {}
+
+public:
+    long double eps;
+
+    static EpsHolder& instance() {
+        static EpsHolder holder;
+        return holder;
+    }
+};
+
+inline void setEps(long double eps) {
+    EpsHolder::instance().eps = eps;
+}
+
+inline long double eps() {
+    return EpsHolder::instance().eps;
+}
+
+template<typename T, typename Enable = void>
+class Comparator {
+public:
+    static bool eq(T a, T b) { return a == b; }
+    static bool ne(T a, T b) { return !(a == b); }
+    static bool lt(T a, T b) { return a < b; }
+    static bool le(T a, T b) { return a <= b; }
+    static bool gt(T a, T b) { return a > b; }
+    static bool ge(T a, T b) { return a >= b; }
+};
+
+template<typename T>
+class Comparator<T,
+    typename std::enable_if<std::is_floating_point<T>::value, void>::type>
+{
+    static bool eq(T a, T b) { return std::abs(b - a) < eps(); }
+    static bool ne(T a, T b) { return !(a == b); }
+    static bool lt(T a, T b) { return a < b - eps; }
+    static bool le(T a, T b) { return a <= b + eps; }
+    static bool gt(T a, T b) { return a > b + eps; }
+    static bool ge(T a, T b) { return a >= b - eps; }
+};
+
+template<typename T> bool eq(T a, T b) { return Comparator<T>::eq(a, b); }
+template<typename T> bool ne(T a, T b) { return Comparator<T>::ne(a, b); }
+template<typename T> bool lt(T a, T b) { return Comparator<T>::lt(a, b); }
+template<typename T> bool le(T a, T b) { return Comparator<T>::le(a, b); }
+template<typename T> bool gt(T a, T b) { return Comparator<T>::gt(a, b); }
+template<typename T> bool ge(T a, T b) { return Comparator<T>::ge(a, b); }
+
+template<typename T>
+struct TPoint : public ReprProxy<TPoint<T>> {
+    T x, y;
+
+    TPoint() : x(0), y(0) {}
+    TPoint(T x, T y) : x(x), y(y) {}
+
+    TPoint<T> operator+(const TPoint<T>& other) const {
+        return TPoint(x + other.x, y + other.y);
+    }
+
+    TPoint<T>& operator+=(const TPoint<T>& other) {
+        x += other.x;
+        y += other.y;
+        return *this;
+    }
+
+    TPoint<T> operator-(const TPoint<T>& other) const {
+        return TPoint(x - other.x, y - other.y);
+    }
+
+    TPoint<T>& operator-=(const TPoint<T>& other) {
+        x -= other.x;
+        y -= other.y;
+        return *this;
+    }
+
+    T operator*(const TPoint<T>& other) const {
+        return x * other.x + y * other.y;
+    }
+
+    T operator%(const TPoint<T>& other) const {
+        return x * other.y - y * other.x;
+    }
+
+    bool operator==(const TPoint<T>& other) const {
+        return eq(x, other.x) && eq(y, other.y);
+    }
+
+    bool operator!=(const TPoint<T>& other) const {
+        return !(*this == other);
+    }
+
+    bool operator<(const TPoint<T>& other) const {
+        if (eq(x, other.x)) {
+            return lt(y, other.y);
+        }
+        return lt(x, other.x);
+    }
+};
+
+using Point = TPoint<long long>;
+using Pointf = TPoint<long double>;
+
+template<typename T>
+std::ostream& operator<<(std::ostream& out, const TPoint<T>& t) {
+    return out << t.x << " " << t.y;
+}
+
+template<typename T>
+JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 2) {
+    (void)mod;
+    out << t;
+}
+
+class GeometryRandom {
+public:
+    GeometryRandom() {
+        static bool created = false;
+        ensure(!created, "impl::GeometryRandom should be created only once");
+        created = true;
+    }
+
+    // point in [0, X] x [0, Y]
+    static Point point(long long X, long long Y) {
+        long long x = rnd.tnext<long long>(0, X);
+        long long y = rnd.tnext<long long>(0, Y);
+        return {x, y};
+    }
+
+    // point in [0, C] x [0, C]
+    static Point point(long long C) {
+        return point(C, C);
+    }
+
+    // Point in [x1, x2] x [y1, y2]
+    static Point point(long long x1, long long y1, long long x2, long long y2) {
+        long long x = rnd.tnext<long long>(x1, x2);
+        long long y = rnd.tnext<long long>(y1, y2);
+        return {x, y};
+    }
+} rndg;
+
+} // namespace impl
+
+using impl::Point;
+using impl::Pointf;
+
+using impl::rndg;
+
+using impl::eps;
+using impl::setEps;
+
 #include <bits/stdc++.h>
 
 
@@ -811,7 +1086,7 @@ GenericArray<T> GenericArray<T>::choice(size_t count) const {
 
     size_t n = size();
 
-    std::unordered_map<T, T> used;
+    std::unordered_map<size_t, size_t> used;
     std::vector<size_t> res;
     for (size_t i = 0; i < count; ++i) {
         size_t oldValue = used.count(n-i-1) ? used[n-i-1] : n-i-1;
@@ -821,6 +1096,15 @@ GenericArray<T> GenericArray<T>::choice(size_t count) const {
     }
 
     return subseq(res);
+}
+
+template<typename T>
+GenericArray<T> GenericArray<T>::choiceWithRepetition(size_t count) const {
+    GenericArray<T> res(count);
+    for (T& t: res) {
+        t = choice();
+    }
+    return res;
 }
 
 template<typename T>
