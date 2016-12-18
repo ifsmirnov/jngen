@@ -102,7 +102,7 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1, 3)
         if (first) {
             first = false;
         } else {
-            out << " ";
+            out << mod.sep;
         }
         JNGEN_PRINT(x);
     }

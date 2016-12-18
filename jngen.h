@@ -281,6 +281,8 @@ struct OutputModifier {
 
     bool printParents = false;
     bool printEdges = true;
+
+    char sep = ' ';
 };
 
 OutputModifier defaultMod;
@@ -338,6 +340,11 @@ public:
         return *this;
     }
 
+    Repr<T>& endl(bool value = true) {
+        mod_.sep = value ? '\n' : ' ';
+        return *this;
+    }
+
 private:
     void print(std::ostream& out) const {
         printValue(out, object_, mod_, PTagMax{});
@@ -384,6 +391,12 @@ public:
     Repr<T> printEdges(bool value = true) {
         Repr<T> repr(static_cast<const T&>(*this));
         repr.printEdges(value);
+        return repr;
+    }
+
+    Repr<T> endl(bool value = true) {
+        Repr<T> repr(static_cast<const T&>(*this));
+        repr.endl(value);
         return repr;
     }
 
@@ -530,7 +543,7 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1, 3)
         if (first) {
             first = false;
         } else {
-            out << " ";
+            out << mod.sep;
         }
         JNGEN_PRINT(x);
     }
