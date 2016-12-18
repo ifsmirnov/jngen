@@ -132,7 +132,7 @@ public:
     }
 
     template<typename T, typename ... Args>
-    T tnext(Args... args) {
+    static T tnext(Args... args) {
         return TypedRandom<T>::next(args...);
     }
 };
@@ -210,124 +210,6 @@ void registerGen(int argc, char *argv[]) {
     }
     rnd.seed(val);
 }
-
-#include <bits/stdc++.h>
-
-namespace impl {
-
-namespace pattern {
-
-/*
-    Here we go with patterns of kind 'ab{2-10}[c-f][^1-9]{16}'. The grammar is
-    described further.
-
-    Pattern ::= Block | Block Pattern
-    Block   ::= Set | Set Count
-    Count   ::= {int} | {int-int}                   // int - regular integer
-    Set     ::= [PosSet] | [NegSet] | Char
-    NegSet  ::= ^ Subset
-    PosSet  ::= x Subset                            // x -- any char except ^
-    Subset  ::= Range | Range Set
-    Range   ::= Char | Char-Char
-    Char    ::= c | \ Special                      // c -- any non-special
-    Special ::= [ ] \ - { }
-*/
-
-struct Set {
-    static const char MIN = 32;
-    static const char MAX = 127;
-
-    std::vector<char> allowed; // should be bool but <s>int is faster</s> who cares
-
-    void negate() {
-        std::vector<char> all(MAX - MIN + 1);
-        std::iota(all.begin(), all.end(), MIN);
-        std::vector<char> result;
-        set_symmetric_difference(
-            allowed.begin(), allowed.end(),
-            all.begin(), all.end(),
-            std::back_inserter(result));
-        allowed = result;
-    }
-
-    Set() {}
-
-    Set(const std::bitset<256>& bitset) {
-        for (int i = MIN; i <= MAX; ++i) {
-            if (bitset[i]) {
-                allowed.push_back(i);
-            }
-        }
-    }
-};
-
-typedef std:pair<int, int> Range;
-
-struct Block {
-    Set set;
-    Range range;
-};
-
-struct Pattern {
-    std::vector<Block> blocks;
-
-    std::string generate(std::function<size_t>(size_t)&& randomEngine);
-};
-
-class Parser {
-public:
-    Parser(const std::string& pattern) : pattern_(pattern) {}
-
-    Pattern parse();
-
-private:
-    Block parseBlock();
-
-    int next() const {
-        return position_ < pattern_.size() ? pattern_[position_] : -1;
-    }
-
-    std::string pattern_;
-    size_t position_;
-};
-
-struct ParsingException : public std::logic_error {};
-
-Pattern Parser::parse() {
-    ensure(position_ == 0, "Cannot parse the same pattern more than once");
-
-    Pattern result;
-
-    try {
-        while (position_ != pattern_.size()) {
-            result.blocks.push_back(parseBlock());
-        }
-        return resut;
-    } catch (ParsingException& e) {
-        std::string msg = "Failed to parse the pattern: '" + pattern_ + "'";
-        ensure(false, msg);
-    }
-
-    return resut;
-}
-
-Block Parser::parseBlock() {
-    // 1) parse set
-
-    int first = next();
-    if (first == -1) {
-        throw ParsingException();
-    }
-
-    std::bitset<256> allowed;
-    bool negate = first == '^';
-    if (!negate) {
-        allowed[first] = true;
-    }
-
-} // namespace detail
-
-} // namespace impl
 
 #include <bits/stdc++.h>
 
@@ -888,6 +770,11 @@ public:
     using Base::insert;
     using Base::clear;
 
+    template<typename F, typename ...Args>
+    static GenericArray<T> randomf(size_t size, F func, const Args& ... args);
+    template<typename F, typename ...Args>
+    static GenericArray<T> randomfUnique(size_t size, F func, const Args& ... args);
+
     template<typename ...Args>
     static GenericArray<T> random(size_t size, const Args& ... args);
     template<typename ...Args>
@@ -934,6 +821,20 @@ GenericArray<T> GenericArray<T>::random(size_t size, const Args& ... args) {
     return result;
 }
 
+template<typename T>
+template<typename F, typename ...Args>
+GenericArray<T> GenericArray<T>::randomf(
+        size_t size,
+        F func,
+        const Args& ... args)
+{
+    GenericArray<T> result(size);
+    for (T& x: result) {
+        x = func(args...);
+    }
+    return result;
+}
+
 namespace detail {
 
 template<typename T, typename Enable = std::size_t>
@@ -950,9 +851,11 @@ struct DictContainer<T, typename std::hash<T>::result_type>
 } // namespace detail
 
 template<typename T>
-template<typename ...Args>
-GenericArray<T> GenericArray<T>::randomUnique(
-        size_t size, const Args& ... args)
+template<typename F, typename ...Args>
+GenericArray<T> GenericArray<T>::randomfUnique(
+        size_t size,
+        F func,
+        const Args& ... args)
 {
     typename detail::DictContainer<T>::type set;
     GenericArray<T> result;
@@ -965,7 +868,7 @@ GenericArray<T> GenericArray<T>::randomUnique(
             ensure(false, "There are not enough unique elements");
         }
 
-        T t = rnd.tnext<T>(args...);
+        T t = func(args...);
         if (!set.count(t)) {
             set.insert(t);
             result.push_back(t);
@@ -973,6 +876,17 @@ GenericArray<T> GenericArray<T>::randomUnique(
     }
 
     return result;
+}
+
+template<typename T>
+template<typename ...Args>
+GenericArray<T> GenericArray<T>::randomUnique(
+        size_t size, const Args& ... args)
+{
+    return GenericArray<T>::randomfUnique(
+        size,
+        rnd.tnext<T, Args...>,
+        args...);
 }
 
 template<typename T>
@@ -1158,6 +1072,42 @@ template<typename T>
 impl::GenericArray<T> makeArray(const std::initializer_list<T>& values) {
     return impl::GenericArray<T>(values);
 }
+
+
+namespace impl {
+
+class ArrayRandom {
+public:
+    ArrayRandom() {
+        static bool created = false;
+        ensure(!created, "impl::ArrayRandom should be created only once");
+        created = true;
+    }
+
+    template<typename F, typename ...Args>
+    static auto randomf(
+            size_t size,
+            F func,
+            Args... args) -> GenericArray<decltype(func(args...))>
+    {
+        typedef decltype(func(args...)) T;
+        return GenericArray<T>::randomf(size, func, args...);
+    }
+
+    template<typename F, typename ...Args>
+    static auto randomfUnique(
+            size_t size,
+            F func,
+            Args... args) -> GenericArray<decltype(func(args...))>
+    {
+        typedef decltype(func(args...)) T;
+        return GenericArray<T>::randomfUnique(size, func, args...);
+    }
+} rnda;
+
+} // namespace impl
+
+using impl::rnda;
 
 #include <bits/stdc++.h>
 

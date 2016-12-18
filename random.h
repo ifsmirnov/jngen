@@ -73,7 +73,7 @@ public:
     }
 
     template<typename T, typename ... Args>
-    T tnext(Args... args) {
+    static T tnext(Args... args) {
         return TypedRandom<T>::next(args...);
     }
 };

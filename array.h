@@ -36,6 +36,11 @@ public:
     using Base::insert;
     using Base::clear;
 
+    template<typename F, typename ...Args>
+    static GenericArray<T> randomf(size_t size, F func, const Args& ... args);
+    template<typename F, typename ...Args>
+    static GenericArray<T> randomfUnique(size_t size, F func, const Args& ... args);
+
     template<typename ...Args>
     static GenericArray<T> random(size_t size, const Args& ... args);
     template<typename ...Args>
@@ -82,6 +87,20 @@ GenericArray<T> GenericArray<T>::random(size_t size, const Args& ... args) {
     return result;
 }
 
+template<typename T>
+template<typename F, typename ...Args>
+GenericArray<T> GenericArray<T>::randomf(
+        size_t size,
+        F func,
+        const Args& ... args)
+{
+    GenericArray<T> result(size);
+    for (T& x: result) {
+        x = func(args...);
+    }
+    return result;
+}
+
 namespace detail {
 
 template<typename T, typename Enable = std::size_t>
@@ -98,9 +117,11 @@ struct DictContainer<T, typename std::hash<T>::result_type>
 } // namespace detail
 
 template<typename T>
-template<typename ...Args>
-GenericArray<T> GenericArray<T>::randomUnique(
-        size_t size, const Args& ... args)
+template<typename F, typename ...Args>
+GenericArray<T> GenericArray<T>::randomfUnique(
+        size_t size,
+        F func,
+        const Args& ... args)
 {
     typename detail::DictContainer<T>::type set;
     GenericArray<T> result;
@@ -113,7 +134,7 @@ GenericArray<T> GenericArray<T>::randomUnique(
             ensure(false, "There are not enough unique elements");
         }
 
-        T t = rnd.tnext<T>(args...);
+        T t = func(args...);
         if (!set.count(t)) {
             set.insert(t);
             result.push_back(t);
@@ -121,6 +142,17 @@ GenericArray<T> GenericArray<T>::randomUnique(
     }
 
     return result;
+}
+
+template<typename T>
+template<typename ...Args>
+GenericArray<T> GenericArray<T>::randomUnique(
+        size_t size, const Args& ... args)
+{
+    return GenericArray<T>::randomfUnique(
+        size,
+        rnd.tnext<T, Args...>,
+        args...);
 }
 
 template<typename T>
