@@ -35,6 +35,7 @@ public:
     using Base::end;
     using Base::insert;
     using Base::clear;
+    using Base::erase;
 
     template<typename F, typename ...Args>
     static GenericArray<T> randomf(size_t size, F func, const Args& ... args);
@@ -56,6 +57,15 @@ public:
 
     GenericArray<T>& sort();
     GenericArray<T> sorted() const;
+
+    template<typename Comp>
+    GenericArray<T>& sort(Comp&& comp) const;
+    template<typename Comp>
+    GenericArray<T> sorted(Comp&& comp);
+
+    GenericArray<T>& unique();
+    GenericArray<T> uniqued() const;
+
 
     GenericArray<T> inverse() const;
 
@@ -207,6 +217,34 @@ template<typename T>
 GenericArray<T> GenericArray<T>::sorted() const {
     auto res = *this;
     res.sort();
+    return res;
+}
+
+template<typename T>
+template<typename Comp>
+GenericArray<T>& GenericArray<T>::sort(Comp&& comp) const {
+    std::sort(begin(), end(), comp);
+    return *this;
+}
+
+template<typename T>
+template<typename Comp>
+GenericArray<T> GenericArray<T>::sorted(Comp&& comp) {
+    auto res = *this;
+    res.sort(comp);
+    return res;
+}
+
+template<typename T>
+GenericArray<T>& GenericArray<T>::unique() {
+    erase(std::unique(begin(), end()), end());
+    return *this;
+}
+
+template<typename T>
+GenericArray<T> GenericArray<T>::uniqued() const {
+    auto res = *this;
+    res.unique();
     return res;
 }
 
