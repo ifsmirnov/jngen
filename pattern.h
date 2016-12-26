@@ -133,6 +133,8 @@ private:
         bool inRange = false;
         while (control(peek()) != ']') {
             char c = next(); // buggy on cases like [a-}]
+            ensure(c != -1);
+
             if (c == '-') {
                 ensure(!inRange);
                 inRange = true;

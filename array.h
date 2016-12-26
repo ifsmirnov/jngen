@@ -66,7 +66,6 @@ public:
     GenericArray<T>& unique();
     GenericArray<T> uniqued() const;
 
-
     GenericArray<T> inverse() const;
 
     template<typename Integer>
