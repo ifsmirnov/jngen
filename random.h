@@ -76,6 +76,11 @@ public:
     static T tnext(Args... args) {
         return TypedRandom<T>::next(args...);
     }
+
+    template<typename ... Args>
+    static std::pair<int, int> nextp(Args... args) {
+        return tnext<std::pair<int, int>>(args...);
+    }
 };
 
 Random rnd;
