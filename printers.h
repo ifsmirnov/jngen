@@ -74,9 +74,9 @@ JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
     // can't just write 'false' here because assertion always fails
     static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
-//     (void)out;
-//     (void)mod;
-//     (void)t;
+    (void)out;
+    (void)mod;
+    (void)t;
 }
 
 JNGEN_DECLARE_PRINTER(JNGEN_HAS_OSTREAM(), 1)
@@ -150,4 +150,24 @@ JNGEN_DECLARE_SIMPLE_PRINTER(std::pair<Lhs JNGEN_COMMA Rhs>, 3)
 
 #undef JNGEN_COMMA
 
+// Following snippet allows writing
+//     cout << pair<int, int>(1, 2) << endl;
+// in user code. I have to put it into separate namespace because
+//   1) I don't want to 'use' all operator<< from impl
+//   2) I cannot do it in global namespace because JNGEN_HAS_OSTREAM relies
+// on that it is in impl.
+namespace namespace_for_fake_operator_ltlt {
+
+template<typename T>
+auto operator<<(std::ostream& out, const T& t)
+    -> typename std::enable_if<!JNGEN_HAS_OSTREAM(), std::ostream&>::type
+{
+    impl::printValue(out, t, impl::defaultMod, impl::PTagMax{});
+    return out;
+}
+
+} // namespace namespace_for_fake_operator_ltlt
+
 } // namespace impl
+
+using namespace impl::namespace_for_fake_operator_ltlt;
