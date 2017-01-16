@@ -409,9 +409,12 @@ private:
         if (orPatterns.empty()) {
             return cur;
         } else {
+            orPatterns.emplace_back();
+            std::swap(orPatterns.back(), cur);
+
             Pattern p;
             p.isOrPattern = true;
-            cur.children = orPatterns;
+            p.children = orPatterns;
             return p;
         }
     }
@@ -845,6 +848,7 @@ JNGEN_DECLARE_SIMPLE_PRINTER(std::pair<Lhs JNGEN_COMMA Rhs>, 3)
 // on that it is in impl.
 namespace namespace_for_fake_operator_ltlt {
 
+/*
 template<typename T>
 auto operator<<(std::ostream& out, const T& t)
     -> typename std::enable_if<!JNGEN_HAS_OSTREAM(), std::ostream&>::type
@@ -852,6 +856,7 @@ auto operator<<(std::ostream& out, const T& t)
     impl::printValue(out, t, impl::defaultMod, impl::PTagMax{});
     return out;
 }
+*/
 
 } // namespace namespace_for_fake_operator_ltlt
 

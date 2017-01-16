@@ -193,9 +193,12 @@ private:
         if (orPatterns.empty()) {
             return cur;
         } else {
+            orPatterns.emplace_back();
+            std::swap(orPatterns.back(), cur);
+
             Pattern p;
             p.isOrPattern = true;
-            cur.children = orPatterns;
+            p.children = orPatterns;
             return p;
         }
     }
