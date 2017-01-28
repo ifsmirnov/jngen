@@ -44,12 +44,14 @@ public:
 
     long long next(long long n) {
         // TODO(ifsmirnov): make random more uniform
-        return ((randomEngine() << 32) ^ randomEngine()) % n;
+        return ((static_cast<long long>(randomEngine()) << 32)
+            ^ randomEngine()) % n;
     }
 
     size_t next(size_t n) {
         // TODO(ifsmirnov): make random more uniform
-        return ((randomEngine() << 32) ^ randomEngine()) % n;
+        return ((static_cast<long long>(randomEngine()) << 32)
+            ^ randomEngine()) % n;
     }
 
     double next(double n) {
