@@ -26,6 +26,10 @@ namespace detail {
 
 template<typename T>
 void readVariable(T& var, const std::string& value) {
+    if (value.empty()) {
+        return;
+    }
+
     std::istringstream ss(value);
     ss >> var;
 
@@ -46,8 +50,10 @@ void getopts(OptionIterator iter, T& var, Args& ...args) {
 } // namespace detail
 
 template<typename ... Args>
-void getopts(const std::vector<std::string>& options, Args& ...args) {
-    ensure(options.size() >= sizeof...(args), "Too few command-line arguments");
+void getopts(std::vector<std::string> options, Args& ...args) {
+    if (options.size() < sizeof...(args)) {
+        options.resize(sizeof...(args));
+    }
     detail::getopts(options.cbegin(), args...);
 }
 
