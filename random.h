@@ -3,6 +3,7 @@
 #include <bits/stdc++.h>
 
 #include "common.h"
+#include "pattern.h"
 
 namespace impl {
 
@@ -72,6 +73,10 @@ public:
 
     double next(double l, double r) {
         return l + next(r-l);
+    }
+
+    std::string next(const std::string& pattern) {
+        return Pattern(pattern).next([this](int n) { return next(n); });
     }
 
     template<typename T, typename ... Args>
