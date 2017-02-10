@@ -51,7 +51,7 @@ public:
 
     size_t next(size_t n) {
         // TODO(ifsmirnov): make random more uniform
-        return ((static_cast<long long>(randomEngine()) << 32)
+        return ((static_cast<unsigned long long>(randomEngine()) << 32)
             ^ randomEngine()) % n;
     }
 
