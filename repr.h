@@ -47,8 +47,8 @@ public:
         mod_(defaultMod)
     {  }
 
-    Repr<T>& add1() {
-        ++mod_.addition;
+    Repr<T>& add1(bool value = true) {
+        mod_.addition = value;
         return *this;
     }
 
@@ -98,9 +98,9 @@ class ReprProxy {
     }
 
 public:
-    Repr<T> add1() {
+    Repr<T> add1(bool value = true) {
         Repr<T> repr(static_cast<const T&>(*this));
-        repr.add1();
+        repr.add1(value);
         return repr;
     }
 

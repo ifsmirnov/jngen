@@ -22,6 +22,9 @@ public:
     Tree& shuffle();
     Tree shuffled() const;
 
+    Tree link(int vInThis, const Tree& other, int vInOther);
+    Tree glue(int vInThis, const Tree& other, int vInOther);
+
     static Tree bamboo(size_t size);
     static Tree randomPrufer(size_t size);
     static Tree random(size_t size, double elongation = 1.0);
@@ -29,6 +32,9 @@ public:
 
 inline void Tree::addEdge(int u, int v) {
     extend(std::max(u, v) + 1);
+
+    u = vertexByLabel(u);
+    v = vertexByLabel(v);
 
     int ret = dsu_.link(u, v);
     ensure(ret, "A cycle appeared in the tree :(");
@@ -109,6 +115,40 @@ inline Tree Tree::random(size_t size, double elongation) {
         int parent = rnd.tnext<int>(v-1 - (v-1) * elongation, v-1);
         t.addEdge(parent, v);
     }
+    return t;
+}
+
+Tree Tree::link(int vInThis, const Tree& other, int vInOther) {
+    Tree t(*this);
+
+    for (const auto& e: other.edges()) {
+        t.addEdge(e.first + n(), e.second + n());
+    }
+
+    t.addEdge(vInThis, vInOther + n());
+
+    return t;
+}
+
+Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
+    auto newLabel = [vInThis, vInOther, &other, this] (int v) {
+        if (v < vInOther) {
+            return n() + v;
+        } else if (v == vInOther) {
+            return vInThis;
+        } else {
+            return n() + v - 1;
+        }
+    };
+
+    Tree t(*this);
+
+    for (const auto& e: other.edges()) {
+        t.addEdge(newLabel(e.first), newLabel(e.second));
+    }
+
+    assert(t.n() == n() + other.n() - 1);
+
     return t;
 }
 

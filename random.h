@@ -156,7 +156,7 @@ using impl::opair;
 
 void registerGen(int argc, char *argv[]) {
     size_t val = 0;
-    for (int i = 0; i < argc; ++i) {
+    for (int i = 1; i < argc; ++i) {
         for (char *s = argv[i]; *s; ++s) {
             val = val * 10099 + *s;
         }

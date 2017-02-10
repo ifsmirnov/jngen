@@ -50,6 +50,7 @@ protected:
         }
         vertexLabel_.shuffle();
         vertexByLabel_ = vertexLabel_.inverse();
+        edgesShuffled_ = true;
     }
 
     void extend(size_t size) {
@@ -71,6 +72,8 @@ protected:
     int compareTo(const GenericGraph& other) const;
 
     int numEdges_ = 0;
+
+    bool edgesShuffled_ = false;
 
     Dsu dsu_;
     std::vector<std::vector<int>> adjList_;
@@ -95,6 +98,10 @@ inline void GenericGraph::doPrintEdges(
                 edges.emplace_back(vertexLabel(v), vertexLabel(to));
             }
         }
+    }
+
+    if (edgesShuffled_) {
+        edges.shuffle();
     }
 
     if (mod.printN) {

@@ -170,4 +170,4 @@ auto operator<<(std::ostream& out, const T& t)
 
 } // namespace impl
 
-using namespace impl::namespace_for_fake_operator_ltlt;
+// using namespace impl::namespace_for_fake_operator_ltlt;
