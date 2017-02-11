@@ -160,7 +160,10 @@ namespace namespace_for_fake_operator_ltlt {
 
 template<typename T>
 auto operator<<(std::ostream& out, const T& t)
-    -> typename std::enable_if<!JNGEN_HAS_OSTREAM(), std::ostream&>::type
+    -> typename std::enable_if<
+            !JNGEN_HAS_OSTREAM() && !std::is_base_of<ReprProxy<T>, T>::value,
+            std::ostream&
+        >::type
 {
     impl::printValue(out, t, impl::defaultMod, impl::PTagMax{});
     return out;
@@ -170,4 +173,4 @@ auto operator<<(std::ostream& out, const T& t)
 
 } // namespace impl
 
-// using namespace impl::namespace_for_fake_operator_ltlt;
+using namespace impl::namespace_for_fake_operator_ltlt;
