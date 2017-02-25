@@ -34,6 +34,11 @@ void startTest() {
     startTest(nextTestNo);
 }
 
+void setNextTestNumber(int testNo) {
+    nextTestNo = testNo;
+}
+
 } // namespace impl
 
 using impl::startTest;
+using impl::setNextTestNumber;

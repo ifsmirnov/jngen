@@ -933,9 +933,9 @@ public:
     GenericArray<T> sorted() const;
 
     template<typename Comp>
-    GenericArray<T>& sort(Comp&& comp) const;
+    GenericArray<T>& sort(Comp&& comp);
     template<typename Comp>
-    GenericArray<T> sorted(Comp&& comp);
+    GenericArray<T> sorted(Comp&& comp) const;
 
     GenericArray<T>& unique();
     GenericArray<T> uniqued() const;
@@ -1095,14 +1095,14 @@ GenericArray<T> GenericArray<T>::sorted() const {
 
 template<typename T>
 template<typename Comp>
-GenericArray<T>& GenericArray<T>::sort(Comp&& comp) const {
+GenericArray<T>& GenericArray<T>::sort(Comp&& comp) {
     std::sort(begin(), end(), comp);
     return *this;
 }
 
 template<typename T>
 template<typename Comp>
-GenericArray<T> GenericArray<T>::sorted(Comp&& comp) {
+GenericArray<T> GenericArray<T>::sorted(Comp&& comp) const {
     auto res = *this;
     res.sort(comp);
     return res;
@@ -1425,6 +1425,8 @@ public:
     static Tree bamboo(size_t size);
     static Tree randomPrufer(size_t size);
     static Tree random(size_t size, double elongation = 1.0);
+    static Tree star(size_t size);
+    static Tree caterpillar(size_t length, size_t size);
 };
 
 inline void Tree::addEdge(int u, int v) {
@@ -1447,6 +1449,40 @@ inline Tree& Tree::shuffle() {
 inline Tree Tree::shuffled() const {
     Tree t = *this;
     return t.shuffle();
+}
+
+Tree Tree::link(int vInThis, const Tree& other, int vInOther) {
+    Tree t(*this);
+
+    for (const auto& e: other.edges()) {
+        t.addEdge(e.first + n(), e.second + n());
+    }
+
+    t.addEdge(vInThis, vInOther + n());
+
+    return t;
+}
+
+Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
+    auto newLabel = [vInThis, vInOther, &other, this] (int v) {
+        if (v < vInOther) {
+            return n() + v;
+        } else if (v == vInOther) {
+            return vInThis;
+        } else {
+            return n() + v - 1;
+        }
+    };
+
+    Tree t(*this);
+
+    for (const auto& e: other.edges()) {
+        t.addEdge(newLabel(e.first), newLabel(e.second));
+    }
+
+    assert(t.n() == n() + other.n() - 1);
+
+    return t;
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
@@ -1515,37 +1551,20 @@ inline Tree Tree::random(size_t size, double elongation) {
     return t;
 }
 
-Tree Tree::link(int vInThis, const Tree& other, int vInOther) {
-    Tree t(*this);
-
-    for (const auto& e: other.edges()) {
-        t.addEdge(e.first + n(), e.second + n());
+inline Tree Tree::star(size_t size) {
+    Tree t;
+    for (size_t i = 1; i < size; ++i) {
+        t.addEdge(0, i);
     }
-
-    t.addEdge(vInThis, vInOther + n());
-
     return t;
 }
 
-Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
-    auto newLabel = [vInThis, vInOther, &other, this] (int v) {
-        if (v < vInOther) {
-            return n() + v;
-        } else if (v == vInOther) {
-            return vInThis;
-        } else {
-            return n() + v - 1;
-        }
-    };
-
-    Tree t(*this);
-
-    for (const auto& e: other.edges()) {
-        t.addEdge(newLabel(e.first), newLabel(e.second));
+inline Tree Tree::caterpillar(size_t length, size_t size) {
+    ensure(length <= size);
+    Tree t = Tree::bamboo(length);
+    for (size_t i = length; i < size; ++i) {
+        t.addEdge(rnd.next(length), i);
     }
-
-    assert(t.n() == n() + other.n() - 1);
-
     return t;
 }
 
@@ -2115,6 +2134,11 @@ void startTest() {
     startTest(nextTestNo);
 }
 
+void setNextTestNumber(int testNo) {
+    nextTestNo = testNo;
+}
+
 } // namespace impl
 
 using impl::startTest;
+using impl::setNextTestNumber;
