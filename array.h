@@ -169,7 +169,7 @@ GenericArray<T> GenericArray<T>::randomUnique(
 {
     return GenericArray<T>::randomfUnique(
         size,
-        [](Args... args) { return rnd.next(args...); },
+        [](Args... args) { return rnd.tnext<T>(args...); },
         args...);
 }
 

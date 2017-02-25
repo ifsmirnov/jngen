@@ -2,6 +2,9 @@
 #include <boost/test/included/unit_test.hpp>
 #include "../jngen.h"
 
+#include <algorithm>
+#include <utility>
+
 BOOST_AUTO_TEST_CASE(basics) {
     Array a, b;
 
@@ -105,4 +108,30 @@ BOOST_AUTO_TEST_CASE(random_generation) {
 
     a = Array::randomUnique(11, 10, 20);
     BOOST_CHECK_EQUAL(a.sorted().uniqued(), Array::id(11, 10));
+
+    auto b = Arrayp::random(100, 10, opair);
+    for (const auto& kv: b) {
+        BOOST_CHECK(kv.first <= kv.second);
+    }
+
+    b = Arrayp::randomUnique(100, 10);
+    BOOST_CHECK_EQUAL(b.size(), 100);
+
+    b = Arrayp::randomUnique(55, 1, 10, opair);
+
+    auto c = Arrayp::randomfUnique(55, []() {
+        int x = rnd.next(1, 10);
+        int y = rnd.next(1, 10);
+        return std::make_pair(std::min(x, y), std::max(x, y));
+    });
+
+    BOOST_CHECK_EQUAL(b.sorted(), c.sorted());
+
+    c = Arrayp::randomf(1000, []() {
+        int x = rnd.next(1, 10);
+        int y = rnd.next(1, 10);
+        return std::make_pair(std::min(x, y), std::max(x, y));
+    });
+
+    BOOST_CHECK_EQUAL(b.sorted(), c.sorted().uniqued());
 }
