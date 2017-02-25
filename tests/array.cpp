@@ -70,3 +70,39 @@ BOOST_AUTO_TEST_CASE(operators) {
     a *= 2;
     BOOST_CHECK_EQUAL(a, b);
 }
+
+BOOST_AUTO_TEST_CASE(random_selection) {
+    auto a = Array::id(10);
+
+    for (int i = 0; i < 10; ++i) {
+        int x = a.choice();
+        BOOST_CHECK(0 <= x && x < 10);
+    }
+
+    auto b = a.choice(5);
+    for (int x: b) {
+        BOOST_CHECK(0 <= x && x < 10);
+    }
+
+    b = a.choice(a.size());
+    for (int x: b) {
+        BOOST_CHECK(0 <= x && x < 10);
+    }
+
+    b = a.choiceWithRepetition(100);
+    for (int x: a) {
+        auto it = find(b.begin(), b.end(), x);
+        BOOST_CHECK(it != b.end());
+    }
+}
+
+BOOST_AUTO_TEST_CASE(random_generation) {
+    auto a = Array::random(100, 10);
+    BOOST_CHECK_EQUAL(a.sorted().uniqued(), Array::id(10));
+
+    a = Array::random(100, 10, 20);
+    BOOST_CHECK_EQUAL(a.sorted().uniqued(), Array::id(11, 10));
+
+    a = Array::randomUnique(11, 10, 20);
+    BOOST_CHECK_EQUAL(a.sorted().uniqued(), Array::id(11, 10));
+}
