@@ -59,9 +59,9 @@ public:
     GenericArray<T> sorted() const;
 
     template<typename Comp>
-    GenericArray<T>& sort(Comp&& comp) const;
+    GenericArray<T>& sort(Comp&& comp);
     template<typename Comp>
-    GenericArray<T> sorted(Comp&& comp);
+    GenericArray<T> sorted(Comp&& comp) const;
 
     GenericArray<T>& unique();
     GenericArray<T> uniqued() const;
@@ -221,14 +221,14 @@ GenericArray<T> GenericArray<T>::sorted() const {
 
 template<typename T>
 template<typename Comp>
-GenericArray<T>& GenericArray<T>::sort(Comp&& comp) const {
+GenericArray<T>& GenericArray<T>::sort(Comp&& comp) {
     std::sort(begin(), end(), comp);
     return *this;
 }
 
 template<typename T>
 template<typename Comp>
-GenericArray<T> GenericArray<T>::sorted(Comp&& comp) {
+GenericArray<T> GenericArray<T>::sorted(Comp&& comp) const {
     auto res = *this;
     res.sort(comp);
     return res;
