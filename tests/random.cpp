@@ -6,8 +6,6 @@
 #include <string>
 #include <vector>
 
-BOOST_AUTO_TEST_SUITE(MasterSuite)
-
 BOOST_AUTO_TEST_CASE(basic_methods) {
     rnd.seed(123);
 
@@ -113,5 +111,3 @@ BOOST_AUTO_TEST_CASE(several_engines) {
     BOOST_CHECK(etalon == generate(r2));
     BOOST_CHECK(etalon == generate(r1));
 }
-
-BOOST_AUTO_TEST_SUITE_END()
