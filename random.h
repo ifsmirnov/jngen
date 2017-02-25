@@ -3,8 +3,10 @@
 #include "common.h"
 #include "pattern.h"
 
+#include <limits>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -30,6 +32,33 @@ protected:
 template<typename T>
 struct TypedRandom;
 
+uint64_t maskForBound(uint64_t bound) {
+    --bound;
+    uint64_t mask = ~0;
+    if ((mask >> 32) >= bound) mask >>= 32;
+    if ((mask >> 16) >= bound) mask >>= 16;
+    if ((mask >> 8 ) >= bound) mask >>= 8 ;
+    if ((mask >> 4 ) >= bound) mask >>= 4 ;
+    if ((mask >> 2 ) >= bound) mask >>= 2 ;
+    if ((mask >> 1 ) >= bound) mask >>= 1 ;
+    return mask;
+}
+
+template<typename Result, typename Source>
+Result uniformRandom(Result bound, Random& random, Source (Random::*method)()) {
+#ifdef JNGEN_FAST_RANDOM
+    return (random.*method)() % bound;
+#else
+    Source mask = maskForBound(bound);
+    while (true) {
+        Source outcome = (random.*method)() & mask;
+        if (outcome < bound) {
+            return outcome;
+        }
+    }
+#endif
+};
+
 class Random {
 public:
     Random() {
@@ -50,28 +79,45 @@ public:
         return randomEngine_();
     }
 
+    uint64_t next64() {
+        uint64_t a = next();
+        uint64_t b = next();
+        return (a << 32) ^ b;
+    }
+
+    double nextf() {
+        return (double)randomEngine_() / randomEngine_.max();
+    }
+
     int next(int n) {
-        // TODO(ifsmirnov): make random more uniform
-        return randomEngine_() % n;
+        ensure(n > 0);
+        return uniformRandom(n, *this, (uint32_t (Random::*)())&Random::next);
+    }
+
+    long next(long n) {
+        ensure(n > 0);
+        return uniformRandom(n, *this, &Random::next64);
     }
 
     long long next(long long n) {
-        // TODO(ifsmirnov): make random more uniform
-        return ((static_cast<long long>(randomEngine_()) << 32)
-            ^ randomEngine_()) % n;
+        ensure(n > 0);
+        return uniformRandom(n, *this, &Random::next64);
     }
 
     size_t next(size_t n) {
-        // TODO(ifsmirnov): make random more uniform
-        return ((static_cast<unsigned long long>(randomEngine_()) << 32)
-            ^ randomEngine_()) % n;
+        ensure(n > 0);
+        return uniformRandom(n, *this, &Random::next64);
     }
 
     double next(double n) {
-        return (double)randomEngine_() / randomEngine_.max() * n;
+        return nextf() * n;
     }
 
     int next(int l, int r) {
+        return l + next(r-l+1);
+    }
+
+    long next(long l, long r) {
         return l + next(r-l+1);
     }
 
