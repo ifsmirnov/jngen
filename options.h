@@ -2,9 +2,11 @@
 
 #include "common.h"
 
-#include <bits/stdc++.h>
+#include <sstream>
+#include <string>
+#include <vector>
 
-namespace impl {
+namespace jngen {
 
 namespace detail {
 
@@ -46,6 +48,6 @@ void getopts(int argc, char *argv[], Args& ...args) {
     return getopts(std::vector<std::string>(argv + 1, argv + argc), args...);
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::getopts;
+using jngen::getopts;

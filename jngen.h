@@ -1,5 +1,6 @@
 
-#include <bits/stdc++.h>
+#include <cassert>
+#include <iostream>
 
 #define JNGEN_ENSURE1(cond)\
     assert(cond)
@@ -18,9 +19,11 @@ while (false)
     (__VA_ARGS__)
 
 
-#include <bits/stdc++.h>
+#include <sstream>
+#include <string>
+#include <vector>
 
-namespace impl {
+namespace jngen {
 
 namespace detail {
 
@@ -62,15 +65,21 @@ void getopts(int argc, char *argv[], Args& ...args) {
     return getopts(std::vector<std::string>(argv + 1, argv + argc), args...);
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::getopts;
-#include <bits/stdc++.h>
+using jngen::getopts;
 
+
+#include <cctype>
+#include <functional>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 // TODO: adequate error messages
 
-namespace impl {
+namespace jngen {
 
 class Pattern {
     friend class Parser;
@@ -78,7 +87,7 @@ public:
     Pattern() : isOrPattern(false), min(1), max(1) {}
     Pattern(const std::string& s);
 
-    std::string next(std::function<size_t(size_t)> rnd) const;
+    std::string next(std::function<int(int)> rnd) const;
 
 private:
     Pattern(Pattern p, std::pair<int, int> quantity) :
@@ -277,7 +286,7 @@ Pattern::Pattern(const std::string& s) {
     *this = Parser().parse(s);
 }
 
-std::string Pattern::next(std::function<size_t(size_t)> rnd) const {
+std::string Pattern::next(std::function<int(int)> rnd) const {
     if (isOrPattern) {
         ensure(!children.empty());
         return children[rnd(children.size())].next(rnd);
@@ -306,14 +315,17 @@ std::string Pattern::next(std::function<size_t(size_t)> rnd) const {
     return result;
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::Pattern;
-
-#include <bits/stdc++.h>
+using jngen::Pattern;
 
 
-namespace impl {
+#include <random>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace jngen {
 
 static void assertRandomEngineConsistency() {
     std::mt19937 engine(1234);
@@ -475,12 +487,12 @@ private:
     }
 };
 
-} // namespace impl
+} // namespace jngen
 
-using impl::Random;
+using jngen::Random;
 
-using impl::rnd;
-using impl::opair;
+using jngen::rnd;
+using jngen::opair;
 
 void registerGen(int argc, char *argv[]) {
     std::vector<uint32_t> seed;
@@ -495,9 +507,10 @@ void registerGen(int argc, char *argv[]) {
     rnd.seed(seed);
 }
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <vector>
 
-namespace impl {
+namespace jngen {
 
 class Dsu {
 public:
@@ -547,12 +560,13 @@ private:
     }
 };
 
-} // namespace impl
+} // namespace jngen
 
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <type_traits>
 
-namespace impl {
+namespace jngen {
 
 template<int N> struct PTag : PTag<N-1> {};
 template<> struct PTag<0> {};
@@ -721,15 +735,19 @@ DefaultModSetter setMod() {
     return DefaultModSetter(dummy);
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::repr;
-using impl::setMod;
-
-#include <bits/stdc++.h>
+using jngen::repr;
+using jngen::setMod;
 
 
-namespace impl {
+#include <iostream>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace jngen {
 
 namespace detail {
 
@@ -833,6 +851,7 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1, 3)
     }
 }
 
+// TODO: why not to make it for tuple?
 JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1 &&
     std::tuple_size<typename T::value_type>::value == 2, 4)
 {
@@ -878,9 +897,9 @@ JNGEN_DECLARE_SIMPLE_PRINTER(std::pair<Lhs JNGEN_COMMA Rhs>, 3)
 // Following snippet allows writing
 //     cout << pair<int, int>(1, 2) << endl;
 // in user code. I have to put it into separate namespace because
-//   1) I don't want to 'use' all operator<< from impl
+//   1) I don't want to 'use' all operator<< from jngen
 //   2) I cannot do it in global namespace because JNGEN_HAS_OSTREAM relies
-// on that it is in impl.
+// on that it is in jngen.
 namespace namespace_for_fake_operator_ltlt {
 
 template<typename T>
@@ -890,20 +909,28 @@ auto operator<<(std::ostream& out, const T& t)
             std::ostream&
         >::type
 {
-    impl::printValue(out, t, impl::defaultMod, impl::PTagMax{});
+    jngen::printValue(out, t, jngen::defaultMod, jngen::PTagMax{});
     return out;
 }
 
 } // namespace namespace_for_fake_operator_ltlt
 
-} // namespace impl
+} // namespace jngen
 
-using namespace impl::namespace_for_fake_operator_ltlt;
-
-#include <bits/stdc++.h>
+using namespace jngen::namespace_for_fake_operator_ltlt;
 
 
-namespace impl {
+#include <algorithm>
+#include <initializer_list>
+#include <numeric>
+#include <set>
+#include <type_traits>
+#include <unordered_set>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+namespace jngen {
 
 template<typename T>
 class GenericArray : public ReprProxy<GenericArray<T>>, public std::vector<T> {
@@ -937,7 +964,8 @@ public:
     template<typename F, typename ...Args>
     static GenericArray<T> randomf(size_t size, F func, const Args& ... args);
     template<typename F, typename ...Args>
-    static GenericArray<T> randomfUnique(size_t size, F func, const Args& ... args);
+    static GenericArray<T> randomfUnique(
+            size_t size, F func, const Args& ... args);
 
     template<typename ...Args>
     static GenericArray<T> random(size_t size, const Args& ... args);
@@ -1057,7 +1085,7 @@ GenericArray<T> GenericArray<T>::randomUnique(
 {
     return GenericArray<T>::randomfUnique(
         size,
-        rnd.tnext<T, Args...>,
+        [&](Args... args) { return rnd.next(args...); },
         args...);
 }
 
@@ -1253,30 +1281,34 @@ GenericArray<T> GenericArray<T>::operator*(int k) const {
     return copy *= k;
 }
 
-} // namespace impl
+} // namespace jngen
 
 template<typename T>
-using TArray = impl::GenericArray<T>;
+using TArray = jngen::GenericArray<T>;
 
-using Array = impl::GenericArray<int>;
-using Array64 = impl::GenericArray<long long>;
-using Arrayf = impl::GenericArray<double>;
-using Arrayp = impl::GenericArray<std::pair<int, int>>;
+using Array = jngen::GenericArray<int>;
+using Array64 = jngen::GenericArray<long long>;
+using Arrayf = jngen::GenericArray<double>;
+using Arrayp = jngen::GenericArray<std::pair<int, int>>;
 
 template<typename T>
-impl::GenericArray<T> makeArray(const std::vector<T>& values) {
-    return impl::GenericArray<T>(values);
+jngen::GenericArray<T> makeArray(const std::vector<T>& values) {
+    return jngen::GenericArray<T>(values);
 }
 
 template<typename T>
-impl::GenericArray<T> makeArray(const std::initializer_list<T>& values) {
-    return impl::GenericArray<T>(values);
+jngen::GenericArray<T> makeArray(const std::initializer_list<T>& values) {
+    return jngen::GenericArray<T>(values);
 }
 
-#include <bits/stdc++.h>
 
+#include <algorithm>
+#include <iostream>
+#include <set>
+#include <utility>
+#include <vector>
 
-namespace impl {
+namespace jngen {
 
 class GenericGraph {
 public:
@@ -1420,13 +1452,14 @@ inline int GenericGraph::compareTo(const GenericGraph& other) const {
     return 0;
 }
 
-} // namespace impl
+} // namespace jngen
 
 
-#include <bits/stdc++.h>
 
+#include <algorithm>
+#include <vector>
 
-namespace impl {
+namespace jngen {
 
 class Tree : public ReprProxy<Tree>, public GenericGraph {
 public:
@@ -1591,14 +1624,17 @@ inline Tree Tree::caterpillar(size_t length, size_t size) {
     return t;
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::Tree;
-
-#include <bits/stdc++.h>
+using jngen::Tree;
 
 
-namespace impl {
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
+namespace jngen {
 
 // TODO: make GraphBuilder subclass of Graph
 class GraphBuilder;
@@ -1724,7 +1760,6 @@ inline void GraphBuilder::build() {
         ensure(m_ <= maxEdges, "Too many edges in the graph");
     }
 
-
     std::set<std::pair<int, int>> usedEdges;
 
     if (connected_) {
@@ -1803,18 +1838,18 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Graph, 2) {
     t.doPrintEdges(out, mod);
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::Graph;
+using jngen::Graph;
 
 
-namespace impl {
+namespace jngen {
 
 class ArrayRandom {
 public:
     ArrayRandom() {
         static bool created = false;
-        ensure(!created, "impl::ArrayRandom should be created only once");
+        ensure(!created, "jngen::ArrayRandom should be created only once");
         created = true;
     }
 
@@ -1839,13 +1874,18 @@ public:
     }
 } rnda;
 
-} // namespace impl
+} // namespace jngen
 
-using impl::rnda;
+using jngen::rnda;
 
 
-namespace impl {
+#include <cstdlib>
+#include <iostream>
+#include <type_traits>
 
+namespace jngen {
+
+// TODO: why do we need this shit?
 class EpsHolder {
 private:
     EpsHolder() : eps(1e-9) {}
@@ -2067,7 +2107,7 @@ class GeometryRandom {
 public:
     GeometryRandom() {
         static bool created = false;
-        ensure(!created, "impl::GeometryRandom should be created only once");
+        ensure(!created, "jngen::GeometryRandom should be created only once");
         created = true;
     }
 
@@ -2104,8 +2144,6 @@ public:
             ensure(x.y <= Y);
         }
 
-        std::cerr << res.size() << std::endl;
-
         ensure(
             static_cast<int>(res.size()) >= n,
             "Cannot generate a convex polygon with so much vertices");
@@ -2114,25 +2152,26 @@ public:
     }
 } rndg;
 
-} // namespace impl
+} // namespace jngen
 
-using impl::Point;
-using impl::Pointf;
+using jngen::Point;
+using jngen::Pointf;
 
-using impl::rndg;
+using jngen::rndg;
 
-using impl::eps;
-using impl::setEps;
+using jngen::eps;
+using jngen::setEps;
 
 
-#include <bits/stdc++.h>
+#include <cstdio>
+#include <cstdlib>
 
-namespace impl {
+namespace jngen {
 
 int getInitialTestNo() {
     char *envvar = getenv("TESTNO");
     int testno;
-    if (!envvar || 1 != sscanf(envvar, "%d", &testno)) {
+    if (!envvar || 1 != std::sscanf(envvar, "%d", &testno)) {
         return 1;
     }
     return testno;
@@ -2143,8 +2182,8 @@ int nextTestNo = -1;
 void startTest(int testNo) {
     nextTestNo = testNo + 1;
     char filename[10];
-    sprintf(filename, "%d", testNo);
-    if (!freopen(filename, "w", stdout)) {
+    std::sprintf(filename, "%d", testNo);
+    if (!std::freopen(filename, "w", stdout)) {
         ensure(false, "Cannot open the file");
     }
 }
@@ -2161,7 +2200,7 @@ void setNextTestNumber(int testNo) {
     nextTestNo = testNo;
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::startTest;
-using impl::setNextTestNumber;
+using jngen::startTest;
+using jngen::setNextTestNumber;

@@ -1,15 +1,15 @@
 #pragma once
 
-#include "common.h"
 #include "array.h"
+#include "common.h"
 
-namespace impl {
+namespace jngen {
 
 class ArrayRandom {
 public:
     ArrayRandom() {
         static bool created = false;
-        ensure(!created, "impl::ArrayRandom should be created only once");
+        ensure(!created, "jngen::ArrayRandom should be created only once");
         created = true;
     }
 
@@ -34,6 +34,6 @@ public:
     }
 } rnda;
 
-} // namespace impl
+} // namespace jngen
 
-using impl::rnda;
+using jngen::rnda;

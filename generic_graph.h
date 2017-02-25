@@ -1,12 +1,16 @@
 #pragma once
 
-#include <bits/stdc++.h>
-
-#include "dsu.h"
 #include "array.h"
+#include "dsu.h"
 #include "printers.h"
 
-namespace impl {
+#include <algorithm>
+#include <iostream>
+#include <set>
+#include <utility>
+#include <vector>
+
+namespace jngen {
 
 class GenericGraph {
 public:
@@ -150,5 +154,5 @@ inline int GenericGraph::compareTo(const GenericGraph& other) const {
     return 0;
 }
 
-} // namespace impl
+} // namespace jngen
 

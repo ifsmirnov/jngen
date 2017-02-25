@@ -1,11 +1,14 @@
 #pragma once
 
-#include <bits/stdc++.h>
-
 #include "common.h"
 #include "pattern.h"
 
-namespace impl {
+#include <random>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace jngen {
 
 static void assertRandomEngineConsistency() {
     std::mt19937 engine(1234);
@@ -167,12 +170,12 @@ private:
     }
 };
 
-} // namespace impl
+} // namespace jngen
 
-using impl::Random;
+using jngen::Random;
 
-using impl::rnd;
-using impl::opair;
+using jngen::rnd;
+using jngen::opair;
 
 void registerGen(int argc, char *argv[]) {
     std::vector<uint32_t> seed;

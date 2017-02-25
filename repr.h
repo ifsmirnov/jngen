@@ -1,8 +1,9 @@
 #pragma once
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <type_traits>
 
-namespace impl {
+namespace jngen {
 
 template<int N> struct PTag : PTag<N-1> {};
 template<> struct PTag<0> {};
@@ -171,7 +172,7 @@ DefaultModSetter setMod() {
     return DefaultModSetter(dummy);
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::repr;
-using impl::setMod;
+using jngen::repr;
+using jngen::setMod;

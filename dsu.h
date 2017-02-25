@@ -1,8 +1,9 @@
 #pragma once
 
-#include <bits/stdc++.h>
+#include <algorithm>
+#include <vector>
 
-namespace impl {
+namespace jngen {
 
 class Dsu {
 public:
@@ -52,5 +53,5 @@ private:
     }
 };
 
-} // namespace impl
+} // namespace jngen
 

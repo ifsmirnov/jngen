@@ -1,12 +1,20 @@
 #pragma once
 
-#include <bits/stdc++.h>
-
 #include "common.h"
-#include "random.h"
 #include "printers.h"
+#include "random.h"
 
-namespace impl {
+#include <algorithm>
+#include <initializer_list>
+#include <numeric>
+#include <set>
+#include <type_traits>
+#include <unordered_set>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+namespace jngen {
 
 template<typename T>
 class GenericArray : public ReprProxy<GenericArray<T>>, public std::vector<T> {
@@ -40,7 +48,8 @@ public:
     template<typename F, typename ...Args>
     static GenericArray<T> randomf(size_t size, F func, const Args& ... args);
     template<typename F, typename ...Args>
-    static GenericArray<T> randomfUnique(size_t size, F func, const Args& ... args);
+    static GenericArray<T> randomfUnique(
+            size_t size, F func, const Args& ... args);
 
     template<typename ...Args>
     static GenericArray<T> random(size_t size, const Args& ... args);
@@ -160,7 +169,7 @@ GenericArray<T> GenericArray<T>::randomUnique(
 {
     return GenericArray<T>::randomfUnique(
         size,
-        rnd.tnext<T, Args...>,
+        [](Args... args) { return rnd.next(args...); },
         args...);
 }
 
@@ -356,22 +365,22 @@ GenericArray<T> GenericArray<T>::operator*(int k) const {
     return copy *= k;
 }
 
-} // namespace impl
+} // namespace jngen
 
 template<typename T>
-using TArray = impl::GenericArray<T>;
+using TArray = jngen::GenericArray<T>;
 
-using Array = impl::GenericArray<int>;
-using Array64 = impl::GenericArray<long long>;
-using Arrayf = impl::GenericArray<double>;
-using Arrayp = impl::GenericArray<std::pair<int, int>>;
+using Array = jngen::GenericArray<int>;
+using Array64 = jngen::GenericArray<long long>;
+using Arrayf = jngen::GenericArray<double>;
+using Arrayp = jngen::GenericArray<std::pair<int, int>>;
 
 template<typename T>
-impl::GenericArray<T> makeArray(const std::vector<T>& values) {
-    return impl::GenericArray<T>(values);
+jngen::GenericArray<T> makeArray(const std::vector<T>& values) {
+    return jngen::GenericArray<T>(values);
 }
 
 template<typename T>
-impl::GenericArray<T> makeArray(const std::initializer_list<T>& values) {
-    return impl::GenericArray<T>(values);
+jngen::GenericArray<T> makeArray(const std::initializer_list<T>& values) {
+    return jngen::GenericArray<T>(values);
 }

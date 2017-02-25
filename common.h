@@ -1,6 +1,7 @@
 #pragma once
 
-#include <bits/stdc++.h>
+#include <cassert>
+#include <iostream>
 
 #define JNGEN_ENSURE1(cond)\
     assert(cond)

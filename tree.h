@@ -1,12 +1,13 @@
 #pragma once
 
-#include <bits/stdc++.h>
-
 #include "array.h"
-#include "printers.h"
 #include "generic_graph.h"
+#include "printers.h"
 
-namespace impl {
+#include <algorithm>
+#include <vector>
+
+namespace jngen {
 
 class Tree : public ReprProxy<Tree>, public GenericGraph {
 public:
@@ -171,6 +172,6 @@ inline Tree Tree::caterpillar(size_t length, size_t size) {
     return t;
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::Tree;
+using jngen::Tree;

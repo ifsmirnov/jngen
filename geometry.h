@@ -1,15 +1,20 @@
 #pragma once
 
+#include "array.h"
 #include "common.h"
-#include "random.h"
-#include "repr.h"
 #include "printers.h"
 #include "random.h"
-#include "array.h"
+#include "random.h"
+#include "repr.h"
 #include "rnda.h"
 
-namespace impl {
+#include <cstdlib>
+#include <iostream>
+#include <type_traits>
 
+namespace jngen {
+
+// TODO: why do we need this shit?
 class EpsHolder {
 private:
     EpsHolder() : eps(1e-9) {}
@@ -231,7 +236,7 @@ class GeometryRandom {
 public:
     GeometryRandom() {
         static bool created = false;
-        ensure(!created, "impl::GeometryRandom should be created only once");
+        ensure(!created, "jngen::GeometryRandom should be created only once");
         created = true;
     }
 
@@ -268,8 +273,6 @@ public:
             ensure(x.y <= Y);
         }
 
-        std::cerr << res.size() << std::endl;
-
         ensure(
             static_cast<int>(res.size()) >= n,
             "Cannot generate a convex polygon with so much vertices");
@@ -278,12 +281,12 @@ public:
     }
 } rndg;
 
-} // namespace impl
+} // namespace jngen
 
-using impl::Point;
-using impl::Pointf;
+using jngen::Point;
+using jngen::Pointf;
 
-using impl::rndg;
+using jngen::rndg;
 
-using impl::eps;
-using impl::setEps;
+using jngen::eps;
+using jngen::setEps;

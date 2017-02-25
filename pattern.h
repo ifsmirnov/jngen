@@ -1,10 +1,17 @@
-#include <bits/stdc++.h>
+#pragma once
 
 #include "common.h"
 
+#include <cctype>
+#include <functional>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 // TODO: adequate error messages
 
-namespace impl {
+namespace jngen {
 
 class Pattern {
     friend class Parser;
@@ -12,7 +19,7 @@ public:
     Pattern() : isOrPattern(false), min(1), max(1) {}
     Pattern(const std::string& s);
 
-    std::string next(std::function<size_t(size_t)> rnd) const;
+    std::string next(std::function<int(int)> rnd) const;
 
 private:
     Pattern(Pattern p, std::pair<int, int> quantity) :
@@ -211,7 +218,7 @@ Pattern::Pattern(const std::string& s) {
     *this = Parser().parse(s);
 }
 
-std::string Pattern::next(std::function<size_t(size_t)> rnd) const {
+std::string Pattern::next(std::function<int(int)> rnd) const {
     if (isOrPattern) {
         ensure(!children.empty());
         return children[rnd(children.size())].next(rnd);
@@ -240,6 +247,6 @@ std::string Pattern::next(std::function<size_t(size_t)> rnd) const {
     return result;
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::Pattern;
+using jngen::Pattern;

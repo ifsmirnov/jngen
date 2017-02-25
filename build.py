@@ -40,7 +40,6 @@ while deps:
                 deps[other].discard(item)
             break
 
-
 with open("jngen.h", "w") as fout:
     for filename in order:
         with open(filename) as fin:

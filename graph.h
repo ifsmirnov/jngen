@@ -1,12 +1,15 @@
 #pragma once
 
-#include <bits/stdc++.h>
-
 #include "array.h"
 #include "generic_graph.h"
 #include "tree.h"
 
-namespace impl {
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
+
+namespace jngen {
 
 // TODO: make GraphBuilder subclass of Graph
 class GraphBuilder;
@@ -132,7 +135,6 @@ inline void GraphBuilder::build() {
         ensure(m_ <= maxEdges, "Too many edges in the graph");
     }
 
-
     std::set<std::pair<int, int>> usedEdges;
 
     if (connected_) {
@@ -211,6 +213,6 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Graph, 2) {
     t.doPrintEdges(out, mod);
 }
 
-} // namespace impl
+} // namespace jngen
 
-using impl::Graph;
+using jngen::Graph;
