@@ -9,6 +9,10 @@
 #include <utility>
 #include <vector>
 
+/* Directed graphs are not supported yet, and Graph class itself
+ * is pretty useless. Sorry for now.
+ */
+
 namespace jngen {
 
 // TODO: make GraphBuilder subclass of Graph
@@ -41,7 +45,7 @@ public:
     bool connected() const {
         return self().GenericGraph::connected();
     }
-    const std::vector<int>& edges(int v) const {
+    std::vector<int> edges(int v) const {
         return self().GenericGraph::edges(v);
     }
     std::vector<std::pair<int, int>> edges() const {

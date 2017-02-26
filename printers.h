@@ -12,6 +12,8 @@ namespace jngen {
 
 namespace detail {
 
+// TODO: maybe make it more clear SFINAE, like boost::has_left_shift<X,Y>?
+
 #define JNGEN_DEFINE_FUNCTION_CHECKER(name, expr)\
 template<typename T, typename Enable = void>\
 class Has ## name ## Helper: public std::false_type {};\

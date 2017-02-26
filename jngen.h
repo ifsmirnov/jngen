@@ -797,6 +797,8 @@ namespace jngen {
 
 namespace detail {
 
+// TODO: maybe make it more clear SFINAE, like boost::has_left_shift<X,Y>?
+
 #define JNGEN_DEFINE_FUNCTION_CHECKER(name, expr)\
 template<typename T, typename Enable = void>\
 class Has ## name ## Helper: public std::false_type {};\
@@ -1350,6 +1352,7 @@ jngen::GenericArray<T> makeArray(const std::initializer_list<T>& values) {
 
 #include <algorithm>
 #include <iostream>
+#include <iterator>
 #include <set>
 #include <utility>
 #include <vector>
@@ -1369,25 +1372,39 @@ public:
     virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
     virtual int vertexByLabel(int v) const { return vertexByLabel_[v]; }
 
-    virtual const std::vector<int>& edges(int v) const {
-        return adjList_[v];
+    virtual std::vector<int> edges(int v) const {
+        v = vertexByLabel(v);
+
+        std::vector<int> result;
+        std::transform(
+            adjList_[v].begin(),
+            adjList_[v].end(),
+            std::back_inserter(result),
+            [this](int x) { return vertexLabel(x); }
+        );
+        return result;
     }
 
     virtual std::vector<std::pair<int, int>> edges() const {
         std::vector<std::pair<int, int>> result;
-        for (int v = 0; v < n(); ++v) {
+        for (int id = 0; id < n(); ++id) {
+            int v = vertexByLabel(id);
+            size_t pos = result.size();
             for (int to: edges(v)) {
                 if (v <= to) {
                     result.emplace_back(vertexLabel(v), vertexLabel(to));
                 }
             }
+            std::sort(result.begin() + pos, result.end());
         }
         return result;
     }
 
+    // TODO: should it really be public?
     virtual void doPrintEdges(
         std::ostream& out, const OutputModifier& mod) const;
 
+    // TODO: more operators!
     virtual bool operator==(const GenericGraph& other) const;
     virtual bool operator<(const GenericGraph& other) const;
 
@@ -1415,6 +1432,7 @@ protected:
         if (u != v) {
             adjList_[v].push_back(u);
         }
+        ++numEdges_;
     }
 
     int compareTo(const GenericGraph& other) const;
@@ -1433,7 +1451,6 @@ inline void GenericGraph::addEdge(int u, int v) {
     extend(std::max(u, v) + 1);
     dsu_.link(u, v);
     addEdgeUnsafe(u, v);
-    ++numEdges_;
 }
 
 inline void GenericGraph::doPrintEdges(
@@ -1478,21 +1495,16 @@ inline bool GenericGraph::operator<(const GenericGraph& other) const {
     return compareTo(other) == -1;
 }
 
+// TODO: this should compare by vertex labels actually
 inline int GenericGraph::compareTo(const GenericGraph& other) const {
-    if (n() < other.n()) {
-        return -1;
-    }
-    if (n() > other.n()) {
-        return 1;
+    if (n() != other.n()) {
+        return n() < other.n() ? -1 : 1;
     }
     for (int i = 0; i < n(); ++i) {
-        std::set<int> edges1(edges(i).begin(), edges(i).end());
-        std::set<int> edges2(other.edges(i).begin(), other.edges(i).end());
-        if (edges1 < edges2) {
-            return -1;
-        }
-        if (edges1 > edges2) {
-            return 1;
+        Array e1 = Array(edges(i)).sorted();
+        Array e2 = Array(other.edges(i)).sorted();
+        if (e1 != e2) {
+            return e1 < e2 ? -1 : 1;
         }
     }
     return 0;
@@ -1680,6 +1692,10 @@ using jngen::Tree;
 #include <utility>
 #include <vector>
 
+/* Directed graphs are not supported yet, and Graph class itself
+ * is pretty useless. Sorry for now.
+ */
+
 namespace jngen {
 
 // TODO: make GraphBuilder subclass of Graph
@@ -1712,7 +1728,7 @@ public:
     bool connected() const {
         return self().GenericGraph::connected();
     }
-    const std::vector<int>& edges(int v) const {
+    std::vector<int> edges(int v) const {
         return self().GenericGraph::edges(v);
     }
     std::vector<std::pair<int, int>> edges() const {
