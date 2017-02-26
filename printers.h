@@ -94,7 +94,11 @@ JNGEN_DECLARE_PRINTER(JNGEN_HAS_OSTREAM(), 1)
 JNGEN_DECLARE_PRINTER(
     JNGEN_HAS_OSTREAM() && JNGEN_HAS_FUNCTION(Plus), 2)
 {
-    out << t + mod.addition;
+    if (std::is_integral<T>::value) {
+        out << t + mod.addition;
+    } else {
+        out << t;
+    }
 }
 
 
@@ -114,7 +118,6 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1, 3)
     }
 }
 
-// TODO: why not to make it for tuple?
 JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1 &&
     std::tuple_size<typename T::value_type>::value == 2, 4)
 {

@@ -3,8 +3,8 @@
 #include "../jngen.h"
 
 #include <sstream>
-
-// Hi!
+#include <utility>
+#include <vector>
 
 template<typename T>
 void checkOutput(const T& t, const std::string& s) {
@@ -76,4 +76,17 @@ BOOST_AUTO_TEST_CASE(output_mod_reset) {
     checkOutput(a, "1 2 3 4 5");
     checkOutput(a.add1(false), "0 1 2 3 4");
     checkOutput(a.add1(), "1 2 3 4 5");
+}
+
+BOOST_AUTO_TEST_CASE(external_repr) {
+    setMod().reset();
+
+    std::vector<int> x{0, 1, 2};
+    checkOutput(repr(x), "0 1 2");
+    checkOutput(repr(x).add1(), "1 2 3");
+
+    std::pair<double, long long> y(0.123456, 31415);
+
+    checkOutput(repr(y), "0.123456 31415");
+    checkOutput(repr(y).add1(), "0.123456 31416");
 }
