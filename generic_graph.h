@@ -26,10 +26,10 @@ public:
     virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
     virtual int vertexByLabel(int v) const { return vertexByLabel_[v]; }
 
-    virtual std::vector<int> edges(int v) const {
+    virtual Array edges(int v) const {
         v = vertexByLabel(v);
 
-        std::vector<int> result;
+        Array result;
         std::transform(
             adjList_[v].begin(),
             adjList_[v].end(),
@@ -39,8 +39,8 @@ public:
         return result;
     }
 
-    virtual std::vector<std::pair<int, int>> edges() const {
-        std::vector<std::pair<int, int>> result;
+    virtual Arrayp edges() const {
+        Arrayp result;
         for (int id = 0; id < n(); ++id) {
             int v = vertexByLabel(id);
             size_t pos = result.size();

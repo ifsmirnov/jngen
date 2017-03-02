@@ -45,10 +45,10 @@ public:
     bool connected() const {
         return self().GenericGraph::connected();
     }
-    std::vector<int> edges(int v) const {
+    Array edges(int v) const {
         return self().GenericGraph::edges(v);
     }
-    std::vector<std::pair<int, int>> edges() const {
+    Arrayp edges() const {
         return self().GenericGraph::edges();
     }
     int vertexLabel(int v) const {
