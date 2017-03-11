@@ -22,17 +22,20 @@ def direct_deps(filename):
     return res
 
 
+unused_files = map(str.strip, open(".unused_files").readlines())
+
+
 deps = {}
 
 
 for filename in os.listdir('.'):
-    if filename.endswith('.h') and filename != 'jngen.h':
+    if filename.endswith('.h') and filename != 'jngen.h' and filename not in unused_files:
         deps[filename] = direct_deps(filename)
 
 order = []
 
 while deps:
-    for item in deps:
+    for item in sorted(deps):
         if not deps[item]:
             order.append(item)
             del deps[item]

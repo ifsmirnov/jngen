@@ -1,6 +1,8 @@
 
 #include <cassert>
+#include <cstdlib>
 #include <iostream>
+#include <string>
 
 #define JNGEN_ENSURE1(cond)\
     assert(cond)
@@ -17,6 +19,99 @@ while (false)
 
 #define ensure(...) JNGEN_GET_MACRO(__VA_ARGS__, JNGEN_ENSURE2, JNGEN_ENSURE1)\
     (__VA_ARGS__)
+
+namespace jngen {
+
+template<typename ... Args>
+std::string format(const std::string& format, Args... args) {
+    constexpr static char BUF_SIZE = 64;
+    static char BUFFER[BUF_SIZE];
+
+    int bufSize = BUF_SIZE;
+    char *buf = BUFFER;
+
+    while (true) {
+        int ret = snprintf(buf, bufSize, format.c_str(), args...);
+        if (ret < bufSize) {
+            break;
+        }
+
+        if (bufSize != BUF_SIZE) {
+            delete[] buf;
+        }
+
+        bufSize *= 2;
+        buf = new char[bufSize];
+    }
+
+    std::string result(buf);
+
+    if (bufSize != BUF_SIZE) {
+        delete[] buf;
+    }
+
+    return result;
+}
+
+} // namespace jngen
+
+using jngen::format;
+
+#include <algorithm>
+#include <vector>
+
+namespace jngen {
+
+class Dsu {
+public:
+    int getParent(int x) {
+        extend(x);
+
+        return parent[x] == x ? x : (parent[x] = getParent(parent[x]));
+    }
+
+    bool link(int x, int y) {
+        extend(std::max(x, y));
+
+        x = parent[x];
+        y = parent[y];
+        if (x == y) {
+            return false;
+        }
+
+        if (rank[x] > rank[y]) {
+            std::swap(x, y);
+        }
+        if (rank[y] == rank[x]) {
+            ++rank[y];
+        }
+        parent[x] = y;
+
+        --components;
+
+        return true;
+    }
+
+    bool connected() const { return components <= 1; }
+
+private:
+    std::vector<int> parent;
+    std::vector<int> rank;
+
+    int components = 0;
+
+    void extend(size_t x) {
+        size_t last = parent.size() - 1;
+        while (parent.size() <= x) {
+            ++components;
+            parent.push_back(++last);
+            rank.push_back(0);
+        }
+    }
+};
+
+} // namespace jngen
+
 
 
 #include <sstream>
@@ -498,6 +593,14 @@ struct TypedRandom<size_t> : public BaseTypedRandom {
     size_t next(size_t l, size_t r) { return random.next(l, r); }
 };
 
+template<>
+struct TypedRandom<char> : public BaseTypedRandom {
+    using BaseTypedRandom::BaseTypedRandom;
+    char next(char n) { return random.next(n); }
+    char next(char l, char r) { return random.next(l, r); }
+};
+
+
 struct OrderedPairTag {} opair;
 
 template<>
@@ -552,62 +655,6 @@ void registerGen(int argc, char *argv[]) {
     }
     rnd.seed(seed);
 }
-
-#include <algorithm>
-#include <vector>
-
-namespace jngen {
-
-class Dsu {
-public:
-    int getParent(int x) {
-        extend(x);
-
-        return parent[x] == x ? x : (parent[x] = getParent(parent[x]));
-    }
-
-    bool link(int x, int y) {
-        extend(std::max(x, y));
-
-        x = parent[x];
-        y = parent[y];
-        if (x == y) {
-            return false;
-        }
-
-        if (rank[x] > rank[y]) {
-            std::swap(x, y);
-        }
-        if (rank[y] == rank[x]) {
-            ++rank[y];
-        }
-        parent[x] = y;
-
-        --components;
-
-        return true;
-    }
-
-    bool connected() const { return components <= 1; }
-
-private:
-    std::vector<int> parent;
-    std::vector<int> rank;
-
-    int components = 0;
-
-    void extend(size_t x) {
-        size_t last = parent.size() - 1;
-        while (parent.size() <= x) {
-            ++components;
-            parent.push_back(++last);
-            rank.push_back(0);
-        }
-    }
-};
-
-} // namespace jngen
-
 
 #include <iostream>
 #include <type_traits>
@@ -975,6 +1022,7 @@ using namespace jngen::namespace_for_fake_operator_ltlt;
 #include <initializer_list>
 #include <numeric>
 #include <set>
+#include <string>
 #include <type_traits>
 #include <unordered_set>
 #include <unordered_map>
@@ -1004,7 +1052,6 @@ public:
 
     // TODO(ifsmirnov): 'use' all methods and make inheritance private
     using Base::at;
-    using Base::operator[];
     using Base::size;
     using Base::begin;
     using Base::end;
@@ -1060,6 +1107,8 @@ public:
 
     GenericArray<T>& operator*=(int k);
     GenericArray<T> operator*(int k) const;
+
+    operator std::string() const;
 };
 
 template<typename T>
@@ -1332,6 +1381,13 @@ GenericArray<T> GenericArray<T>::operator*(int k) const {
     return copy *= k;
 }
 
+template<typename T>
+GenericArray<T>::operator std::string() const {
+    static_assert(std::is_same<T, char>::value, "Must not cast"
+        " TArray<T> to std::string with 'T' != 'char'");
+    return std::string(begin(), end());
+}
+
 } // namespace jngen
 
 template<typename T>
@@ -1515,6 +1571,612 @@ inline int GenericGraph::compareTo(const GenericGraph& other) const {
 
 } // namespace jngen
 
+
+
+namespace jngen {
+
+class ArrayRandom {
+public:
+    ArrayRandom() {
+        static bool created = false;
+        ensure(!created, "jngen::ArrayRandom should be created only once");
+        created = true;
+    }
+
+    template<typename F, typename ...Args>
+    static auto randomf(
+            size_t size,
+            F func,
+            Args... args) -> GenericArray<decltype(func(args...))>
+    {
+        typedef decltype(func(args...)) T;
+        return GenericArray<T>::randomf(size, func, args...);
+    }
+
+    template<typename F, typename ...Args>
+    static auto randomfUnique(
+            size_t size,
+            F func,
+            Args... args) -> GenericArray<decltype(func(args...))>
+    {
+        typedef decltype(func(args...)) T;
+        return GenericArray<T>::randomfUnique(size, func, args...);
+    }
+} rnda;
+
+} // namespace jngen
+
+using jngen::rnda;
+
+
+#include <cstdlib>
+#include <iostream>
+#include <type_traits>
+
+namespace jngen {
+
+// TODO: why do we need this shit?
+class EpsHolder {
+private:
+    EpsHolder() : eps(1e-9) {}
+
+public:
+    long double eps;
+
+    static EpsHolder& instance() {
+        static EpsHolder holder;
+        return holder;
+    }
+};
+
+inline void setEps(long double eps) {
+    EpsHolder::instance().eps = eps;
+}
+
+inline long double eps() {
+    return EpsHolder::instance().eps;
+}
+
+template<typename T, typename Enable = void>
+class Comparator {
+public:
+    static bool eq(T a, T b) { return a == b; }
+    static bool ne(T a, T b) { return !(a == b); }
+    static bool lt(T a, T b) { return a < b; }
+    static bool le(T a, T b) { return a <= b; }
+    static bool gt(T a, T b) { return a > b; }
+    static bool ge(T a, T b) { return a >= b; }
+};
+
+template<typename T>
+class Comparator<T,
+    typename std::enable_if<std::is_floating_point<T>::value, void>::type>
+{
+    static bool eq(T a, T b) { return std::abs(b - a) < eps(); }
+    static bool ne(T a, T b) { return !(a == b); }
+    static bool lt(T a, T b) { return a < b - eps; }
+    static bool le(T a, T b) { return a <= b + eps; }
+    static bool gt(T a, T b) { return a > b + eps; }
+    static bool ge(T a, T b) { return a >= b - eps; }
+};
+
+// TODO: do something with eq(int, long long)
+template<typename T> bool eq(T a, T b) { return Comparator<T>::eq(a, b); }
+template<typename T> bool ne(T a, T b) { return Comparator<T>::ne(a, b); }
+template<typename T> bool lt(T a, T b) { return Comparator<T>::lt(a, b); }
+template<typename T> bool le(T a, T b) { return Comparator<T>::le(a, b); }
+template<typename T> bool gt(T a, T b) { return Comparator<T>::gt(a, b); }
+template<typename T> bool ge(T a, T b) { return Comparator<T>::ge(a, b); }
+
+template<typename T>
+struct TPoint : public ReprProxy<TPoint<T>> {
+    T x, y;
+
+    TPoint() : x(0), y(0) {}
+    TPoint(T x, T y) : x(x), y(y) {}
+
+    template<typename U>
+    TPoint(const TPoint<U>& other) : x(other.x), y(other.y) {}
+
+    TPoint<T> operator+(const TPoint<T>& other) const {
+        return TPoint(x + other.x, y + other.y);
+    }
+
+    TPoint<T>& operator+=(const TPoint<T>& other) {
+        x += other.x;
+        y += other.y;
+        return *this;
+    }
+
+    TPoint<T> operator-(const TPoint<T>& other) const {
+        return TPoint(x - other.x, y - other.y);
+    }
+
+    TPoint<T>& operator-=(const TPoint<T>& other) {
+        x -= other.x;
+        y -= other.y;
+        return *this;
+    }
+
+    TPoint<T> operator*(T factor) const {
+        return TPoint<T>(x * factor, y * factor);
+    }
+
+    TPoint<T>& operator*=(T factor) {
+        x *= factor;
+        y *= factor;
+        return *this;
+    }
+
+    T operator*(const TPoint<T>& other) const {
+        return x * other.x + y * other.y;
+    }
+
+    T operator%(const TPoint<T>& other) const {
+        return x * other.y - y * other.x;
+    }
+
+    bool operator==(const TPoint<T>& other) const {
+        return eq(x, other.x) && eq(y, other.y);
+    }
+
+    bool operator!=(const TPoint<T>& other) const {
+        return !(*this == other);
+    }
+
+    bool operator<(const TPoint<T>& other) const {
+        if (eq(x, other.x)) {
+            return lt(y, other.y);
+        }
+        return lt(x, other.x);
+    }
+};
+
+using Point = TPoint<long long>;
+using Pointf = TPoint<long double>;
+
+template<typename T>
+std::ostream& operator<<(std::ostream& out, const TPoint<T>& t) {
+    return out << t.x << " " << t.y;
+}
+
+template<typename T>
+JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 2) {
+    (void)mod;
+    out << t;
+}
+
+// TODO: make polygon a class to support, e.g., shifting by a point
+template<typename T>
+using TPolygon = GenericArray<TPoint<T>>;
+
+using Polygon = TPolygon<long long>;
+using Polygonf = TPolygon<long double>;
+
+template<typename T>
+JNGEN_DECLARE_SIMPLE_PRINTER(TPolygon<T>, 5) {
+    // I should avoid copy-paste from array printer here but need to output
+    // points with '\n' separator. Maybe 'mod' should be made non-const?
+    if (mod.printN) {
+        out << t.size() << "\n";
+    }
+    bool first = true;
+    for (const auto& x: t) {
+        if (first) {
+            first = false;
+        } else {
+            out << '\n';
+        }
+        JNGEN_PRINT(x);
+    }
+}
+
+namespace detail {
+
+// Please forgive me the liberty of using TPolygon instead of Array<Point<T>> :)
+// (laxity?)
+template<typename T>
+TPolygon<T> convexHull(TPolygon<T> points) {
+    points.sort().unique();
+
+    if (points.size() <= 2u) {
+        return points;
+    }
+
+    TPolygon<T> upper(points.begin(), points.begin() + 2);
+    upper.reserve(points.size());
+    int top = 1;
+    for (size_t i = 2; i < points.size(); ++i) {
+        while (top >= 1 && ge(
+                (upper[top] - upper[top-1]) % (points[i] - upper[top]), 0ll))
+        {
+            upper.pop_back();
+            --top;
+        }
+        upper.push_back(points[i]);
+        ++top;
+    }
+
+    TPolygon<T> lower(points.begin(), points.begin() + 2);
+    lower.reserve(points.size());
+    top = 1;
+    for (size_t i = 2; i < points.size(); ++i) {
+        while (top >= 1 && le(
+                (lower[top] - lower[top-1]) % (points[i] - lower[top]), 0ll))
+        {
+            lower.pop_back();
+            --top;
+        }
+        lower.push_back(points[i]);
+        ++top;
+    }
+    upper.pop_back();
+    upper.erase(upper.begin());
+    return lower + upper.reversed();
+}
+
+template<typename T>
+TPolygon<T> convexPolygonByEllipse(
+        int n, Pointf center, Pointf xAxis, Pointf yAxis)
+{
+    return convexHull(TPolygon<T>::randomf(
+        n,
+        [center, xAxis, yAxis] () -> TPoint<T> {
+            static const long double PI = acosl(-1.0);
+            long double angle = rnd.next(0., PI*2);
+            long double sina = sinl(angle);
+            long double cosa = cosl(angle);
+            return center + xAxis * cosa + yAxis * sina;
+        }
+    ));
+}
+
+} // namespace detail
+
+class GeometryRandom {
+public:
+    GeometryRandom() {
+        static bool created = false;
+        ensure(!created, "jngen::GeometryRandom should be created only once");
+        created = true;
+    }
+
+    // point in [0, X] x [0, Y]
+    static Point point(long long X, long long Y) {
+        long long x = rnd.tnext<long long>(0, X);
+        long long y = rnd.tnext<long long>(0, Y);
+        return {x, y};
+    }
+
+    // point in [0, C] x [0, C]
+    static Point point(long long C) {
+        return point(C, C);
+    }
+
+    // Point in [x1, x2] x [y1, y2]
+    static Point point(long long x1, long long y1, long long x2, long long y2) {
+        long long x = rnd.tnext<long long>(x1, x2);
+        long long y = rnd.tnext<long long>(y1, y2);
+        return {x, y};
+    }
+
+    static Polygon convexPolygon(int n, long long X, long long Y) {
+        Polygon res = detail::convexPolygonByEllipse<long long>(
+            n * 10, // BUBEN!
+            Point(X/2, Y/2),
+            Point(X/2, 0),
+            Point(0, Y/2)
+        );
+        for (auto& x: res) {
+            ensure(x.x >= 0);
+            ensure(x.x <= X);
+            ensure(x.y >= 0);
+            ensure(x.y <= Y);
+        }
+
+        ensure(
+            static_cast<int>(res.size()) >= n,
+            "Cannot generate a convex polygon with so much vertices");
+
+        return res.subseq(Array::id(res.size()).choice(n).sort());
+    }
+} rndg;
+
+} // namespace jngen
+
+using jngen::Point;
+using jngen::Pointf;
+
+using jngen::rndg;
+
+using jngen::eps;
+using jngen::setEps;
+
+
+#include <cmath>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace jngen {
+
+typedef std::pair<long long, long long> HashBase; // (mod, base)
+typedef std::pair<std::string, std::string> StringPair;
+
+class StringRandom {
+public:
+    StringRandom() {
+        static bool created = false;
+        ensure(!created, "jngen::StringRandom should be created only once");
+        created = true;
+    }
+
+    static std::string thueMorse(int len, char first = 'a', char second = 'b');
+
+    static std::string abacaba(int len, char first = 'a');
+
+    static StringPair antiHash(
+            const std::vector<HashBase>& bases,
+            const std::string& alphabet = "a-z",
+            int length = -1);
+} rnds;
+
+namespace detail {
+
+inline int popcount(long long x) {
+    int res = 0;
+    while (x) {
+        ++res;
+        x &= x-1;
+    }
+    return res;
+}
+
+inline int trailingZeroes(long long x) {
+    int res = 0;
+    ensure(x != 0);
+    while (!(x&1)) {
+        ++res;
+        x >>= 1;
+    }
+    return res;
+}
+
+inline std::string parseAllowedChars(std::string pattern) {
+    std::set<char> result;
+    pattern += "\0\0";
+    for (size_t i = 0; i < pattern.length(); ++i) {
+        if (pattern[i] == '-') {
+            result.insert('-');
+        } else if(pattern[i+1] == '-' && pattern[i+2] != '\0') {
+            for (char c = pattern[i]; c <= pattern[i+2]; ++c) {
+                result.insert(c);
+            }
+            i += 2;
+        } else {
+            result.insert(pattern[i]);
+        }
+    }
+    return std::string(result.begin(), result.end());
+}
+
+inline std::vector<std::string> extendAntiHash(
+        const std::vector<std::string>& chars,
+        HashBase base,
+        int count)
+{
+    ensure(count == 2, "Count != 2 is not supported (yet)");
+
+    size_t baseLength = chars[0].size();
+    for (const auto& s: chars) {
+        ensure(s.size() == baseLength);
+    }
+
+    long long mod = base.first;
+    long long p = base.second;
+
+    long long pPower = 1;
+    for (size_t i = 0; i != baseLength; ++i) {
+        pPower = (pPower * p) % mod;
+    }
+
+    std::vector<long long> charHashes;
+    for (const auto& s: chars) {
+        long long hash = 0;
+        for (char c: s) {
+            hash = (hash * p + c) % mod;
+        }
+        charHashes.push_back(hash);
+    }
+
+    auto computeHash = [&charHashes, mod, pPower](const std::vector<int>& a) {
+        long long hash = 0;
+        for (int x: a) {
+            hash = (hash * pPower + charHashes[x]) % mod;
+        }
+        return hash;
+    };
+
+    // This bounds were achieved empirically and should be justified.
+    int needForMatch;
+    if (count == 2) {
+        needForMatch = 5 * pow(double(mod), 0.5);
+    } else {
+        ensure(false, "Only count = 2 is supported yet");
+    }
+
+    int length = 2;
+    double wordCount = pow(double(chars.size()), double(length));
+
+    while (true) {
+        ++length;
+        wordCount *= chars.size();
+        if (wordCount < needForMatch) {
+            continue;
+        }
+
+        std::vector<std::pair<long long, Array>> words;
+        std::map<long long, int> hashCount;
+        std::set<Array> used;
+
+        for (int i = 0; i < needForMatch; ++i) {
+            Array w = Array::random(length, chars.size());
+            if (used.count(w)) {
+                --i;
+                continue;
+            }
+            used.insert(w);
+            long long hash = computeHash(w);
+            words.emplace_back(hash, w);
+            if (++hashCount[hash] == count) {
+                std::vector<std::string> result;
+                for (const auto& kv: words) {
+                    if (kv.first == hash) {
+                        std::string word;
+                        for (int c: kv.second) {
+                            word += chars[c];
+                        }
+                        result.push_back(word);
+                    }
+                }
+                return result;
+            }
+        }
+    }
+}
+
+inline StringPair minimalAntiHashTest(
+        std::vector<HashBase> bases,
+        const std::string allowedChars)
+{
+    for (auto base: bases) {
+        ensure(base.first >= 0, "0 < MOD must hold");
+        ensure(
+            base.first < (long long)(2e9),
+            "Modules larger than 2'000'000'000 are not supported yet");
+        ensure(
+            0 < base.second && base.second < base.first,
+            "0 <= P < MOD must hold");
+    }
+
+    std::vector<int> counts;
+    if (bases.size() == 1) {
+        counts = {2};
+    } else if (bases.size() == 2) {
+        counts = {2, 2};
+    } else {
+        counts.assign(bases.size(), 2);
+    }
+
+    std::vector<std::string> cur;
+    for (char c: allowedChars) {
+        cur.emplace_back(1, c);
+    }
+
+    for (size_t i = 0; i != bases.size(); ++i) {
+        cur = extendAntiHash(cur, bases[i], counts[i]);
+        ensure(static_cast<int>(cur.size()) == counts[i],
+            "Cannot generate long enough pair with same hash");
+    }
+
+    return {cur[0], cur[1]};
+}
+
+} // namespace detail
+
+std::string StringRandom::thueMorse(int len, char first, char second) {
+    std::string res(len, ' ');
+    for (int i = 0; i < len; ++i) {
+        res[i] = detail::popcount(i)%2 == 0 ? first : second;
+    }
+    return res;
+}
+
+std::string StringRandom::abacaba(int len, char first) {
+    std::string res(len, ' ');
+    for (int i = 0; i < len; ++i) {
+        res[i] = first + detail::trailingZeroes(~i);
+    }
+    return res;
+}
+
+StringPair StringRandom::antiHash(
+        const std::vector<HashBase>& bases,
+        const std::string& alphabet,
+        int length)
+{
+    std::string allowedChars = detail::parseAllowedChars(alphabet);
+    StringPair result = detail::minimalAntiHashTest(bases, allowedChars);
+
+    if (length == -1) {
+        return result;
+    }
+
+    ensure(
+        static_cast<int>(result.first.length()) <= length,
+        "Cannot generate enough long anti-hash test");
+
+    int extraLength = length - result.first.length();
+    int leftSize = rnd.next(0, extraLength);
+
+    std::string left = rnd.next(format("[%s]{%d}", alphabet.c_str(), leftSize));
+    std::string right =
+        rnd.next(format("[%s]{%d}", alphabet.c_str(), extraLength - leftSize));
+
+    return {
+        left + result.first + right,
+        left + result.second + right
+    };
+}
+
+} // namespace jngen
+
+using jngen::rnds;
+
+
+#include <cstdio>
+#include <cstdlib>
+
+namespace jngen {
+
+int getInitialTestNo() {
+    char *envvar = getenv("TESTNO");
+    int testno;
+    if (!envvar || 1 != std::sscanf(envvar, "%d", &testno)) {
+        return 1;
+    }
+    return testno;
+}
+
+int nextTestNo = -1;
+
+void startTest(int testNo) {
+    nextTestNo = testNo + 1;
+    char filename[10];
+    std::sprintf(filename, "%d", testNo);
+    if (!std::freopen(filename, "w", stdout)) {
+        ensure(false, "Cannot open the file");
+    }
+}
+
+void startTest() {
+    if (nextTestNo == -1) {
+        nextTestNo = getInitialTestNo();
+    }
+
+    startTest(nextTestNo);
+}
+
+void setNextTestNumber(int testNo) {
+    nextTestNo = testNo;
+}
+
+} // namespace jngen
+
+using jngen::startTest;
+using jngen::setNextTestNumber;
 
 
 #include <algorithm>
@@ -1906,366 +2568,3 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Graph, 2) {
 } // namespace jngen
 
 using jngen::Graph;
-
-
-namespace jngen {
-
-class ArrayRandom {
-public:
-    ArrayRandom() {
-        static bool created = false;
-        ensure(!created, "jngen::ArrayRandom should be created only once");
-        created = true;
-    }
-
-    template<typename F, typename ...Args>
-    static auto randomf(
-            size_t size,
-            F func,
-            Args... args) -> GenericArray<decltype(func(args...))>
-    {
-        typedef decltype(func(args...)) T;
-        return GenericArray<T>::randomf(size, func, args...);
-    }
-
-    template<typename F, typename ...Args>
-    static auto randomfUnique(
-            size_t size,
-            F func,
-            Args... args) -> GenericArray<decltype(func(args...))>
-    {
-        typedef decltype(func(args...)) T;
-        return GenericArray<T>::randomfUnique(size, func, args...);
-    }
-} rnda;
-
-} // namespace jngen
-
-using jngen::rnda;
-
-
-#include <cstdlib>
-#include <iostream>
-#include <type_traits>
-
-namespace jngen {
-
-// TODO: why do we need this shit?
-class EpsHolder {
-private:
-    EpsHolder() : eps(1e-9) {}
-
-public:
-    long double eps;
-
-    static EpsHolder& instance() {
-        static EpsHolder holder;
-        return holder;
-    }
-};
-
-inline void setEps(long double eps) {
-    EpsHolder::instance().eps = eps;
-}
-
-inline long double eps() {
-    return EpsHolder::instance().eps;
-}
-
-template<typename T, typename Enable = void>
-class Comparator {
-public:
-    static bool eq(T a, T b) { return a == b; }
-    static bool ne(T a, T b) { return !(a == b); }
-    static bool lt(T a, T b) { return a < b; }
-    static bool le(T a, T b) { return a <= b; }
-    static bool gt(T a, T b) { return a > b; }
-    static bool ge(T a, T b) { return a >= b; }
-};
-
-template<typename T>
-class Comparator<T,
-    typename std::enable_if<std::is_floating_point<T>::value, void>::type>
-{
-    static bool eq(T a, T b) { return std::abs(b - a) < eps(); }
-    static bool ne(T a, T b) { return !(a == b); }
-    static bool lt(T a, T b) { return a < b - eps; }
-    static bool le(T a, T b) { return a <= b + eps; }
-    static bool gt(T a, T b) { return a > b + eps; }
-    static bool ge(T a, T b) { return a >= b - eps; }
-};
-
-// TODO: do something with eq(int, long long)
-template<typename T> bool eq(T a, T b) { return Comparator<T>::eq(a, b); }
-template<typename T> bool ne(T a, T b) { return Comparator<T>::ne(a, b); }
-template<typename T> bool lt(T a, T b) { return Comparator<T>::lt(a, b); }
-template<typename T> bool le(T a, T b) { return Comparator<T>::le(a, b); }
-template<typename T> bool gt(T a, T b) { return Comparator<T>::gt(a, b); }
-template<typename T> bool ge(T a, T b) { return Comparator<T>::ge(a, b); }
-
-template<typename T>
-struct TPoint : public ReprProxy<TPoint<T>> {
-    T x, y;
-
-    TPoint() : x(0), y(0) {}
-    TPoint(T x, T y) : x(x), y(y) {}
-
-    template<typename U>
-    TPoint(const TPoint<U>& other) : x(other.x), y(other.y) {}
-
-    TPoint<T> operator+(const TPoint<T>& other) const {
-        return TPoint(x + other.x, y + other.y);
-    }
-
-    TPoint<T>& operator+=(const TPoint<T>& other) {
-        x += other.x;
-        y += other.y;
-        return *this;
-    }
-
-    TPoint<T> operator-(const TPoint<T>& other) const {
-        return TPoint(x - other.x, y - other.y);
-    }
-
-    TPoint<T>& operator-=(const TPoint<T>& other) {
-        x -= other.x;
-        y -= other.y;
-        return *this;
-    }
-
-    TPoint<T> operator*(T factor) const {
-        return TPoint<T>(x * factor, y * factor);
-    }
-
-    TPoint<T>& operator*=(T factor) {
-        x *= factor;
-        y *= factor;
-        return *this;
-    }
-
-    T operator*(const TPoint<T>& other) const {
-        return x * other.x + y * other.y;
-    }
-
-    T operator%(const TPoint<T>& other) const {
-        return x * other.y - y * other.x;
-    }
-
-    bool operator==(const TPoint<T>& other) const {
-        return eq(x, other.x) && eq(y, other.y);
-    }
-
-    bool operator!=(const TPoint<T>& other) const {
-        return !(*this == other);
-    }
-
-    bool operator<(const TPoint<T>& other) const {
-        if (eq(x, other.x)) {
-            return lt(y, other.y);
-        }
-        return lt(x, other.x);
-    }
-};
-
-using Point = TPoint<long long>;
-using Pointf = TPoint<long double>;
-
-template<typename T>
-std::ostream& operator<<(std::ostream& out, const TPoint<T>& t) {
-    return out << t.x << " " << t.y;
-}
-
-template<typename T>
-JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 2) {
-    (void)mod;
-    out << t;
-}
-
-// TODO: make polygon a class to support, e.g., shifting by a point
-template<typename T>
-using TPolygon = GenericArray<TPoint<T>>;
-
-using Polygon = TPolygon<long long>;
-using Polygonf = TPolygon<long double>;
-
-template<typename T>
-JNGEN_DECLARE_SIMPLE_PRINTER(TPolygon<T>, 5) {
-    // I should avoid copy-paste from array printer here but need to output
-    // points with '\n' separator. Maybe 'mod' should be made non-const?
-    if (mod.printN) {
-        out << t.size() << "\n";
-    }
-    bool first = true;
-    for (const auto& x: t) {
-        if (first) {
-            first = false;
-        } else {
-            out << '\n';
-        }
-        JNGEN_PRINT(x);
-    }
-}
-
-namespace detail {
-
-// Please forgive me the liberty of using TPolygon instead of Array<Point<T>> :)
-// (laxity?)
-template<typename T>
-TPolygon<T> convexHull(TPolygon<T> points) {
-    points.sort().unique();
-
-    if (points.size() <= 2u) {
-        return points;
-    }
-
-    TPolygon<T> upper(points.begin(), points.begin() + 2);
-    upper.reserve(points.size());
-    int top = 1;
-    for (size_t i = 2; i < points.size(); ++i) {
-        while (top >= 1 && ge(
-                (upper[top] - upper[top-1]) % (points[i] - upper[top]), 0ll))
-        {
-            upper.pop_back();
-            --top;
-        }
-        upper.push_back(points[i]);
-        ++top;
-    }
-
-    TPolygon<T> lower(points.begin(), points.begin() + 2);
-    lower.reserve(points.size());
-    top = 1;
-    for (size_t i = 2; i < points.size(); ++i) {
-        while (top >= 1 && le(
-                (lower[top] - lower[top-1]) % (points[i] - lower[top]), 0ll))
-        {
-            lower.pop_back();
-            --top;
-        }
-        lower.push_back(points[i]);
-        ++top;
-    }
-    upper.pop_back();
-    upper.erase(upper.begin());
-    return lower + upper.reversed();
-}
-
-template<typename T>
-TPolygon<T> convexPolygonByEllipse(
-        int n, Pointf center, Pointf xAxis, Pointf yAxis)
-{
-    return convexHull(TPolygon<T>::randomf(
-        n,
-        [center, xAxis, yAxis] () -> TPoint<T> {
-            static const long double PI = acosl(-1.0);
-            long double angle = rnd.next(0., PI*2);
-            long double sina = sinl(angle);
-            long double cosa = cosl(angle);
-            return center + xAxis * cosa + yAxis * sina;
-        }
-    ));
-}
-
-} // namespace detail
-
-class GeometryRandom {
-public:
-    GeometryRandom() {
-        static bool created = false;
-        ensure(!created, "jngen::GeometryRandom should be created only once");
-        created = true;
-    }
-
-    // point in [0, X] x [0, Y]
-    static Point point(long long X, long long Y) {
-        long long x = rnd.tnext<long long>(0, X);
-        long long y = rnd.tnext<long long>(0, Y);
-        return {x, y};
-    }
-
-    // point in [0, C] x [0, C]
-    static Point point(long long C) {
-        return point(C, C);
-    }
-
-    // Point in [x1, x2] x [y1, y2]
-    static Point point(long long x1, long long y1, long long x2, long long y2) {
-        long long x = rnd.tnext<long long>(x1, x2);
-        long long y = rnd.tnext<long long>(y1, y2);
-        return {x, y};
-    }
-
-    static Polygon convexPolygon(int n, long long X, long long Y) {
-        Polygon res = detail::convexPolygonByEllipse<long long>(
-            n * 10, // BUBEN!
-            Point(X/2, Y/2),
-            Point(X/2, 0),
-            Point(0, Y/2)
-        );
-        for (auto& x: res) {
-            ensure(x.x >= 0);
-            ensure(x.x <= X);
-            ensure(x.y >= 0);
-            ensure(x.y <= Y);
-        }
-
-        ensure(
-            static_cast<int>(res.size()) >= n,
-            "Cannot generate a convex polygon with so much vertices");
-
-        return res.subseq(Array::id(res.size()).choice(n).sort());
-    }
-} rndg;
-
-} // namespace jngen
-
-using jngen::Point;
-using jngen::Pointf;
-
-using jngen::rndg;
-
-using jngen::eps;
-using jngen::setEps;
-
-
-#include <cstdio>
-#include <cstdlib>
-
-namespace jngen {
-
-int getInitialTestNo() {
-    char *envvar = getenv("TESTNO");
-    int testno;
-    if (!envvar || 1 != std::sscanf(envvar, "%d", &testno)) {
-        return 1;
-    }
-    return testno;
-}
-
-int nextTestNo = -1;
-
-void startTest(int testNo) {
-    nextTestNo = testNo + 1;
-    char filename[10];
-    std::sprintf(filename, "%d", testNo);
-    if (!std::freopen(filename, "w", stdout)) {
-        ensure(false, "Cannot open the file");
-    }
-}
-
-void startTest() {
-    if (nextTestNo == -1) {
-        nextTestNo = getInitialTestNo();
-    }
-
-    startTest(nextTestNo);
-}
-
-void setNextTestNumber(int testNo) {
-    nextTestNo = testNo;
-}
-
-} // namespace jngen
-
-using jngen::startTest;
-using jngen::setNextTestNumber;
