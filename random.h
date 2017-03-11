@@ -181,6 +181,14 @@ struct TypedRandom<size_t> : public BaseTypedRandom {
     size_t next(size_t l, size_t r) { return random.next(l, r); }
 };
 
+template<>
+struct TypedRandom<char> : public BaseTypedRandom {
+    using BaseTypedRandom::BaseTypedRandom;
+    char next(char n) { return random.next(n); }
+    char next(char l, char r) { return random.next(l, r); }
+};
+
+
 struct OrderedPairTag {} opair;
 
 template<>

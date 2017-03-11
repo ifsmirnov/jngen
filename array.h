@@ -8,6 +8,7 @@
 #include <initializer_list>
 #include <numeric>
 #include <set>
+#include <string>
 #include <type_traits>
 #include <unordered_set>
 #include <unordered_map>
@@ -37,7 +38,6 @@ public:
 
     // TODO(ifsmirnov): 'use' all methods and make inheritance private
     using Base::at;
-    using Base::operator[];
     using Base::size;
     using Base::begin;
     using Base::end;
@@ -93,6 +93,8 @@ public:
 
     GenericArray<T>& operator*=(int k);
     GenericArray<T> operator*(int k) const;
+
+    operator std::string() const;
 };
 
 template<typename T>
@@ -363,6 +365,13 @@ template<typename T>
 GenericArray<T> GenericArray<T>::operator*(int k) const {
     GenericArray<T> copy(*this);
     return copy *= k;
+}
+
+template<typename T>
+GenericArray<T>::operator std::string() const {
+    static_assert(std::is_same<T, char>::value, "Must not cast"
+        " TArray<T> to std::string with 'T' != 'char'");
+    return std::string(begin(), end());
 }
 
 } // namespace jngen
