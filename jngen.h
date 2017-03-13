@@ -458,13 +458,15 @@ uint64_t maskForBound(uint64_t bound) {
 
 template<typename Result, typename Source>
 Result uniformRandom(Result bound, Random& random, Source (Random::*method)()) {
+    static_assert(sizeof(Result) <= sizeof(Source),
+        "uniformRandom: Source type must be at least as large as Result type");
 #ifdef JNGEN_FAST_RANDOM
     return (random.*method)() % bound;
 #else
     Source mask = maskForBound(bound);
     while (true) {
         Source outcome = (random.*method)() & mask;
-        if (outcome < bound) {
+        if (outcome < static_cast<Source>(bound)) {
             return outcome;
         }
     }
