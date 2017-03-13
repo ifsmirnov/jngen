@@ -3,6 +3,7 @@
 #include "common.h"
 #include "printers.h"
 #include "random.h"
+#include "sequence_ops.h"
 
 #include <algorithm>
 #include <initializer_list>
@@ -84,7 +85,7 @@ public:
     GenericArray<T> subseq(
         const std::initializer_list<Integer>& indices) const;
 
-    const T& choice() const;
+    T choice() const;
     GenericArray<T> choice(size_t count) const;
     GenericArray<T> choiceWithRepetition(size_t count) const;
 
@@ -191,9 +192,7 @@ GenericArray<T> GenericArray<T>::id(size_t size, T start) {
 
 template<typename T>
 GenericArray<T>& GenericArray<T>::shuffle() {
-    for (size_t i = 1; i < size(); ++i) {
-        std::swap(at(i), at(rnd.next(i + 1)));
-    }
+    jngen::shuffle(begin(), end());
     return *this;
 }
 
@@ -304,8 +303,8 @@ GenericArray<T> GenericArray<T>::subseq(
 }
 
 template<typename T>
-const T& GenericArray<T>::choice() const {
-    return at(rnd.next(size()));
+T GenericArray<T>::choice() const {
+    return jngen::choice(begin(), end());
 }
 
 template<typename T>

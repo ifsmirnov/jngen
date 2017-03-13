@@ -22,7 +22,10 @@ def direct_deps(filename):
     return res
 
 
-unused_files = map(str.strip, open(".unused_files").readlines())
+try:
+    unused_files = set(map(str.strip, open(".unused_files").readlines()))
+except IOError:
+    unused_files = {}
 
 
 deps = {}

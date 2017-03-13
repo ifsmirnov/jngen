@@ -1021,6 +1021,33 @@ using namespace jngen::namespace_for_fake_operator_ltlt;
 
 
 #include <algorithm>
+
+namespace jngen {
+
+// TODO: deprecate random_shuffle as done in testlib.h
+
+template<typename Iterator>
+void shuffle(Iterator begin, Iterator end) {
+    ensure(end > begin, "Cannot shuffle range of negative length");
+    size_t size = end - begin;
+    for (size_t i = 1; i < size; ++i) {
+        std::swap(*(begin + i), *(begin + rnd.next(i + 1)));
+    }
+}
+
+template<typename Iterator>
+typename Iterator::value_type choice(Iterator begin, Iterator end) {
+    ensure(end > begin, "Cannot select from a range of negative length");
+    return *(begin + rnd.next(end - begin));
+}
+
+} // namespace jngen
+
+using jngen::shuffle;
+using jngen::choice;
+
+
+#include <algorithm>
 #include <initializer_list>
 #include <numeric>
 #include <set>
@@ -1100,7 +1127,7 @@ public:
     GenericArray<T> subseq(
         const std::initializer_list<Integer>& indices) const;
 
-    const T& choice() const;
+    T choice() const;
     GenericArray<T> choice(size_t count) const;
     GenericArray<T> choiceWithRepetition(size_t count) const;
 
@@ -1207,9 +1234,7 @@ GenericArray<T> GenericArray<T>::id(size_t size, T start) {
 
 template<typename T>
 GenericArray<T>& GenericArray<T>::shuffle() {
-    for (size_t i = 1; i < size(); ++i) {
-        std::swap(at(i), at(rnd.next(i + 1)));
-    }
+    jngen::shuffle(begin(), end());
     return *this;
 }
 
@@ -1320,8 +1345,8 @@ GenericArray<T> GenericArray<T>::subseq(
 }
 
 template<typename T>
-const T& GenericArray<T>::choice() const {
-    return at(rnd.next(size()));
+T GenericArray<T>::choice() const {
+    return jngen::choice(begin(), end());
 }
 
 template<typename T>
