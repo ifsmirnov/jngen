@@ -139,12 +139,6 @@ std::ostream& operator<<(std::ostream& out, const TPoint<T>& t) {
     return out << t.x << " " << t.y;
 }
 
-template<typename T>
-JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 2) {
-    (void)mod;
-    out << t;
-}
-
 // TODO: make polygon a class to support, e.g., shifting by a point
 template<typename T>
 using TPolygon = GenericArray<TPoint<T>>;

@@ -645,7 +645,9 @@ using jngen::Random;
 using jngen::rnd;
 using jngen::opair;
 
-void registerGen(int argc, char *argv[]) {
+void registerGen(int argc, char *argv[], int version = 1) {
+    (void)version; // unused, only for testlib.h compatibility
+
     std::vector<uint32_t> seed;
     for (int i = 1; i < argc; ++i) {
         int startPosition = seed.size();
@@ -1014,6 +1016,9 @@ auto operator<<(std::ostream& out, const T& t)
 }
 
 } // namespace namespace_for_fake_operator_ltlt
+
+// Calling this operator inside jngen namespace doesn't work without this line.
+using namespace jngen::namespace_for_fake_operator_ltlt;
 
 } // namespace jngen
 
@@ -1765,12 +1770,6 @@ using Pointf = TPoint<long double>;
 template<typename T>
 std::ostream& operator<<(std::ostream& out, const TPoint<T>& t) {
     return out << t.x << " " << t.y;
-}
-
-template<typename T>
-JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 2) {
-    (void)mod;
-    out << t;
 }
 
 // TODO: make polygon a class to support, e.g., shifting by a point

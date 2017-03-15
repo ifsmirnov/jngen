@@ -181,6 +181,9 @@ auto operator<<(std::ostream& out, const T& t)
 
 } // namespace namespace_for_fake_operator_ltlt
 
+// Calling this operator inside jngen namespace doesn't work without this line.
+using namespace jngen::namespace_for_fake_operator_ltlt;
+
 } // namespace jngen
 
 using namespace jngen::namespace_for_fake_operator_ltlt;

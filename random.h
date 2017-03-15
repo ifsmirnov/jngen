@@ -233,7 +233,9 @@ using jngen::Random;
 using jngen::rnd;
 using jngen::opair;
 
-void registerGen(int argc, char *argv[]) {
+void registerGen(int argc, char *argv[], int version = 1) {
+    (void)version; // unused, only for testlib.h compatibility
+
     std::vector<uint32_t> seed;
     for (int i = 1; i < argc; ++i) {
         int startPosition = seed.size();
