@@ -1,11 +1,12 @@
 #pragma once
 
+#include "repr.h"
+#include "printers.h"
+
+#include <cstring>
+#include <iostream>
 #include <stdexcept>
 #include <type_traits>
-#include <cstring>
-
-#include <iostream>
-#include <typeinfo>
 
 namespace jngen {
 
@@ -211,6 +212,11 @@ public:
 
     int type() const { return Base::type(); }
 
+    template<typename T>
+    constexpr static bool hasType() {
+        return Base::template typeId<T>() != NO_TYPE;
+    }
+
 private:
     template<typename T_, typename T = typename PlainType<T_>::type>
     T* ptr() {
@@ -240,7 +246,8 @@ private:
 struct OstreamVisitor {
     template<typename T>
     void operator()(const T& t) {
-        out << t;
+        auto mod = OutputModifier();
+        JNGEN_PRINT(t);
     }
     std::ostream& out;
 };
@@ -249,17 +256,16 @@ struct OstreamVisitor {
 
 using variant_detail::Variant;
 
+template<typename ... Args>
+JNGEN_DECLARE_SIMPLE_PRINTER(Variant<Args...>, 5) {
+    (void)mod;
+    if (t.type() == jngen::variant_detail::NO_TYPE) {
+        out << "{empty variant}";
+    } else {
+        t.applyVisitor(jngen::variant_detail::OstreamVisitor{out});
+    }
+}
+
 } // namespace jngen
 
 using jngen::Variant;
-
-template<typename ... Args>
-std::ostream& operator<<(std::ostream& out, const Variant<Args...>& v) {
-    if (v.type() == jngen::variant_detail::NO_TYPE) {
-        out << "{empty variant}";
-    } else {
-        v.applyVisitor(jngen::variant_detail::OstreamVisitor{out});
-    }
-
-    return out;
-}

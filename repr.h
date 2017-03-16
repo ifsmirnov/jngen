@@ -91,8 +91,10 @@ protected:
     OutputModifier mod_;
 };
 
+class BaseReprProxy {};
+
 template<typename T>
-class ReprProxy {
+class ReprProxy : public BaseReprProxy {
     friend std::ostream& operator<<(std::ostream& out, const ReprProxy& proxy) {
         Repr<T> repr(static_cast<const T&>(proxy));
         return out << repr;

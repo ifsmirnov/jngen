@@ -190,6 +190,13 @@ struct TypedRandom<char> : public BaseTypedRandom {
     char next(char l, char r) { return random.next(l, r); }
 };
 
+template<typename T>
+struct TypedRandom : public BaseTypedRandom {
+    using BaseTypedRandom::BaseTypedRandom;
+    template<typename ... Args>
+    T next(Args... args) { return random.next(args...); }
+};
+
 
 struct OrderedPairTag {} opair;
 

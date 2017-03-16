@@ -602,6 +602,13 @@ struct TypedRandom<char> : public BaseTypedRandom {
     char next(char l, char r) { return random.next(l, r); }
 };
 
+template<typename T>
+struct TypedRandom : public BaseTypedRandom {
+    using BaseTypedRandom::BaseTypedRandom;
+    template<typename ... Args>
+    T next(Args... args) { return random.next(args...); }
+};
+
 
 struct OrderedPairTag {} opair;
 
@@ -751,8 +758,10 @@ protected:
     OutputModifier mod_;
 };
 
+class BaseReprProxy {};
+
 template<typename T>
-class ReprProxy {
+class ReprProxy : public BaseReprProxy {
     friend std::ostream& operator<<(std::ostream& out, const ReprProxy& proxy) {
         Repr<T> repr(static_cast<const T&>(proxy));
         return out << repr;
@@ -849,6 +858,7 @@ namespace jngen {
 namespace detail {
 
 // TODO: maybe make it more clear SFINAE, like boost::has_left_shift<X,Y>?
+// TODO: make these defines namespace independent
 
 #define JNGEN_DEFINE_FUNCTION_CHECKER(name, expr)\
 template<typename T, typename Enable = void>\
@@ -1007,7 +1017,7 @@ namespace namespace_for_fake_operator_ltlt {
 template<typename T>
 auto operator<<(std::ostream& out, const T& t)
     -> typename std::enable_if<
-            !JNGEN_HAS_OSTREAM() && !std::is_base_of<ReprProxy<T>, T>::value,
+            !JNGEN_HAS_OSTREAM() && !std::is_base_of<BaseReprProxy, T>::value,
             std::ostream&
         >::type
 {
@@ -1768,8 +1778,9 @@ using Point = TPoint<long long>;
 using Pointf = TPoint<long double>;
 
 template<typename T>
-std::ostream& operator<<(std::ostream& out, const TPoint<T>& t) {
-    return out << t.x << " " << t.y;
+JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 3) {
+    (void)mod;
+    out << t.x << " " << t.y;
 }
 
 // TODO: make polygon a class to support, e.g., shifting by a point

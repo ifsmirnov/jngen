@@ -13,6 +13,7 @@ namespace jngen {
 namespace detail {
 
 // TODO: maybe make it more clear SFINAE, like boost::has_left_shift<X,Y>?
+// TODO: make these defines namespace independent
 
 #define JNGEN_DEFINE_FUNCTION_CHECKER(name, expr)\
 template<typename T, typename Enable = void>\
@@ -171,7 +172,7 @@ namespace namespace_for_fake_operator_ltlt {
 template<typename T>
 auto operator<<(std::ostream& out, const T& t)
     -> typename std::enable_if<
-            !JNGEN_HAS_OSTREAM() && !std::is_base_of<ReprProxy<T>, T>::value,
+            !JNGEN_HAS_OSTREAM() && !std::is_base_of<BaseReprProxy, T>::value,
             std::ostream&
         >::type
 {

@@ -135,8 +135,9 @@ using Point = TPoint<long long>;
 using Pointf = TPoint<long double>;
 
 template<typename T>
-std::ostream& operator<<(std::ostream& out, const TPoint<T>& t) {
-    return out << t.x << " " << t.y;
+JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 3) {
+    (void)mod;
+    out << t.x << " " << t.y;
 }
 
 // TODO: make polygon a class to support, e.g., shifting by a point
