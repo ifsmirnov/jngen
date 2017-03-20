@@ -20,8 +20,12 @@ void shuffle(Iterator begin, Iterator end) {
 
 template<typename Iterator>
 typename Iterator::value_type choice(Iterator begin, Iterator end) {
-    ensure(end > begin, "Cannot select from a range of negative length");
-    return *(begin + rnd.next(end - begin));
+    return rnd.choice(begin, end);
+}
+
+template<typename Container>
+typename Container::value_type choice(const Container& container) {
+    return rnd.choice(container);
 }
 
 } // namespace jngen

@@ -111,3 +111,45 @@ BOOST_AUTO_TEST_CASE(several_engines) {
     BOOST_CHECK(etalon == generate(r2));
     BOOST_CHECK(etalon == generate(r1));
 }
+
+BOOST_AUTO_TEST_CASE(test_choice) {
+    BOOST_CHECK(true);
+
+    std::vector<int> a;
+    for (int i = 0; i < 10; ++i) {
+        a.push_back(i);
+    }
+
+    shuffle(a.begin(), a.end());
+    choice(a.begin(), a.end());
+    choice(a);
+
+    rnd.choice(a.begin(), a.end());
+    rnd.choice(a);
+
+    std::set<int> b(a.begin(), a.end());
+    choice(b.begin(), b.end());
+    choice(b);
+
+    rnd.choice(b.begin(), b.end());
+    rnd.choice(b);
+}
+
+BOOST_AUTO_TEST_CASE(wnext) {
+    rnd.seed(987);
+
+    rnd.wnext(0.1, 1);
+    rnd.wnext(1.0, 2.0, 2);
+
+    rnd.wnext(10, 3);
+    rnd.wnext(10, 20, -3);
+
+    rnd.wnext(100ll, 0);
+    rnd.wnext(100ll, 200ll, -40);
+
+    auto a = rnda.randomf(10000, []() { return rnd.wnext(1, 10, 2); });
+    a.sort().unique();
+    ensure(a.size() == 10u);
+    ensure(a[0] == 1);
+    ensure(a[9] == 10);
+}

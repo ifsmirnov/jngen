@@ -415,6 +415,10 @@ std::string Pattern::next(std::function<int(int)> rnd) const {
 using jngen::Pattern;
 
 
+#include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
 #include <limits>
 #include <random>
 #include <string>
@@ -508,11 +512,6 @@ public:
         return uniformRandom(n, *this, (uint32_t (Random::*)())&Random::next);
     }
 
-    long next(long n) {
-        ensure(n > 0);
-        return uniformRandom(n, *this, &Random::next64);
-    }
-
     long long next(long long n) {
         ensure(n > 0);
         return uniformRandom(n, *this, &Random::next64);
@@ -524,28 +523,24 @@ public:
     }
 
     double next(double n) {
+        ensure(n >= 0);
         return nextf() * n;
     }
 
-    int next(int l, int r) {
-        return l + next(r-l+1);
-    }
+    int next(int l, int r);
+    long long next(long long l, long long r);
+    size_t next(size_t l, size_t r);
+    double next(double l, double r);
 
-    long next(long l, long r) {
-        return l + next(r-l+1);
-    }
+    int wnext(int n, int w);
+    long long wnext(long long n, int w);
+    size_t wnext(size_t n, int w);
+    double wnext(double n, int w);
 
-    long long next(long long l, long long r) {
-        return l + next(r-l+1);
-    }
-
-    size_t next(size_t l, size_t r) {
-        return l + next(r-l+1);
-    }
-
-    double next(double l, double r) {
-        return l + next(r-l);
-    }
+    int wnext(int l, int r, int w);
+    long long wnext(long long l, long long r, int w);
+    size_t wnext(size_t l, size_t r, int w);
+    double wnext(double l, double r, int w);
 
     std::string next(const std::string& pattern) {
         return Pattern(pattern).next([this](int n) { return next(n); });
@@ -561,8 +556,57 @@ public:
         return tnext<std::pair<int, int>>(args...);
     }
 
+    template<typename Iterator>
+    typename Iterator::value_type choice(Iterator begin, Iterator end) {
+        auto length = std::distance(begin, end);
+        ensure(length > 0, "Cannot select from a range of negative length");
+        size_t index = tnext<size_t>(length);
+        std::advance(begin, index);
+        return *begin;
+    }
+
+    template<typename Container>
+    typename Container::value_type choice(const Container& container) {
+        ensure(!container.empty(), "Cannot select from an empty container");
+        return choice(container.begin(), container.end());
+    }
+
 private:
+    template<typename T>
+    T baseWnext(T n, int w) {
+        static_assert(std::is_arithmetic<T>::value,
+            "Only numeric types allowed for baseWnext<T>(T n, int w)");
+        if (std::abs(w) <= WNEXT_LIMIT) {
+            T result = next(n);
+            while (w > 0) {
+                result = std::max(result, next(n));
+                --w;
+            }
+            while (w < 0) {
+                result = std::min(result, next(n));
+                ++w;
+            }
+            return result;
+        }
+
+        if (w < 0) {
+            if (std::is_integral<T>::value) {
+                return n - 1 - baseWnext(n, -w);
+            } else {
+                return n - baseWnext(n, -w);
+            }
+        }
+
+        T upperLimit =
+            std::is_integral<T>::value ? n-1 : n;
+
+        double val = std::pow(nextf(), 1.0 / (w + 1));
+        T result = val * n;
+        return std::max(T(0), std::min(result, upperLimit));
+    }
+
     std::mt19937 randomEngine_;
+    constexpr static int WNEXT_LIMIT = 8;
 };
 
 Random rnd;
@@ -659,6 +703,64 @@ void registerGen(int argc, char *argv[], int version = 1) {
     }
     rnd.seed(seed);
 }
+
+#define JNGEN_INCLUDE_RANDOM_INL_H
+#ifndef JNGEN_INCLUDE_RANDOM_INL_H
+#error File "random_inl.h" must not be included directly.
+#endif
+
+namespace jngen {
+
+int Random::next(int l, int r) {
+    return l + next(r-l+1);
+}
+
+long long Random::next(long long l, long long r) {
+    return l + next(r-l+1);
+}
+
+size_t Random::next(size_t l, size_t r) {
+    return l + next(r-l+1);
+}
+
+double Random::next(double l, double r) {
+    return l + next(r-l);
+}
+
+int Random::wnext(int n, int w) {
+    return baseWnext(n, w);
+}
+
+long long Random::wnext(long long n, int w) {
+    return baseWnext(n, w);
+}
+
+size_t Random::wnext(size_t n, int w) {
+    return baseWnext(n, w);
+}
+
+double Random::wnext(double n, int w) {
+    return baseWnext(n, w);
+}
+
+int Random::wnext(int l, int r, int w) {
+    return l + wnext(r-l+1, w);
+}
+
+long long Random::wnext(long long l, long long r, int w) {
+    return l + wnext(r-l+1, w);
+}
+
+size_t Random::wnext(size_t l, size_t r, int w) {
+    return l + wnext(r-l+1, w);
+}
+
+double Random::wnext(double l, double r, int w) {
+    return l + wnext(r-l, w);
+}
+
+} // namespace jngen
+#undef JNGEN_INCLUDE_RANDOM_INL_H
 
 #include <iostream>
 #include <type_traits>
@@ -1042,8 +1144,12 @@ void shuffle(Iterator begin, Iterator end) {
 
 template<typename Iterator>
 typename Iterator::value_type choice(Iterator begin, Iterator end) {
-    ensure(end > begin, "Cannot select from a range of negative length");
-    return *(begin + rnd.next(end - begin));
+    return rnd.choice(begin, end);
+}
+
+template<typename Container>
+typename Container::value_type choice(const Container& container) {
+    return rnd.choice(container);
 }
 
 } // namespace jngen
