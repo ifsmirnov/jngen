@@ -69,10 +69,11 @@ protected:
         vertexByLabel_ = vertexLabel_.inverse();
         edges_.shuffle();
 
-        // TODO: fix for directed
-        for (auto& edge: edges_) {
-            if (rnd.next(2)) {
-                std::swap(edge.first, edge.second);
+        if (!directed_) {
+            for (auto& edge: edges_) {
+                if (rnd.next(2)) {
+                    std::swap(edge.first, edge.second);
+                }
             }
         }
     }
@@ -100,12 +101,12 @@ protected:
     // v: edge number
     // returns: edge number
     int edgeOtherEnd(int v, int edgeId) {
-        // TODO: checks for directed graphs
         ensure(edgeId < numEdges_);
         const auto& edge = edges_[edgeId];
         if (edge.first == v) {
             return edge.second;
         }
+        ensure(!directed_);
         ensure(edge.second == v);
         return edge.first;
     }
@@ -115,10 +116,11 @@ protected:
             vertexLabel_ == Array::id(n()),
             "Can call normalizeEdges() only on newly created graph");
 
-        // TODO: fix for directed
-        for (auto& edge: edges_) {
-            if (edge.first > edge.second) {
-                std::swap(edge.first, edge.second);
+        if (!directed_) {
+            for (auto& edge: edges_) {
+                if (edge.first > edge.second) {
+                    std::swap(edge.first, edge.second);
+                }
             }
         }
 
@@ -139,6 +141,8 @@ protected:
     int compareTo(const GenericGraph& other) const;
 
     int numEdges_ = 0;
+
+    bool directed_ = false;
 
     Dsu dsu_;
     std::vector<Array> adjList_;
@@ -188,7 +192,6 @@ inline bool GenericGraph::operator<(const GenericGraph& other) const {
     return compareTo(other) == -1;
 }
 
-// TODO: this should compare by vertex labels actually
 inline int GenericGraph::compareTo(const GenericGraph& other) const {
     if (n() != other.n()) {
         return n() < other.n() ? -1 : 1;
