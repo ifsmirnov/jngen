@@ -21,7 +21,7 @@ public:
     virtual int m() const { return numEdges_; }
 
     virtual void addEdge(int u, int v);
-    virtual bool connected() const { return dsu_.connected(); }
+    virtual bool isConnected() const { return dsu_.isConnected(); }
 
     virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
     virtual int vertexByLabel(int v) const { return vertexByLabel_[v]; }

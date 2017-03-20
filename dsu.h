@@ -35,7 +35,7 @@ public:
         return true;
     }
 
-    bool connected() const { return components <= 1; }
+    bool isConnected() const { return components <= 1; }
 
 private:
     std::vector<int> parent;

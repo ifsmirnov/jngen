@@ -90,7 +90,7 @@ Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
-    ensure(t.connected(), "Tree is not connected :(");
+    ensure(t.isConnected(), "Tree is not connected :(");
 
     if (mod.printParents) {
         out << "Printing parents is not supported yet";

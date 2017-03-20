@@ -11,7 +11,7 @@ BOOST_AUTO_TEST_CASE(basics) {
 
     BOOST_CHECK(gg.n() == 0);
     BOOST_CHECK(gg.m() == 0);
-    BOOST_CHECK(gg.connected());
+    BOOST_CHECK(gg.isConnected());
     BOOST_CHECK(gg.edges().empty());
 
     gg.addEdge(0, 2);
@@ -21,10 +21,10 @@ BOOST_AUTO_TEST_CASE(basics) {
     BOOST_CHECK(gg.edges()[1] == std::make_pair(1, 3));
     BOOST_CHECK(gg.n() == 4);
     BOOST_CHECK(gg.m() == 2);
-    BOOST_CHECK(!gg.connected());
+    BOOST_CHECK(!gg.isConnected());
 
     gg.addEdge(0, 3);
-    BOOST_CHECK(gg.connected());
+    BOOST_CHECK(gg.isConnected());
     gg.addEdge(0, 3);
     BOOST_CHECK(gg.m() == 4);
 

@@ -36,14 +36,15 @@ public:
 
     Graph& allowLoops(bool value = true);
     Graph& allowMulti(bool value = true);
+    Graph& connected(bool value = true);
 
     int n() const { return self().GenericGraph::n(); }
     int m() const { return self().GenericGraph::m(); }
     void addEdge(int u, int v) {
         self().GenericGraph::addEdge(u, v);
     }
-    bool connected() const {
-        return self().GenericGraph::connected();
+    bool isConnected() const {
+        return self().GenericGraph::isConnected();
     }
     Array edges(int v) const {
         return self().GenericGraph::edges(v);
@@ -81,8 +82,8 @@ public:
         return graph_;
     }
 
-    GraphBuilder(int n, int m, bool connected) :
-        n_(n), m_(m), connected_(connected)
+    GraphBuilder(int n, int m) :
+        n_(n), m_(m)
     {  }
 
     void allowLoops(bool value) {
@@ -93,16 +94,20 @@ public:
         multiEdges_ = value;
     }
 
+    void connected(bool value) {
+        connected_ = value;
+    }
+
 private:
     void build();
 
     int n_;
     int m_;
-    bool connected_;
+    bool connected_ = false;
     bool multiEdges_ = false;
     bool loops_ = false;
 
-    bool finalized_;
+    bool finalized_ = false;
     Graph graph_;
 };
 
@@ -120,6 +125,12 @@ inline Graph& Graph::allowLoops(bool value) {
 inline Graph& Graph::allowMulti(bool value) {
     ensure(builder_, "Cannot modify the graph which is already built");
     builder_->allowMulti(value);
+    return *this;
+}
+
+inline Graph& Graph::connected(bool value) {
+    ensure(builder_, "Cannot modify the graph which is already built");
+    builder_->connected(value);
     return *this;
 }
 
@@ -179,14 +190,7 @@ inline void GraphBuilder::build() {
 
 Graph Graph::random(int n, int m) {
     Graph g;
-    auto builder = std::make_shared<GraphBuilder>(n, m, false);
-    g.setBuilder(builder);
-    return g;
-}
-
-Graph Graph::randomConnected(int n, int m) {
-    Graph g;
-    auto builder = std::make_shared<GraphBuilder>(n, m, true);
+    auto builder = std::make_shared<GraphBuilder>(n, m);
     g.setBuilder(builder);
     return g;
 }
