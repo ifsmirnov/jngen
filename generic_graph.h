@@ -67,7 +67,6 @@ protected:
         }
         vertexLabel_.shuffle();
         vertexByLabel_ = vertexLabel_.inverse();
-        edges_.shuffle();
 
         if (!directed_) {
             for (auto& edge: edges_) {
@@ -76,6 +75,8 @@ protected:
                 }
             }
         }
+
+        permuteEdges(Array::id(numEdges_).shuffled());
     }
 
     void extend(size_t size) {
@@ -111,6 +112,17 @@ protected:
         return edge.first;
     }
 
+    void permuteEdges(const Array& order) {
+        edges_ = edges_.subseq(order);
+
+        auto newByOld = order.inverse();
+        for (int v = 0; v < n(); ++v) {
+            for (auto& x: adjList_[v]) {
+                x = newByOld[x];
+            }
+        }
+    }
+
     void normalizeEdges() {
         ensure(
             vertexLabel_ == Array::id(n()),
@@ -128,14 +140,8 @@ protected:
             [this](int i, int j) {
                 return edges_[i] < edges_[j];
             });
-        edges_ = edges_.subseq(order);
 
-        auto newByOld = order.inverse();
-        for (int v = 0; v < n(); ++v) {
-            for (auto& x: adjList_[v]) {
-                x = newByOld[x];
-            }
-        }
+        permuteEdges(order);
     }
 
     int compareTo(const GenericGraph& other) const;
