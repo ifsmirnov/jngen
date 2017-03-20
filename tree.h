@@ -108,6 +108,7 @@ inline Tree Tree::bamboo(size_t size) {
     for (size_t i = 0; i + 1 < size; ++i) {
         t.addEdge(i, i+1);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -143,6 +144,7 @@ inline Tree Tree::randomPrufer(size_t size) {
 
     ensure(leaves.size() == 2u);
     t.addEdge(*leaves.begin(), *leaves.rbegin());
+    t.normalizeEdges();
     return t;
 }
 
@@ -152,6 +154,7 @@ inline Tree Tree::random(size_t size, double elongation) {
         int parent = rnd.tnext<int>(v-1 - (v-1) * elongation, v-1);
         t.addEdge(parent, v);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -160,6 +163,7 @@ inline Tree Tree::star(size_t size) {
     for (size_t i = 1; i < size; ++i) {
         t.addEdge(0, i);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -169,6 +173,7 @@ inline Tree Tree::caterpillar(size_t length, size_t size) {
     for (size_t i = length; i < size; ++i) {
         t.addEdge(rnd.next(length), i);
     }
+    t.normalizeEdges();
     return t;
 }
 

@@ -20,12 +20,15 @@ public:
     virtual int n() const { return adjList_.size(); }
     virtual int m() const { return numEdges_; }
 
+    // u, v: labels
     virtual void addEdge(int u, int v);
     virtual bool isConnected() const { return dsu_.isConnected(); }
 
     virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
     virtual int vertexByLabel(int v) const { return vertexByLabel_[v]; }
 
+    // v: label
+    // return: array<label>
     virtual Array edges(int v) const {
         v = vertexByLabel(v);
 
@@ -34,24 +37,19 @@ public:
             adjList_[v].begin(),
             adjList_[v].end(),
             std::back_inserter(result),
-            [this](int x) { return vertexLabel(x); }
+            [this, v](int x) { return vertexLabel(edgeOtherEnd(v, x)); }
         );
         return result;
     }
 
+    // return: array<label, label>
     virtual Arrayp edges() const {
-        Arrayp result;
-        for (int id = 0; id < n(); ++id) {
-            int v = vertexByLabel(id);
-            size_t pos = result.size();
-            for (int to: edges(v)) {
-                if (v <= to) {
-                    result.emplace_back(vertexLabel(v), vertexLabel(to));
-                }
-            }
-            std::sort(result.begin() + pos, result.end());
+        auto edges = edges_;
+        for (auto& e: edges) {
+            e.first = vertexLabel(e.first);
+            e.second = vertexLabel(e.second);
         }
-        return result;
+        return edges;
     }
 
     // TODO: should it really be public?
@@ -69,7 +67,14 @@ protected:
         }
         vertexLabel_.shuffle();
         vertexByLabel_ = vertexLabel_.inverse();
-        edgesShuffled_ = true;
+        edges_.shuffle();
+
+        // TODO: fix for directed
+        for (auto& edge: edges_) {
+            if (rnd.next(2)) {
+                std::swap(edge.first, edge.second);
+            }
+        }
     }
 
     void extend(size_t size) {
@@ -81,28 +86,73 @@ protected:
         }
     }
 
+    // u, v: edge numbers
     void addEdgeUnsafe(int u, int v) {
-        adjList_[u].push_back(v);
+        int id = numEdges_++;
+        edges_.emplace_back(u, v);
+
+        adjList_[u].push_back(id);
         if (u != v) {
-            adjList_[v].push_back(u);
+            adjList_[v].push_back(id);
         }
-        ++numEdges_;
+    }
+
+    // v: edge number
+    // returns: edge number
+    int edgeOtherEnd(int v, int edgeId) {
+        // TODO: checks for directed graphs
+        ensure(edgeId < numEdges_);
+        const auto& edge = edges_[edgeId];
+        if (edge.first == v) {
+            return edge.second;
+        }
+        ensure(edge.second == v);
+        return edge.first;
+    }
+
+    void normalizeEdges() {
+        ensure(
+            vertexLabel_ == Array::id(n()),
+            "Can call normalizeEdges() only on newly created graph");
+
+        // TODO: fix for directed
+        for (auto& edge: edges_) {
+            if (edge.first > edge.second) {
+                std::swap(edge.first, edge.second);
+            }
+        }
+
+        auto order = Array::id(numEdges_).sorted(
+            [this](int i, int j) {
+                return edges_[i] < edges_[j];
+            });
+        edges_ = edges_.subseq(order);
+
+        auto newByOld = order.inverse();
+        for (int v = 0; v < n(); ++v) {
+            for (auto& x: adjList_[v]) {
+                x = newByOld[x];
+            }
+        }
     }
 
     int compareTo(const GenericGraph& other) const;
 
     int numEdges_ = 0;
 
-    bool edgesShuffled_ = false;
-
     Dsu dsu_;
-    std::vector<std::vector<int>> adjList_;
+    std::vector<Array> adjList_;
     Array vertexLabel_;
     Array vertexByLabel_;
+    Arrayp edges_;
 };
 
 inline void GenericGraph::addEdge(int u, int v) {
     extend(std::max(u, v) + 1);
+
+    u = vertexByLabel(u);
+    v = vertexByLabel(v);
+
     dsu_.link(u, v);
     addEdgeUnsafe(u, v);
 }
@@ -110,18 +160,7 @@ inline void GenericGraph::addEdge(int u, int v) {
 inline void GenericGraph::doPrintEdges(
     std::ostream& out, const OutputModifier& mod) const
 {
-    Arrayp edges;
-    for (int v = 0; v < n(); ++v) {
-        for (int to: this->edges(v)) {
-            if (v <= to) {
-                edges.emplace_back(vertexLabel(v), vertexLabel(to));
-            }
-        }
-    }
-
-    if (edgesShuffled_) {
-        edges.shuffle();
-    }
+    Arrayp edges = this->edges();
 
     if (mod.printN) {
         out << n();

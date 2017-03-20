@@ -19,6 +19,7 @@ namespace jngen {
 class GraphBuilder;
 
 class Graph : public ReprProxy<Graph>, public GenericGraph {
+    friend class GraphBuilder;
 public:
     virtual ~Graph() {}
     Graph() {}
@@ -186,6 +187,8 @@ inline void GraphBuilder::build() {
     for (const auto& edge: result) {
         graph_.addEdge(edge.first, edge.second);
     }
+
+    graph_.normalizeEdges();
 }
 
 Graph Graph::random(int n, int m) {
