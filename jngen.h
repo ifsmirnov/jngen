@@ -92,7 +92,7 @@ public:
         return true;
     }
 
-    bool connected() const { return components <= 1; }
+    bool isConnected() const { return components <= 1; }
 
 private:
     std::vector<int> parent;
@@ -1467,12 +1467,15 @@ public:
     virtual int n() const { return adjList_.size(); }
     virtual int m() const { return numEdges_; }
 
+    // u, v: labels
     virtual void addEdge(int u, int v);
-    virtual bool connected() const { return dsu_.connected(); }
+    virtual bool isConnected() const { return dsu_.isConnected(); }
 
     virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
     virtual int vertexByLabel(int v) const { return vertexByLabel_[v]; }
 
+    // v: label
+    // return: array<label>
     virtual Array edges(int v) const {
         v = vertexByLabel(v);
 
@@ -1481,24 +1484,19 @@ public:
             adjList_[v].begin(),
             adjList_[v].end(),
             std::back_inserter(result),
-            [this](int x) { return vertexLabel(x); }
+            [this, v](int x) { return vertexLabel(edgeOtherEnd(v, x)); }
         );
         return result;
     }
 
+    // return: array<label, label>
     virtual Arrayp edges() const {
-        Arrayp result;
-        for (int id = 0; id < n(); ++id) {
-            int v = vertexByLabel(id);
-            size_t pos = result.size();
-            for (int to: edges(v)) {
-                if (v <= to) {
-                    result.emplace_back(vertexLabel(v), vertexLabel(to));
-                }
-            }
-            std::sort(result.begin() + pos, result.end());
+        auto edges = edges_;
+        for (auto& e: edges) {
+            e.first = vertexLabel(e.first);
+            e.second = vertexLabel(e.second);
         }
-        return result;
+        return edges;
     }
 
     // TODO: should it really be public?
@@ -1516,7 +1514,16 @@ protected:
         }
         vertexLabel_.shuffle();
         vertexByLabel_ = vertexLabel_.inverse();
-        edgesShuffled_ = true;
+
+        if (!directed_) {
+            for (auto& edge: edges_) {
+                if (rnd.next(2)) {
+                    std::swap(edge.first, edge.second);
+                }
+            }
+        }
+
+        permuteEdges(Array::id(numEdges_).shuffled());
     }
 
     void extend(size_t size) {
@@ -1528,28 +1535,81 @@ protected:
         }
     }
 
+    // u, v: edge numbers
     void addEdgeUnsafe(int u, int v) {
-        adjList_[u].push_back(v);
+        int id = numEdges_++;
+        edges_.emplace_back(u, v);
+
+        adjList_[u].push_back(id);
         if (u != v) {
-            adjList_[v].push_back(u);
+            adjList_[v].push_back(id);
         }
-        ++numEdges_;
+    }
+
+    // v: edge number
+    // returns: edge number
+    int edgeOtherEnd(int v, int edgeId) {
+        ensure(edgeId < numEdges_);
+        const auto& edge = edges_[edgeId];
+        if (edge.first == v) {
+            return edge.second;
+        }
+        ensure(!directed_);
+        ensure(edge.second == v);
+        return edge.first;
+    }
+
+    void permuteEdges(const Array& order) {
+        edges_ = edges_.subseq(order);
+
+        auto newByOld = order.inverse();
+        for (int v = 0; v < n(); ++v) {
+            for (auto& x: adjList_[v]) {
+                x = newByOld[x];
+            }
+        }
+    }
+
+    void normalizeEdges() {
+        ensure(
+            vertexLabel_ == Array::id(n()),
+            "Can call normalizeEdges() only on newly created graph");
+
+        if (!directed_) {
+            for (auto& edge: edges_) {
+                if (edge.first > edge.second) {
+                    std::swap(edge.first, edge.second);
+                }
+            }
+        }
+
+        auto order = Array::id(numEdges_).sorted(
+            [this](int i, int j) {
+                return edges_[i] < edges_[j];
+            });
+
+        permuteEdges(order);
     }
 
     int compareTo(const GenericGraph& other) const;
 
     int numEdges_ = 0;
 
-    bool edgesShuffled_ = false;
+    bool directed_ = false;
 
     Dsu dsu_;
-    std::vector<std::vector<int>> adjList_;
+    std::vector<Array> adjList_;
     Array vertexLabel_;
     Array vertexByLabel_;
+    Arrayp edges_;
 };
 
 inline void GenericGraph::addEdge(int u, int v) {
     extend(std::max(u, v) + 1);
+
+    u = vertexByLabel(u);
+    v = vertexByLabel(v);
+
     dsu_.link(u, v);
     addEdgeUnsafe(u, v);
 }
@@ -1557,18 +1617,7 @@ inline void GenericGraph::addEdge(int u, int v) {
 inline void GenericGraph::doPrintEdges(
     std::ostream& out, const OutputModifier& mod) const
 {
-    Arrayp edges;
-    for (int v = 0; v < n(); ++v) {
-        for (int to: this->edges(v)) {
-            if (v <= to) {
-                edges.emplace_back(vertexLabel(v), vertexLabel(to));
-            }
-        }
-    }
-
-    if (edgesShuffled_) {
-        edges.shuffle();
-    }
+    Arrayp edges = this->edges();
 
     if (mod.printN) {
         out << n();
@@ -1596,7 +1645,6 @@ inline bool GenericGraph::operator<(const GenericGraph& other) const {
     return compareTo(other) == -1;
 }
 
-// TODO: this should compare by vertex labels actually
 inline int GenericGraph::compareTo(const GenericGraph& other) const {
     if (n() != other.n()) {
         return n() < other.n() ? -1 : 1;
@@ -2173,6 +2221,41 @@ StringPair StringRandom::antiHash(
 using jngen::rnds;
 
 
+#include <type_traits>
+
+namespace jngen {
+
+// generator(TArray<T>) -> U
+// combiner(TArray<U>) -> U
+template<typename T, typename Generator, typename Combiner>
+auto composition(
+        const TArray<T>& elements,
+        size_t numParts,
+        Generator&& generator,
+        Combiner&& combiner)
+    -> decltype(generator(elements))
+{
+    using U = decltype(generator(elements));
+
+    static_assert(
+        std::is_same<U, decltype(combiner(TArray<U>{}))>::value,
+        "result type of 'combiner(TArray<U>)' must be U");
+
+    auto partition = elements.partitionNonEmpty(numParts);
+
+    TArray<U> subObjects;
+    for (const auto& part: partition) {
+        subObjects.emplace_back(generator(part));
+    }
+
+    return combiner(subObjects);
+}
+
+} // namespace jngen
+
+using jngen::composition;
+
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -2302,7 +2385,7 @@ Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
-    ensure(t.connected(), "Tree is not connected :(");
+    ensure(t.isConnected(), "Tree is not connected :(");
 
     if (mod.printParents) {
         out << "Printing parents is not supported yet";
@@ -2320,6 +2403,7 @@ inline Tree Tree::bamboo(size_t size) {
     for (size_t i = 0; i + 1 < size; ++i) {
         t.addEdge(i, i+1);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -2355,6 +2439,7 @@ inline Tree Tree::randomPrufer(size_t size) {
 
     ensure(leaves.size() == 2u);
     t.addEdge(*leaves.begin(), *leaves.rbegin());
+    t.normalizeEdges();
     return t;
 }
 
@@ -2364,6 +2449,7 @@ inline Tree Tree::random(size_t size, double elongation) {
         int parent = rnd.tnext<int>(v-1 - (v-1) * elongation, v-1);
         t.addEdge(parent, v);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -2372,6 +2458,7 @@ inline Tree Tree::star(size_t size) {
     for (size_t i = 1; i < size; ++i) {
         t.addEdge(0, i);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -2381,6 +2468,7 @@ inline Tree Tree::caterpillar(size_t length, size_t size) {
     for (size_t i = length; i < size; ++i) {
         t.addEdge(rnd.next(length), i);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -2404,6 +2492,7 @@ namespace jngen {
 class GraphBuilder;
 
 class Graph : public ReprProxy<Graph>, public GenericGraph {
+    friend class GraphBuilder;
 public:
     virtual ~Graph() {}
     Graph() {}
@@ -2421,14 +2510,15 @@ public:
 
     Graph& allowLoops(bool value = true);
     Graph& allowMulti(bool value = true);
+    Graph& connected(bool value = true);
 
     int n() const { return self().GenericGraph::n(); }
     int m() const { return self().GenericGraph::m(); }
     void addEdge(int u, int v) {
         self().GenericGraph::addEdge(u, v);
     }
-    bool connected() const {
-        return self().GenericGraph::connected();
+    bool isConnected() const {
+        return self().GenericGraph::isConnected();
     }
     Array edges(int v) const {
         return self().GenericGraph::edges(v);
@@ -2466,8 +2556,8 @@ public:
         return graph_;
     }
 
-    GraphBuilder(int n, int m, bool connected) :
-        n_(n), m_(m), connected_(connected)
+    GraphBuilder(int n, int m) :
+        n_(n), m_(m)
     {  }
 
     void allowLoops(bool value) {
@@ -2478,16 +2568,20 @@ public:
         multiEdges_ = value;
     }
 
+    void connected(bool value) {
+        connected_ = value;
+    }
+
 private:
     void build();
 
     int n_;
     int m_;
-    bool connected_;
+    bool connected_ = false;
     bool multiEdges_ = false;
     bool loops_ = false;
 
-    bool finalized_;
+    bool finalized_ = false;
     Graph graph_;
 };
 
@@ -2505,6 +2599,12 @@ inline Graph& Graph::allowLoops(bool value) {
 inline Graph& Graph::allowMulti(bool value) {
     ensure(builder_, "Cannot modify the graph which is already built");
     builder_->allowMulti(value);
+    return *this;
+}
+
+inline Graph& Graph::connected(bool value) {
+    ensure(builder_, "Cannot modify the graph which is already built");
+    builder_->connected(value);
     return *this;
 }
 
@@ -2560,18 +2660,13 @@ inline void GraphBuilder::build() {
     for (const auto& edge: result) {
         graph_.addEdge(edge.first, edge.second);
     }
+
+    graph_.normalizeEdges();
 }
 
 Graph Graph::random(int n, int m) {
     Graph g;
-    auto builder = std::make_shared<GraphBuilder>(n, m, false);
-    g.setBuilder(builder);
-    return g;
-}
-
-Graph Graph::randomConnected(int n, int m) {
-    Graph g;
-    auto builder = std::make_shared<GraphBuilder>(n, m, true);
+    auto builder = std::make_shared<GraphBuilder>(n, m);
     g.setBuilder(builder);
     return g;
 }
@@ -2918,3 +3013,89 @@ public:
 } // namespace jngen
 
 using jngen::VariantArray;
+
+#include <string>
+#include <utility>
+
+
+namespace jngen {
+
+#define JNGEN_DEFAULT_WEIGHT_TYPES int, double, std::string, std::pair<int, int>
+
+#if defined(JNGEN_EXTRA_WEIGHT_TYPES)
+#define JNGEN_WEIGHT_TYPES JNGEN_DEFAULT_WEIGHT_TYPES , JNGEN_EXTRA_WEIGHT_TYPES
+#else
+#define JNGEN_WEIGHT_TYPES JNGEN_DEFAULT_WEIGHT_TYPES
+#endif
+
+using Weight = Variant<JNGEN_WEIGHT_TYPES>;
+using WeightArray = VariantArray<JNGEN_WEIGHT_TYPES>;
+
+} // namespace jngen
+
+using jngen::Weight;
+using jngen::WeightArray;
+
+
+#include <utility>
+
+namespace jngen {
+
+class VertexDescriptor {
+public:
+    int v() const { return vertex_; }
+    int vertex() const { return vertex_; }
+
+    Weight w() const { return weight_; }
+    Weight weight() const { return weight_; }
+
+    operator int() const { return v(); }
+
+private:
+    VertexDescriptor() = delete;
+
+    const int vertex_;
+    const Weight weight_;
+};
+
+JNGEN_DECLARE_SIMPLE_PRINTER(VertexDescriptor, 3) {
+    JNGEN_PRINT(t.vertex());
+
+    if (!t.weight().empty()) {
+        out << " ";
+        JNGEN_PRINT_NO_MOD(t.weight());
+    }
+}
+
+class EdgeDescriptor {
+public:
+    int u() const { return from_; }
+    int from() const { return from_; }
+
+    int v() const { return to_; }
+    int to() const { return to_; }
+
+    Weight w() const { return weight_; }
+    Weight weight() const { return weight_; }
+
+    operator int() const { return to_; }
+    operator std::pair<int, int>() const { return {from_, to_}; }
+
+private:
+    EdgeDescriptor() = delete;
+
+    const int from_;
+    const int to_;
+    const Weight weight_;
+};
+
+JNGEN_DECLARE_SIMPLE_PRINTER(EdgeDescriptor, 3) {
+    JNGEN_PRINT(t.to());
+
+    if (!t.weight().empty()) {
+        out << " ";
+        JNGEN_PRINT_NO_MOD(t.weight());
+    }
+}
+
+} // namespace jngen

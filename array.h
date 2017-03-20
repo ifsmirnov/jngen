@@ -89,6 +89,9 @@ public:
     GenericArray<T> choice(size_t count) const;
     GenericArray<T> choiceWithRepetition(size_t count) const;
 
+    GenericArray<GenericArray<T>> partition(size_t numParts = 0) const;
+    GenericArray<GenericArray<T>> partitionNonEmpty(size_t numParts = 0) const;
+
     GenericArray<T>& operator+=(const GenericArray<T>& other);
     GenericArray<T> operator+(const GenericArray<T>& other) const;
 
@@ -332,6 +335,37 @@ GenericArray<T> GenericArray<T>::choiceWithRepetition(size_t count) const {
         t = choice();
     }
     return res;
+}
+
+template<typename T>
+GenericArray<GenericArray<T>>
+GenericArray<T>::partition(size_t numParts) const {
+    ensure(numParts != 0, "random partition not supported yet");
+
+    GenericArray<GenericArray<T>> parts(numParts);
+
+    for (size_t i = 0; i < size(); ++i) {
+        parts[rnd.next(numParts)].push_back(at(i));
+    }
+
+    return parts;
+}
+
+template<typename T>
+GenericArray<GenericArray<T>>
+GenericArray<T>::partitionNonEmpty(size_t numParts) const {
+    ensure(numParts != 0, "random partition not supported yet");
+
+    GenericArray<GenericArray<T>> parts(numParts);
+    auto order = GenericArray<size_t>::id(size()).shuffled();
+    for (size_t i = 0; i < size(); ++i) {
+        if (i < numParts) {
+            parts[i].push_back(at(order[i]));
+        } else {
+            parts[rnd.next(numParts)].push_back(at(order[i]));
+        }
+    }
+    return parts;
 }
 
 template<typename T>
