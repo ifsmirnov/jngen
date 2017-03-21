@@ -59,7 +59,7 @@ Result uniformRandom(Result bound, Random& random, Source (Random::*method)()) {
         }
     }
 #endif
-};
+}
 
 class Random {
 public:
