@@ -18,7 +18,7 @@ public:
         extend(1);
     }
 
-    void addEdge(int u, int v);
+    void addEdge(int u, int v, const Weight& w = Weight{}) override;
 
     Tree& shuffle();
     Tree shuffled() const;
@@ -33,7 +33,7 @@ public:
     static Tree caterpillar(size_t length, size_t size);
 };
 
-inline void Tree::addEdge(int u, int v) {
+inline void Tree::addEdge(int u, int v, const Weight& w) {
     extend(std::max(u, v) + 1);
 
     u = vertexByLabel(u);
@@ -43,6 +43,10 @@ inline void Tree::addEdge(int u, int v) {
     ensure(ret, "A cycle appeared in the tree :(");
 
     addEdgeUnsafe(u, v);
+
+    if (!w.empty()) {
+        setEdgeWeight(m() - 1, w);
+    }
 }
 
 inline Tree& Tree::shuffle() {
@@ -90,7 +94,7 @@ Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
-    ensure(t.connected(), "Tree is not connected :(");
+    ensure(t.isConnected(), "Tree is not connected :(");
 
     if (mod.printParents) {
         out << "Printing parents is not supported yet";
@@ -108,6 +112,7 @@ inline Tree Tree::bamboo(size_t size) {
     for (size_t i = 0; i + 1 < size; ++i) {
         t.addEdge(i, i+1);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -143,6 +148,7 @@ inline Tree Tree::randomPrufer(size_t size) {
 
     ensure(leaves.size() == 2u);
     t.addEdge(*leaves.begin(), *leaves.rbegin());
+    t.normalizeEdges();
     return t;
 }
 
@@ -152,6 +158,7 @@ inline Tree Tree::random(size_t size, double elongation) {
         int parent = rnd.tnext<int>(v-1 - (v-1) * elongation, v-1);
         t.addEdge(parent, v);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -160,6 +167,7 @@ inline Tree Tree::star(size_t size) {
     for (size_t i = 1; i < size; ++i) {
         t.addEdge(0, i);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -169,6 +177,7 @@ inline Tree Tree::caterpillar(size_t length, size_t size) {
     for (size_t i = length; i < size; ++i) {
         t.addEdge(rnd.next(length), i);
     }
+    t.normalizeEdges();
     return t;
 }
 

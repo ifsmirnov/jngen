@@ -12,11 +12,11 @@ BOOST_AUTO_TEST_CASE(manual_construction) {
 
     BOOST_CHECK_EQUAL(t.n(), 1);
     BOOST_CHECK_EQUAL(t.m(), 0);
-    BOOST_CHECK(t.connected());
+    BOOST_CHECK(t.isConnected());
 
     t.addEdge(0, 1);
     t.addEdge(2, 3);
-    BOOST_CHECK(!t.connected());
+    BOOST_CHECK(!t.isConnected());
 
     t.addEdge(1, 2);
 
@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(manual_construction) {
     std::ostringstream ss;
     ss << t.printN().add1() << std::endl;
 
-    BOOST_CHECK_EQUAL(ss.str(), "4\n1 2\n2 3\n3 4\n");
+    BOOST_CHECK_EQUAL(ss.str(), "4\n1 2\n3 4\n2 3\n");
 }
 
 void dfs(int v, int anc, const Tree& t, std::vector<int>& dist) {
@@ -51,7 +51,7 @@ int findDiameter(
         std::vector<int>& centers,
         std::vector<int>& dist)
 {
-    BOOST_REQUIRE(t.connected());
+    BOOST_REQUIRE(t.isConnected());
     std::vector<int> dist1(t.n(), -1);
     std::vector<int> dist2(t.n(), -1);
 

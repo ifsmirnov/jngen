@@ -92,7 +92,7 @@ public:
         return true;
     }
 
-    bool connected() const { return components <= 1; }
+    bool isConnected() const { return components <= 1; }
 
 private:
     std::vector<int> parent;
@@ -475,7 +475,7 @@ Result uniformRandom(Result bound, Random& random, Source (Random::*method)()) {
         }
     }
 #endif
-};
+}
 
 class Random {
 public:
@@ -644,6 +644,13 @@ struct TypedRandom<char> : public BaseTypedRandom {
     using BaseTypedRandom::BaseTypedRandom;
     char next(char n) { return random.next(n); }
     char next(char l, char r) { return random.next(l, r); }
+};
+
+template<typename T>
+struct TypedRandom : public BaseTypedRandom {
+    using BaseTypedRandom::BaseTypedRandom;
+    template<typename ... Args>
+    T next(Args... args) { return random.next(args...); }
 };
 
 
@@ -853,8 +860,10 @@ protected:
     OutputModifier mod_;
 };
 
+class BaseReprProxy {};
+
 template<typename T>
-class ReprProxy {
+class ReprProxy : public BaseReprProxy {
     friend std::ostream& operator<<(std::ostream& out, const ReprProxy& proxy) {
         Repr<T> repr(static_cast<const T&>(proxy));
         return out << repr;
@@ -951,6 +960,7 @@ namespace jngen {
 namespace detail {
 
 // TODO: maybe make it more clear SFINAE, like boost::has_left_shift<X,Y>?
+// TODO: make these defines namespace independent
 
 #define JNGEN_DEFINE_FUNCTION_CHECKER(name, expr)\
 template<typename T, typename Enable = void>\
@@ -1013,6 +1023,9 @@ void printValue(std::ostream& out, const type& t,\
 
 #define JNGEN_PRINT(value)\
 printValue(out, value, mod, PTagMax{})
+
+#define JNGEN_PRINT_NO_MOD(value)\
+printValue(out, value, OutputModifier{}, PTagMax{})
 
 JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
@@ -1109,7 +1122,7 @@ namespace namespace_for_fake_operator_ltlt {
 template<typename T>
 auto operator<<(std::ostream& out, const T& t)
     -> typename std::enable_if<
-            !JNGEN_HAS_OSTREAM() && !std::is_base_of<ReprProxy<T>, T>::value,
+            !JNGEN_HAS_OSTREAM() && !std::is_base_of<BaseReprProxy, T>::value,
             std::ostream&
         >::type
 {
@@ -1193,11 +1206,18 @@ public:
     // TODO(ifsmirnov): 'use' all methods and make inheritance private
     using Base::at;
     using Base::size;
+    using Base::resize;
     using Base::begin;
     using Base::end;
     using Base::insert;
     using Base::clear;
     using Base::erase;
+
+    void extend(size_t requiredSize) {
+        if (requiredSize > size()) {
+            resize(requiredSize);
+        }
+    }
 
     template<typename F, typename ...Args>
     static GenericArray<T> randomf(size_t size, F func, const Args& ... args);
@@ -1547,170 +1567,6 @@ jngen::GenericArray<T> makeArray(const std::initializer_list<T>& values) {
 }
 
 
-#include <algorithm>
-#include <iostream>
-#include <iterator>
-#include <set>
-#include <utility>
-#include <vector>
-
-namespace jngen {
-
-class GenericGraph {
-public:
-    virtual ~GenericGraph() {}
-
-    virtual int n() const { return adjList_.size(); }
-    virtual int m() const { return numEdges_; }
-
-    virtual void addEdge(int u, int v);
-    virtual bool connected() const { return dsu_.connected(); }
-
-    virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
-    virtual int vertexByLabel(int v) const { return vertexByLabel_[v]; }
-
-    virtual Array edges(int v) const {
-        v = vertexByLabel(v);
-
-        Array result;
-        std::transform(
-            adjList_[v].begin(),
-            adjList_[v].end(),
-            std::back_inserter(result),
-            [this](int x) { return vertexLabel(x); }
-        );
-        return result;
-    }
-
-    virtual Arrayp edges() const {
-        Arrayp result;
-        for (int id = 0; id < n(); ++id) {
-            int v = vertexByLabel(id);
-            size_t pos = result.size();
-            for (int to: edges(v)) {
-                if (v <= to) {
-                    result.emplace_back(vertexLabel(v), vertexLabel(to));
-                }
-            }
-            std::sort(result.begin() + pos, result.end());
-        }
-        return result;
-    }
-
-    // TODO: should it really be public?
-    virtual void doPrintEdges(
-        std::ostream& out, const OutputModifier& mod) const;
-
-    // TODO: more operators!
-    virtual bool operator==(const GenericGraph& other) const;
-    virtual bool operator<(const GenericGraph& other) const;
-
-protected:
-    void doShuffle() {
-        if (vertexLabel_.size() < static_cast<size_t>(n())) {
-            vertexLabel_ = Array::id(n());
-        }
-        vertexLabel_.shuffle();
-        vertexByLabel_ = vertexLabel_.inverse();
-        edgesShuffled_ = true;
-    }
-
-    void extend(size_t size) {
-        size_t oldSize = n();
-        if (size > oldSize) {
-            adjList_.resize(size);
-            vertexLabel_ += Array::id(size - oldSize, oldSize);
-            vertexByLabel_ += Array::id(size - oldSize, oldSize);
-        }
-    }
-
-    void addEdgeUnsafe(int u, int v) {
-        adjList_[u].push_back(v);
-        if (u != v) {
-            adjList_[v].push_back(u);
-        }
-        ++numEdges_;
-    }
-
-    int compareTo(const GenericGraph& other) const;
-
-    int numEdges_ = 0;
-
-    bool edgesShuffled_ = false;
-
-    Dsu dsu_;
-    std::vector<std::vector<int>> adjList_;
-    Array vertexLabel_;
-    Array vertexByLabel_;
-};
-
-inline void GenericGraph::addEdge(int u, int v) {
-    extend(std::max(u, v) + 1);
-    dsu_.link(u, v);
-    addEdgeUnsafe(u, v);
-}
-
-inline void GenericGraph::doPrintEdges(
-    std::ostream& out, const OutputModifier& mod) const
-{
-    Arrayp edges;
-    for (int v = 0; v < n(); ++v) {
-        for (int to: this->edges(v)) {
-            if (v <= to) {
-                edges.emplace_back(vertexLabel(v), vertexLabel(to));
-            }
-        }
-    }
-
-    if (edgesShuffled_) {
-        edges.shuffle();
-    }
-
-    if (mod.printN) {
-        out << n();
-        if (mod.printM) {
-            out << " " << m();
-        }
-        out << "\n";
-    } else if (mod.printM) {
-        out << m() << "\n";
-    }
-
-    auto t(mod);
-    {
-        auto mod(t);
-        mod.printN = false;
-        JNGEN_PRINT(edges);
-    }
-}
-
-inline bool GenericGraph::operator==(const GenericGraph& other) const {
-    return compareTo(other) == 0;
-}
-
-inline bool GenericGraph::operator<(const GenericGraph& other) const {
-    return compareTo(other) == -1;
-}
-
-// TODO: this should compare by vertex labels actually
-inline int GenericGraph::compareTo(const GenericGraph& other) const {
-    if (n() != other.n()) {
-        return n() < other.n() ? -1 : 1;
-    }
-    for (int i = 0; i < n(); ++i) {
-        Array e1 = Array(edges(i)).sorted();
-        Array e2 = Array(other.edges(i)).sorted();
-        if (e1 != e2) {
-            return e1 < e2 ? -1 : 1;
-        }
-    }
-    return 0;
-}
-
-} // namespace jngen
-
-
-
 namespace jngen {
 
 class ArrayRandom {
@@ -1874,8 +1730,9 @@ using Point = TPoint<long long>;
 using Pointf = TPoint<long double>;
 
 template<typename T>
-std::ostream& operator<<(std::ostream& out, const TPoint<T>& t) {
-    return out << t.x << " " << t.y;
+JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 3) {
+    (void)mod;
+    out << t.x << " " << t.y;
 }
 
 // TODO: make polygon a class to support, e.g., shifting by a point
@@ -2018,6 +1875,9 @@ public:
 
 using jngen::Point;
 using jngen::Pointf;
+
+using jngen::Polygon;
+using jngen::Polygonf;
 
 using jngen::rndg;
 
@@ -2311,6 +2171,777 @@ using jngen::startTest;
 using jngen::setNextTestNumber;
 
 
+#include <cstring>
+#include <iostream>
+#include <stdexcept>
+#include <type_traits>
+
+namespace jngen {
+
+namespace variant_detail {
+
+constexpr static int NO_TYPE = -1;
+
+template<typename T>
+struct PlainType {
+    using type = typename std::remove_cv<
+        typename std::remove_reference<T>::type>::type;
+};
+
+template<size_t Size, typename ... Args>
+class VariantImpl;
+
+template<size_t Size>
+class VariantImpl<Size> {
+public:
+    VariantImpl() {
+        type_ = NO_TYPE;
+    }
+
+private:
+    int type_;
+    char data_[Size];
+
+protected:
+    int& type() { return type_; }
+    int type() const { return type_; }
+
+    char* data() { return data_; }
+    const char* data() const { return data_; }
+
+    void doDestroy() {
+        throw;
+    }
+
+    template<typename P>
+    constexpr static int typeId() {
+        return NO_TYPE;
+    }
+
+    void copy(char*) const {
+        throw;
+    }
+
+    void move(char* dst) const {
+        memmove(dst, data(), Size);
+    }
+
+    void setType(int) {
+        throw;
+    }
+
+    template<typename V>
+    void applyVisitor(V&&) const {
+        throw;
+    }
+
+    void assign() {}
+};
+
+template<size_t Size, typename T, typename ... Args>
+class VariantImpl<Size, T, Args...> : public VariantImpl<
+        (sizeof(T) > Size ? sizeof(T) : Size),
+        Args...
+    >
+{
+    using Base = VariantImpl<(sizeof(T) > Size ? sizeof(T) : Size), Args...>;
+
+    constexpr static size_t MY_ID = sizeof...(Args);
+
+protected:
+    void doDestroy() {
+        if (this->type() == MY_ID) {
+            this->type() = NO_TYPE;
+            reinterpret_cast<T*>(this->data())->~T();
+        } else {
+            Base::doDestroy();
+        }
+    }
+
+    template<typename P>
+    constexpr static int typeId() {
+        return std::is_same<P, T>::value ?
+            MY_ID :
+            Base::template typeId<P>();
+    }
+
+    void copy(char* dst) const {
+        if (this->type() == MY_ID) {
+            new(dst) T(*reinterpret_cast<const T*>(this->data()));
+        } else {
+            Base::copy(dst);
+        }
+    }
+
+    void setType(int typeIndex) {
+        if (typeIndex == MY_ID) {
+            if (this->type() != NO_TYPE) {
+                throw;
+            }
+            assign(T{});
+        } else {
+            Base::setType(typeIndex);
+        }
+    }
+
+    template<typename V>
+    void applyVisitor(V&& v) const {
+        if (this->type() == MY_ID) {
+            v(*reinterpret_cast<const T*>(this->data()));
+        } else {
+            Base::applyVisitor(v);
+        }
+    }
+
+    using Base::assign;
+
+    void assign(const T& t) {
+        if (this->type() == NO_TYPE) {
+            new(this->data()) T;
+            this->type() = MY_ID;
+        }
+
+        ref() = t;
+    }
+
+private:
+    T& ref() { return *reinterpret_cast<T*>(this->data()); }
+
+public:
+    operator T() const {
+        if (this->type() == MY_ID) {
+            return *reinterpret_cast<const T*>(this->data());
+        } else {
+            return T();
+        }
+    }
+};
+
+template<typename ... Args>
+class Variant : public VariantImpl<0, Args...> {
+    using Base = VariantImpl<0, Args...>;
+
+public:
+    Variant() {}
+
+    Variant(const Variant<Args...>& other) {
+        if (other.type() != NO_TYPE) {
+            other.copy(this->data());
+            unsafeType() = other.type();
+        }
+    }
+
+    Variant& operator=(const Variant<Args...>& other) {
+        if (this->type() != NO_TYPE) {
+            this->doDestroy();
+        }
+        if (other.type() != NO_TYPE) {
+            other.copy(this->data());
+            unsafeType() = other.type();
+        }
+        return *this;
+    }
+
+    Variant(Variant<Args...>&& other) {
+        if (other.type() != NO_TYPE) {
+            other.move(this->data());
+            unsafeType() = other.type();
+            other.unsafeType() = NO_TYPE;
+        }
+    }
+
+    Variant& operator=(Variant<Args...>&& other) {
+        if (this->type() != NO_TYPE) {
+            this->doDestroy();
+        }
+        if (other.type() != NO_TYPE) {
+            other.move(this->data());
+            unsafeType() = other.type();
+            other.unsafeType() = NO_TYPE;
+        }
+        return *this;
+    }
+
+    ~Variant() {
+        if (type() != NO_TYPE) {
+            this->doDestroy();
+        }
+    }
+
+    template<typename T>
+    Variant(const T& t) : Variant() {
+        this->assign(t);
+    }
+
+    template<typename T>
+    T& ref() {
+        return *ptr<T>();
+    }
+
+    template<typename T>
+    const T& cref() {
+        auto ptr = cptr<T>();
+        if (ptr == 0) {
+            throw std::logic_error("jngen::Variant: taking a reference for"
+                " a type which is not active now");
+        }
+        return *ptr;
+    }
+
+    template<typename V>
+    void applyVisitor(V&& v) const {
+        Base::applyVisitor(v);
+    }
+
+    int type() const { return Base::type(); }
+
+    void setType(int typeIndex) {
+        if (typeIndex == NO_TYPE) {
+            throw std::logic_error("jngen::Variant::setType():"
+                " calling with NO_TYPE is invalid");
+        }
+        if (this->type() == typeIndex) {
+            return;
+        }
+        if (this->type() != NO_TYPE) {
+            this->doDestroy();
+        }
+        Base::setType(typeIndex);
+    }
+
+    bool empty() const { return Base::type() == NO_TYPE; }
+
+    template<typename T>
+    constexpr static bool hasType() {
+        return Base::template typeId<T>() != NO_TYPE;
+    }
+
+private:
+    template<typename T_, typename T = typename PlainType<T_>::type>
+    T* ptr() {
+        if (type() != this->template typeId<T>()) {
+            if (type() != NO_TYPE) {
+                this->doDestroy();
+            }
+            ::new(this->data()) T;
+            unsafeType() = this->template typeId<T>();
+        }
+        return reinterpret_cast<T*>(this->data());
+    }
+
+    template<typename T_, typename T = typename PlainType<T_>::type>
+    const T* cptr() const {
+        if (type() != this->template typeId<T>()) {
+            return nullptr;
+        }
+        return reinterpret_cast<const T*>(this->data());
+    }
+
+    int& unsafeType() {
+        return Base::type();
+    }
+};
+
+struct OstreamVisitor {
+    template<typename T>
+    void operator()(const T& t) {
+        JNGEN_PRINT(t);
+    }
+    std::ostream& out;
+    const OutputModifier& mod;
+};
+
+} // namespace variant_detail
+
+using variant_detail::Variant;
+
+template<typename ... Args>
+JNGEN_DECLARE_SIMPLE_PRINTER(Variant<Args...>, 5) {
+    if (t.type() == jngen::variant_detail::NO_TYPE) {
+        out << "{empty variant}";
+    } else {
+        t.applyVisitor(jngen::variant_detail::OstreamVisitor{out, mod});
+    }
+}
+
+} // namespace jngen
+
+
+#include <iterator>
+#include <type_traits>
+
+namespace jngen {
+
+template<typename ... Args>
+class VariantArray : public GenericArray<Variant<Args...>> {
+public:
+    using Base = GenericArray<Variant<Args...>>;
+    using BaseVariant = Variant<Args...>;
+
+    using Base::Base;
+
+    VariantArray() {}
+
+    /* implicit */ VariantArray(const Base& base) :
+            Base(base)
+    {  }
+
+    template<typename T, typename = typename std::enable_if<
+        BaseVariant::template hasType<T>()>::type>
+    VariantArray(const GenericArray<T>& other) {
+        std::copy(other.begin(), other.end(), std::back_inserter(*this));
+    }
+
+    template<typename T, typename = typename std::enable_if<
+        BaseVariant::template hasType<T>()>::type>
+    VariantArray(GenericArray<T>&& other) {
+        std::move(other.begin(), other.end(), std::back_inserter(*this));
+        GenericArray<T>().swap(other);
+    }
+
+    template<typename T, typename = typename std::enable_if<
+        BaseVariant::template hasType<T>()>::type>
+    operator GenericArray<T>() const
+    {
+        return GenericArray<T>(this->begin(), this->end());
+    }
+
+    bool hasNonEmpty() const {
+        for (const auto& x: *this) {
+            if (!x.empty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int anyType() const {
+        for (const auto& x: *this) {
+            if (!x.empty()) {
+                return x.type();
+            }
+        }
+        return 0;
+    }
+
+};
+
+} // namespace jngen
+
+#include <string>
+#include <utility>
+
+
+namespace jngen {
+
+#define JNGEN_DEFAULT_WEIGHT_TYPES int, double, std::string, std::pair<int, int>
+
+#if defined(JNGEN_EXTRA_WEIGHT_TYPES)
+#define JNGEN_WEIGHT_TYPES JNGEN_DEFAULT_WEIGHT_TYPES , JNGEN_EXTRA_WEIGHT_TYPES
+#else
+#define JNGEN_WEIGHT_TYPES JNGEN_DEFAULT_WEIGHT_TYPES
+#endif
+
+using Weight = Variant<JNGEN_WEIGHT_TYPES>;
+using WeightArray = VariantArray<JNGEN_WEIGHT_TYPES>;
+
+} // namespace jngen
+
+using jngen::Weight;
+using jngen::WeightArray;
+
+
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <set>
+#include <utility>
+#include <vector>
+
+namespace jngen {
+
+class GenericGraph {
+public:
+    virtual ~GenericGraph() {}
+
+    virtual int n() const { return adjList_.size(); }
+    virtual int m() const { return numEdges_; }
+
+    // u, v: labels
+    virtual void addEdge(int u, int v, const Weight& w = Weight{});
+    virtual bool isConnected() const { return dsu_.isConnected(); }
+
+    virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
+    virtual int vertexByLabel(int v) const { return vertexByLabel_[v]; }
+
+    // v: label
+    // return: array<label>
+    virtual Array edges(int v) const;
+
+    // return: array<label, label>
+    virtual Arrayp edges() const;
+
+    // order: by labels
+    // TODO: think about ordering here
+    virtual void setVertexWeights(const WeightArray& weights) {
+        ensure(static_cast<int>(weights.size()) == n());
+        vertexWeights_.resize(n());
+        for (int i = 0; i < n(); ++i) {
+            vertexWeights_[i] = weights[vertexByLabel(i)];
+        }
+    }
+
+    // v: label
+    virtual void setVertexWeight(int v, const Weight& weight) {
+        ensure(v < n());
+        v = vertexByLabel(v);
+
+        vertexWeights_.extend(v + 1);
+        vertexWeights_[v] = weight;
+    }
+
+    virtual void setEdgeWeights(const WeightArray& weights) {
+        ensure(static_cast<int>(weights.size()) == m());
+        edgeWeights_ = weights;
+    }
+
+    virtual void setEdgeWeight(size_t index, const Weight& weight) {
+        ensure(static_cast<int>(index) < m());
+        edgeWeights_.extend(index + 1);
+        edgeWeights_[index] = weight;
+    }
+
+    // v: label
+    virtual Weight vertexWeight(int v) const {
+        size_t index = vertexByLabel(v);
+        if (index < vertexWeights_.size()) {
+            return Weight{};
+        }
+        return vertexWeights_[index];
+    }
+
+    virtual Weight edgeWeight(size_t index) const {
+        if (index < edgeWeights_.size()) {
+            return Weight{};
+        }
+        return edgeWeights_[index];
+    }
+
+    // TODO: should it really be public?
+    virtual void doPrintEdges(
+        std::ostream& out, const OutputModifier& mod) const;
+
+    // TODO: more operators!
+    virtual bool operator==(const GenericGraph& other) const;
+    virtual bool operator<(const GenericGraph& other) const;
+
+protected:
+    void doShuffle();
+
+    void extend(size_t size);
+
+    // u, v: edge numbers
+    void addEdgeUnsafe(int u, int v);
+
+    // v: edge number
+    // returns: edge number
+    int edgeOtherEnd(int v, int edgeId);
+
+    void permuteEdges(const Array& order);
+
+    void normalizeEdges();
+
+    int compareTo(const GenericGraph& other) const;
+
+    int numEdges_ = 0;
+
+    bool directed_ = false;
+
+    Dsu dsu_;
+    std::vector<Array> adjList_;
+    Array vertexLabel_;
+    Array vertexByLabel_;
+    Arrayp edges_;
+
+    WeightArray vertexWeights_;
+    WeightArray edgeWeights_;
+};
+
+Array GenericGraph::edges(int v) const {
+    v = vertexByLabel(v);
+
+    Array result;
+    std::transform(
+        adjList_[v].begin(),
+        adjList_[v].end(),
+        std::back_inserter(result),
+        [this, v](int x) { return vertexLabel(edgeOtherEnd(v, x)); }
+    );
+    return result;
+}
+
+Arrayp GenericGraph::edges() const {
+    auto edges = edges_;
+    for (auto& e: edges) {
+        e.first = vertexLabel(e.first);
+        e.second = vertexLabel(e.second);
+    }
+    return edges;
+}
+
+inline void GenericGraph::doShuffle() {
+    if (vertexLabel_.size() < static_cast<size_t>(n())) {
+        vertexLabel_ = Array::id(n());
+    }
+    vertexLabel_.shuffle();
+    vertexByLabel_ = vertexLabel_.inverse();
+
+    if (!directed_) {
+        for (auto& edge: edges_) {
+            if (rnd.next(2)) {
+                std::swap(edge.first, edge.second);
+            }
+        }
+    }
+
+    permuteEdges(Array::id(numEdges_).shuffled());
+}
+
+inline void GenericGraph::extend(size_t size) {
+    size_t oldSize = n();
+    if (size > oldSize) {
+        adjList_.resize(size);
+        vertexLabel_ += Array::id(size - oldSize, oldSize);
+        vertexByLabel_ += Array::id(size - oldSize, oldSize);
+    }
+}
+
+void GenericGraph::addEdgeUnsafe(int u, int v) {
+    int id = numEdges_++;
+    edges_.emplace_back(u, v);
+
+    adjList_[u].push_back(id);
+    if (u != v) {
+        adjList_[v].push_back(id);
+    }
+}
+
+int GenericGraph::edgeOtherEnd(int v, int edgeId) {
+    ensure(edgeId < numEdges_);
+    const auto& edge = edges_[edgeId];
+    if (edge.first == v) {
+        return edge.second;
+    }
+    ensure(!directed_);
+    ensure(edge.second == v);
+    return edge.first;
+}
+
+void GenericGraph::permuteEdges(const Array& order) {
+    edges_ = edges_.subseq(order);
+
+    auto newByOld = order.inverse();
+    for (int v = 0; v < n(); ++v) {
+        for (auto& x: adjList_[v]) {
+            x = newByOld[x];
+        }
+    }
+
+    if (edgeWeights_.hasNonEmpty()) {
+        edgeWeights_.extend(m());
+        edgeWeights_ = edgeWeights_.subseq(order);
+    }
+}
+
+void GenericGraph::normalizeEdges() {
+    ensure(
+        vertexLabel_ == Array::id(n()),
+        "Can call normalizeEdges() only on newly created graph");
+
+    if (!directed_) {
+        for (auto& edge: edges_) {
+            if (edge.first > edge.second) {
+                std::swap(edge.first, edge.second);
+            }
+        }
+    }
+
+    auto order = Array::id(numEdges_).sorted(
+        [this](int i, int j) {
+            return edges_[i] < edges_[j];
+        });
+
+    permuteEdges(order);
+}
+
+inline void GenericGraph::addEdge(int u, int v, const Weight& w) {
+    extend(std::max(u, v) + 1);
+
+    u = vertexByLabel(u);
+    v = vertexByLabel(v);
+
+    dsu_.link(u, v);
+    addEdgeUnsafe(u, v);
+
+    if (!w.empty()) {
+        setEdgeWeight(m() - 1, w);
+    }
+}
+
+namespace {
+
+WeightArray prepareWeightArray(WeightArray a, int requiredSize) {
+    ensure(a.hasNonEmpty(), "INTERNAL ASSERT");
+
+    a.extend(requiredSize);
+    int type = a.anyType();
+    for (auto& x: a) {
+        if (x.empty()) {
+            x.setType(type);
+        }
+    }
+
+    return a;
+}
+
+} // namespace
+
+inline void GenericGraph::doPrintEdges(
+    std::ostream& out, const OutputModifier& mod) const
+{
+    if (mod.printN) {
+        out << n();
+        if (mod.printM) {
+            out << " " << m();
+        }
+        out << "\n";
+    } else if (mod.printM) {
+        out << m() << "\n";
+    }
+
+    if (vertexWeights_.hasNonEmpty()) {
+        auto vertexWeights = prepareWeightArray(vertexWeights_, n());
+        for (int i = 0; i < n(); ++i) {
+            if (i > 0) {
+                out << " ";
+            }
+            JNGEN_PRINT_NO_MOD(vertexWeights[vertexByLabel(i)]);
+        }
+        out << "\n";
+    }
+
+    auto t(mod);
+    {
+        auto mod(t);
+
+        Arrayp edges = this->edges();
+        mod.printN = false;
+        if (edgeWeights_.hasNonEmpty()) {
+            auto edgeWeights = prepareWeightArray(edgeWeights_, m());
+            for (int i = 0; i < m(); ++i) {
+                if (i > 0) {
+                    out << "\n";
+                }
+                JNGEN_PRINT(edges[i]);
+                out << " ";
+                JNGEN_PRINT_NO_MOD(edgeWeights[i]);
+            }
+        } else {
+            JNGEN_PRINT(edges);
+        }
+    }
+}
+
+inline bool GenericGraph::operator==(const GenericGraph& other) const {
+    return compareTo(other) == 0;
+}
+
+inline bool GenericGraph::operator<(const GenericGraph& other) const {
+    return compareTo(other) == -1;
+}
+
+inline int GenericGraph::compareTo(const GenericGraph& other) const {
+    if (n() != other.n()) {
+        return n() < other.n() ? -1 : 1;
+    }
+    for (int i = 0; i < n(); ++i) {
+        Array e1 = Array(edges(i)).sorted();
+        Array e2 = Array(other.edges(i)).sorted();
+        if (e1 != e2) {
+            return e1 < e2 ? -1 : 1;
+        }
+    }
+    return 0;
+}
+
+} // namespace jngen
+
+
+
+#include <utility>
+
+namespace jngen {
+
+class VertexDescriptor {
+public:
+    int v() const { return vertex_; }
+    int vertex() const { return vertex_; }
+
+    Weight w() const { return weight_; }
+    Weight weight() const { return weight_; }
+
+    operator int() const { return v(); }
+
+private:
+    VertexDescriptor() = delete;
+
+    const int vertex_;
+    const Weight weight_;
+};
+
+JNGEN_DECLARE_SIMPLE_PRINTER(VertexDescriptor, 3) {
+    JNGEN_PRINT(t.vertex());
+
+    if (!t.weight().empty()) {
+        out << " ";
+        JNGEN_PRINT_NO_MOD(t.weight());
+    }
+}
+
+class EdgeDescriptor {
+public:
+    int u() const { return from_; }
+    int from() const { return from_; }
+
+    int v() const { return to_; }
+    int to() const { return to_; }
+
+    Weight w() const { return weight_; }
+    Weight weight() const { return weight_; }
+
+    operator int() const { return to_; }
+    operator std::pair<int, int>() const { return {from_, to_}; }
+
+private:
+    EdgeDescriptor() = delete;
+
+    const int from_;
+    const int to_;
+    const Weight weight_;
+};
+
+JNGEN_DECLARE_SIMPLE_PRINTER(EdgeDescriptor, 3) {
+    JNGEN_PRINT(t.to());
+
+    if (!t.weight().empty()) {
+        out << " ";
+        JNGEN_PRINT_NO_MOD(t.weight());
+    }
+}
+
+} // namespace jngen
+
+
 #include <algorithm>
 #include <vector>
 
@@ -2325,7 +2956,7 @@ public:
         extend(1);
     }
 
-    void addEdge(int u, int v);
+    void addEdge(int u, int v, const Weight& w = Weight{}) override;
 
     Tree& shuffle();
     Tree shuffled() const;
@@ -2340,7 +2971,7 @@ public:
     static Tree caterpillar(size_t length, size_t size);
 };
 
-inline void Tree::addEdge(int u, int v) {
+inline void Tree::addEdge(int u, int v, const Weight& w) {
     extend(std::max(u, v) + 1);
 
     u = vertexByLabel(u);
@@ -2350,6 +2981,10 @@ inline void Tree::addEdge(int u, int v) {
     ensure(ret, "A cycle appeared in the tree :(");
 
     addEdgeUnsafe(u, v);
+
+    if (!w.empty()) {
+        setEdgeWeight(m() - 1, w);
+    }
 }
 
 inline Tree& Tree::shuffle() {
@@ -2397,7 +3032,7 @@ Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
-    ensure(t.connected(), "Tree is not connected :(");
+    ensure(t.isConnected(), "Tree is not connected :(");
 
     if (mod.printParents) {
         out << "Printing parents is not supported yet";
@@ -2415,6 +3050,7 @@ inline Tree Tree::bamboo(size_t size) {
     for (size_t i = 0; i + 1 < size; ++i) {
         t.addEdge(i, i+1);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -2450,6 +3086,7 @@ inline Tree Tree::randomPrufer(size_t size) {
 
     ensure(leaves.size() == 2u);
     t.addEdge(*leaves.begin(), *leaves.rbegin());
+    t.normalizeEdges();
     return t;
 }
 
@@ -2459,6 +3096,7 @@ inline Tree Tree::random(size_t size, double elongation) {
         int parent = rnd.tnext<int>(v-1 - (v-1) * elongation, v-1);
         t.addEdge(parent, v);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -2467,6 +3105,7 @@ inline Tree Tree::star(size_t size) {
     for (size_t i = 1; i < size; ++i) {
         t.addEdge(0, i);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -2476,6 +3115,7 @@ inline Tree Tree::caterpillar(size_t length, size_t size) {
     for (size_t i = length; i < size; ++i) {
         t.addEdge(rnd.next(length), i);
     }
+    t.normalizeEdges();
     return t;
 }
 
@@ -2499,6 +3139,7 @@ namespace jngen {
 class GraphBuilder;
 
 class Graph : public ReprProxy<Graph>, public GenericGraph {
+    friend class GraphBuilder;
 public:
     virtual ~Graph() {}
     Graph() {}
@@ -2512,29 +3153,47 @@ public:
     void setN(int n);
 
     static Graph random(int n, int m);
-    static Graph randomConnected(int n, int m);
 
     Graph& allowLoops(bool value = true);
     Graph& allowMulti(bool value = true);
+    Graph& connected(bool value = true);
 
-    int n() const { return self().GenericGraph::n(); }
-    int m() const { return self().GenericGraph::m(); }
-    void addEdge(int u, int v) {
-        self().GenericGraph::addEdge(u, v);
+    int n() const override { return self().GenericGraph::n(); }
+    int m() const override { return self().GenericGraph::m(); }
+    void addEdge(int u, int v, const Weight& w = Weight{}) override {
+        self().GenericGraph::addEdge(u, v, w);
     }
-    bool connected() const {
-        return self().GenericGraph::connected();
+    bool isConnected() const override {
+        return self().GenericGraph::isConnected();
     }
-    Array edges(int v) const {
+    Array edges(int v) const override {
         return self().GenericGraph::edges(v);
     }
-    Arrayp edges() const {
+    Arrayp edges() const override {
         return self().GenericGraph::edges();
     }
-    int vertexLabel(int v) const {
+    virtual void setVertexWeights(const WeightArray& weights) override {
+        self().GenericGraph::setVertexWeights(weights);
+    }
+    virtual void setVertexWeight(int v, const Weight& weight) override {
+        self().GenericGraph::setVertexWeight(v, weight);
+    }
+    virtual void setEdgeWeights(const WeightArray& weights) override {
+        self().GenericGraph::setEdgeWeights(weights);
+    }
+    virtual void setEdgeWeight(size_t index, const Weight& weight) override {
+        self().GenericGraph::setEdgeWeight(index, weight);
+    }
+    virtual Weight vertexWeight(int v) const override {
+        return self().GenericGraph::vertexWeight(v);
+    }
+    virtual Weight edgeWeight(size_t index) const override {
+        return self().GenericGraph::edgeWeight(index);
+    }
+    int vertexLabel(int v) const override {
         return self().GenericGraph::vertexLabel(v);
     }
-    int vertexByLabel(int v) const {
+    int vertexByLabel(int v) const override {
         return self().GenericGraph::vertexByLabel(v);
     }
 
@@ -2561,8 +3220,8 @@ public:
         return graph_;
     }
 
-    GraphBuilder(int n, int m, bool connected) :
-        n_(n), m_(m), connected_(connected)
+    GraphBuilder(int n, int m) :
+        n_(n), m_(m)
     {  }
 
     void allowLoops(bool value) {
@@ -2573,16 +3232,20 @@ public:
         multiEdges_ = value;
     }
 
+    void connected(bool value) {
+        connected_ = value;
+    }
+
 private:
     void build();
 
     int n_;
     int m_;
-    bool connected_;
+    bool connected_ = false;
     bool multiEdges_ = false;
     bool loops_ = false;
 
-    bool finalized_;
+    bool finalized_ = false;
     Graph graph_;
 };
 
@@ -2600,6 +3263,12 @@ inline Graph& Graph::allowLoops(bool value) {
 inline Graph& Graph::allowMulti(bool value) {
     ensure(builder_, "Cannot modify the graph which is already built");
     builder_->allowMulti(value);
+    return *this;
+}
+
+inline Graph& Graph::connected(bool value) {
+    ensure(builder_, "Cannot modify the graph which is already built");
+    builder_->connected(value);
     return *this;
 }
 
@@ -2655,18 +3324,13 @@ inline void GraphBuilder::build() {
     for (const auto& edge: result) {
         graph_.addEdge(edge.first, edge.second);
     }
+
+    graph_.normalizeEdges();
 }
 
 Graph Graph::random(int n, int m) {
     Graph g;
-    auto builder = std::make_shared<GraphBuilder>(n, m, false);
-    g.setBuilder(builder);
-    return g;
-}
-
-Graph Graph::randomConnected(int n, int m) {
-    Graph g;
-    auto builder = std::make_shared<GraphBuilder>(n, m, true);
+    auto builder = std::make_shared<GraphBuilder>(n, m);
     g.setBuilder(builder);
     return g;
 }

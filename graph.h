@@ -19,6 +19,7 @@ namespace jngen {
 class GraphBuilder;
 
 class Graph : public ReprProxy<Graph>, public GenericGraph {
+    friend class GraphBuilder;
 public:
     virtual ~Graph() {}
     Graph() {}
@@ -32,29 +33,47 @@ public:
     void setN(int n);
 
     static Graph random(int n, int m);
-    static Graph randomConnected(int n, int m);
 
     Graph& allowLoops(bool value = true);
     Graph& allowMulti(bool value = true);
+    Graph& connected(bool value = true);
 
-    int n() const { return self().GenericGraph::n(); }
-    int m() const { return self().GenericGraph::m(); }
-    void addEdge(int u, int v) {
-        self().GenericGraph::addEdge(u, v);
+    int n() const override { return self().GenericGraph::n(); }
+    int m() const override { return self().GenericGraph::m(); }
+    void addEdge(int u, int v, const Weight& w = Weight{}) override {
+        self().GenericGraph::addEdge(u, v, w);
     }
-    bool connected() const {
-        return self().GenericGraph::connected();
+    bool isConnected() const override {
+        return self().GenericGraph::isConnected();
     }
-    Array edges(int v) const {
+    Array edges(int v) const override {
         return self().GenericGraph::edges(v);
     }
-    Arrayp edges() const {
+    Arrayp edges() const override {
         return self().GenericGraph::edges();
     }
-    int vertexLabel(int v) const {
+    virtual void setVertexWeights(const WeightArray& weights) override {
+        self().GenericGraph::setVertexWeights(weights);
+    }
+    virtual void setVertexWeight(int v, const Weight& weight) override {
+        self().GenericGraph::setVertexWeight(v, weight);
+    }
+    virtual void setEdgeWeights(const WeightArray& weights) override {
+        self().GenericGraph::setEdgeWeights(weights);
+    }
+    virtual void setEdgeWeight(size_t index, const Weight& weight) override {
+        self().GenericGraph::setEdgeWeight(index, weight);
+    }
+    virtual Weight vertexWeight(int v) const override {
+        return self().GenericGraph::vertexWeight(v);
+    }
+    virtual Weight edgeWeight(size_t index) const override {
+        return self().GenericGraph::edgeWeight(index);
+    }
+    int vertexLabel(int v) const override {
         return self().GenericGraph::vertexLabel(v);
     }
-    int vertexByLabel(int v) const {
+    int vertexByLabel(int v) const override {
         return self().GenericGraph::vertexByLabel(v);
     }
 
@@ -81,8 +100,8 @@ public:
         return graph_;
     }
 
-    GraphBuilder(int n, int m, bool connected) :
-        n_(n), m_(m), connected_(connected)
+    GraphBuilder(int n, int m) :
+        n_(n), m_(m)
     {  }
 
     void allowLoops(bool value) {
@@ -93,16 +112,20 @@ public:
         multiEdges_ = value;
     }
 
+    void connected(bool value) {
+        connected_ = value;
+    }
+
 private:
     void build();
 
     int n_;
     int m_;
-    bool connected_;
+    bool connected_ = false;
     bool multiEdges_ = false;
     bool loops_ = false;
 
-    bool finalized_;
+    bool finalized_ = false;
     Graph graph_;
 };
 
@@ -120,6 +143,12 @@ inline Graph& Graph::allowLoops(bool value) {
 inline Graph& Graph::allowMulti(bool value) {
     ensure(builder_, "Cannot modify the graph which is already built");
     builder_->allowMulti(value);
+    return *this;
+}
+
+inline Graph& Graph::connected(bool value) {
+    ensure(builder_, "Cannot modify the graph which is already built");
+    builder_->connected(value);
     return *this;
 }
 
@@ -175,18 +204,13 @@ inline void GraphBuilder::build() {
     for (const auto& edge: result) {
         graph_.addEdge(edge.first, edge.second);
     }
+
+    graph_.normalizeEdges();
 }
 
 Graph Graph::random(int n, int m) {
     Graph g;
-    auto builder = std::make_shared<GraphBuilder>(n, m, false);
-    g.setBuilder(builder);
-    return g;
-}
-
-Graph Graph::randomConnected(int n, int m) {
-    Graph g;
-    auto builder = std::make_shared<GraphBuilder>(n, m, true);
+    auto builder = std::make_shared<GraphBuilder>(n, m);
     g.setBuilder(builder);
     return g;
 }

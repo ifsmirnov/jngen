@@ -63,7 +63,7 @@ Result uniformRandom(Result bound, Random& random, Source (Random::*method)()) {
         }
     }
 #endif
-};
+}
 
 class Random {
 public:
@@ -232,6 +232,13 @@ struct TypedRandom<char> : public BaseTypedRandom {
     using BaseTypedRandom::BaseTypedRandom;
     char next(char n) { return random.next(n); }
     char next(char l, char r) { return random.next(l, r); }
+};
+
+template<typename T>
+struct TypedRandom : public BaseTypedRandom {
+    using BaseTypedRandom::BaseTypedRandom;
+    template<typename ... Args>
+    T next(Args... args) { return random.next(args...); }
 };
 
 
