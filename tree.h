@@ -18,7 +18,7 @@ public:
         extend(1);
     }
 
-    void addEdge(int u, int v);
+    void addEdge(int u, int v, const Weight& w = Weight{}) override;
 
     Tree& shuffle();
     Tree shuffled() const;
@@ -33,7 +33,7 @@ public:
     static Tree caterpillar(size_t length, size_t size);
 };
 
-inline void Tree::addEdge(int u, int v) {
+inline void Tree::addEdge(int u, int v, const Weight& w) {
     extend(std::max(u, v) + 1);
 
     u = vertexByLabel(u);
@@ -43,6 +43,10 @@ inline void Tree::addEdge(int u, int v) {
     ensure(ret, "A cycle appeared in the tree :(");
 
     addEdgeUnsafe(u, v);
+
+    if (!w.empty()) {
+        setEdgeWeight(m() - 1, w);
+    }
 }
 
 inline Tree& Tree::shuffle() {

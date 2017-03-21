@@ -58,6 +58,10 @@ protected:
         memmove(dst, data(), Size);
     }
 
+    void setType(int) {
+        throw;
+    }
+
     template<typename V>
     void applyVisitor(V&&) const {
         throw;
@@ -98,6 +102,17 @@ protected:
             new(dst) T(*reinterpret_cast<const T*>(this->data()));
         } else {
             Base::copy(dst);
+        }
+    }
+
+    void setType(int typeIndex) {
+        if (typeIndex == MY_ID) {
+            if (this->type() != NO_TYPE) {
+                throw;
+            }
+            assign(T{});
+        } else {
+            Base::setType(typeIndex);
         }
     }
 
@@ -212,6 +227,22 @@ public:
 
     int type() const { return Base::type(); }
 
+    void setType(int typeIndex) {
+        if (typeIndex == NO_TYPE) {
+            throw std::logic_error("jngen::Variant::setType():"
+                " calling with NO_TYPE is invalid");
+        }
+        if (this->type() == typeIndex) {
+            return;
+        }
+        if (this->type() != NO_TYPE) {
+            this->doDestroy();
+        }
+        Base::setType(typeIndex);
+    }
+
+    bool empty() const { return Base::type() == NO_TYPE; }
+
     template<typename T>
     constexpr static bool hasType() {
         return Base::template typeId<T>() != NO_TYPE;
@@ -246,10 +277,10 @@ private:
 struct OstreamVisitor {
     template<typename T>
     void operator()(const T& t) {
-        auto mod = OutputModifier();
         JNGEN_PRINT(t);
     }
     std::ostream& out;
+    const OutputModifier& mod;
 };
 
 } // namespace variant_detail
@@ -258,14 +289,11 @@ using variant_detail::Variant;
 
 template<typename ... Args>
 JNGEN_DECLARE_SIMPLE_PRINTER(Variant<Args...>, 5) {
-    (void)mod;
     if (t.type() == jngen::variant_detail::NO_TYPE) {
         out << "{empty variant}";
     } else {
-        t.applyVisitor(jngen::variant_detail::OstreamVisitor{out});
+        t.applyVisitor(jngen::variant_detail::OstreamVisitor{out, mod});
     }
 }
 
 } // namespace jngen
-
-using jngen::Variant;

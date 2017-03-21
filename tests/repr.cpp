@@ -46,10 +46,10 @@ BOOST_AUTO_TEST_CASE(output_mod_graph_and_tree) {
     g.addEdge(0, 2);
     g.setN(4);
 
-    checkOutput(g, "0 1\n0 2\n1 2");
-    checkOutput(g.printN(), "4\n0 1\n0 2\n1 2");
-    checkOutput(g.printN().printM(), "4 3\n0 1\n0 2\n1 2");
-    checkOutput(g.printM().add1(), "3\n1 2\n1 3\n2 3");
+    checkOutput(g, "0 1\n1 2\n0 2");
+    checkOutput(g.printN(), "4\n0 1\n1 2\n0 2");
+    checkOutput(g.printN().printM(), "4 3\n0 1\n1 2\n0 2");
+    checkOutput(g.printM().add1(), "3\n1 2\n2 3\n1 3");
 
     Tree t = Tree::bamboo(3);
     checkOutput(t, "0 1\n1 2");

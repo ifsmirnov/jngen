@@ -40,11 +40,18 @@ public:
     // TODO(ifsmirnov): 'use' all methods and make inheritance private
     using Base::at;
     using Base::size;
+    using Base::resize;
     using Base::begin;
     using Base::end;
     using Base::insert;
     using Base::clear;
     using Base::erase;
+
+    void extend(size_t requiredSize) {
+        if (requiredSize > size()) {
+            resize(requiredSize);
+        }
+    }
 
     template<typename F, typename ...Args>
     static GenericArray<T> randomf(size_t size, F func, const Args& ... args);

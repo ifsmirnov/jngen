@@ -42,8 +42,25 @@ public:
     {
         return GenericArray<T>(this->begin(), this->end());
     }
+
+    bool hasNonEmpty() const {
+        for (const auto& x: *this) {
+            if (!x.empty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int anyType() const {
+        for (const auto& x: *this) {
+            if (!x.empty()) {
+                return x.type();
+            }
+        }
+        return 0;
+    }
+
 };
 
 } // namespace jngen
-
-using jngen::VariantArray;

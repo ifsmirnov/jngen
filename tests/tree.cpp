@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(manual_construction) {
     std::ostringstream ss;
     ss << t.printN().add1() << std::endl;
 
-    BOOST_CHECK_EQUAL(ss.str(), "4\n1 2\n2 3\n3 4\n");
+    BOOST_CHECK_EQUAL(ss.str(), "4\n1 2\n3 4\n2 3\n");
 }
 
 void dfs(int v, int anc, const Tree& t, std::vector<int>& dist) {

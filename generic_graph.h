@@ -3,6 +3,7 @@
 #include "array.h"
 #include "dsu.h"
 #include "printers.h"
+#include "weight.h"
 
 #include <algorithm>
 #include <iostream>
@@ -21,7 +22,7 @@ public:
     virtual int m() const { return numEdges_; }
 
     // u, v: labels
-    virtual void addEdge(int u, int v);
+    virtual void addEdge(int u, int v, const Weight& w = Weight{});
     virtual bool isConnected() const { return dsu_.isConnected(); }
 
     virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
@@ -29,27 +30,55 @@ public:
 
     // v: label
     // return: array<label>
-    virtual Array edges(int v) const {
-        v = vertexByLabel(v);
-
-        Array result;
-        std::transform(
-            adjList_[v].begin(),
-            adjList_[v].end(),
-            std::back_inserter(result),
-            [this, v](int x) { return vertexLabel(edgeOtherEnd(v, x)); }
-        );
-        return result;
-    }
+    virtual Array edges(int v) const;
 
     // return: array<label, label>
-    virtual Arrayp edges() const {
-        auto edges = edges_;
-        for (auto& e: edges) {
-            e.first = vertexLabel(e.first);
-            e.second = vertexLabel(e.second);
+    virtual Arrayp edges() const;
+
+    // order: by labels
+    // TODO: think about ordering here
+    void setVertexWeights(const WeightArray& weights) {
+        ensure(static_cast<int>(weights.size()) == n());
+        vertexWeights_.resize(n());
+        for (int i = 0; i < n(); ++i) {
+            vertexWeights_[i] = weights[vertexByLabel(i)];
         }
-        return edges;
+    }
+
+    // v: label
+    void setVertexWeight(int v, const Weight& weight) {
+        ensure(v < n());
+        v = vertexByLabel(v);
+
+        vertexWeights_.extend(v + 1);
+        vertexWeights_[v] = weight;
+    }
+
+    void setEdgeWeights(const WeightArray& weights) {
+        ensure(static_cast<int>(weights.size()) == m());
+        edgeWeights_ = weights;
+    }
+
+    void setEdgeWeight(size_t index, const Weight& weight) {
+        ensure(static_cast<int>(index) < m());
+        edgeWeights_.extend(index + 1);
+        edgeWeights_[index] = weight;
+    }
+
+    // v: label
+    Weight vertexWeight(int v) const {
+        size_t index = vertexByLabel(v);
+        if (index < vertexWeights_.size()) {
+            return Weight{};
+        }
+        return vertexWeights_[index];
+    }
+
+    Weight edgeWeight(size_t index) const {
+        if (index < edgeWeights_.size()) {
+            return Weight{};
+        }
+        return edgeWeights_[index];
     }
 
     // TODO: should it really be public?
@@ -61,88 +90,20 @@ public:
     virtual bool operator<(const GenericGraph& other) const;
 
 protected:
-    void doShuffle() {
-        if (vertexLabel_.size() < static_cast<size_t>(n())) {
-            vertexLabel_ = Array::id(n());
-        }
-        vertexLabel_.shuffle();
-        vertexByLabel_ = vertexLabel_.inverse();
+    void doShuffle();
 
-        if (!directed_) {
-            for (auto& edge: edges_) {
-                if (rnd.next(2)) {
-                    std::swap(edge.first, edge.second);
-                }
-            }
-        }
-
-        permuteEdges(Array::id(numEdges_).shuffled());
-    }
-
-    void extend(size_t size) {
-        size_t oldSize = n();
-        if (size > oldSize) {
-            adjList_.resize(size);
-            vertexLabel_ += Array::id(size - oldSize, oldSize);
-            vertexByLabel_ += Array::id(size - oldSize, oldSize);
-        }
-    }
+    void extend(size_t size);
 
     // u, v: edge numbers
-    void addEdgeUnsafe(int u, int v) {
-        int id = numEdges_++;
-        edges_.emplace_back(u, v);
-
-        adjList_[u].push_back(id);
-        if (u != v) {
-            adjList_[v].push_back(id);
-        }
-    }
+    void addEdgeUnsafe(int u, int v);
 
     // v: edge number
     // returns: edge number
-    int edgeOtherEnd(int v, int edgeId) {
-        ensure(edgeId < numEdges_);
-        const auto& edge = edges_[edgeId];
-        if (edge.first == v) {
-            return edge.second;
-        }
-        ensure(!directed_);
-        ensure(edge.second == v);
-        return edge.first;
-    }
+    int edgeOtherEnd(int v, int edgeId);
 
-    void permuteEdges(const Array& order) {
-        edges_ = edges_.subseq(order);
+    void permuteEdges(const Array& order);
 
-        auto newByOld = order.inverse();
-        for (int v = 0; v < n(); ++v) {
-            for (auto& x: adjList_[v]) {
-                x = newByOld[x];
-            }
-        }
-    }
-
-    void normalizeEdges() {
-        ensure(
-            vertexLabel_ == Array::id(n()),
-            "Can call normalizeEdges() only on newly created graph");
-
-        if (!directed_) {
-            for (auto& edge: edges_) {
-                if (edge.first > edge.second) {
-                    std::swap(edge.first, edge.second);
-                }
-            }
-        }
-
-        auto order = Array::id(numEdges_).sorted(
-            [this](int i, int j) {
-                return edges_[i] < edges_[j];
-            });
-
-        permuteEdges(order);
-    }
+    void normalizeEdges();
 
     int compareTo(const GenericGraph& other) const;
 
@@ -155,9 +116,119 @@ protected:
     Array vertexLabel_;
     Array vertexByLabel_;
     Arrayp edges_;
+
+    WeightArray vertexWeights_;
+    WeightArray edgeWeights_;
 };
 
-inline void GenericGraph::addEdge(int u, int v) {
+Array GenericGraph::edges(int v) const {
+    v = vertexByLabel(v);
+
+    Array result;
+    std::transform(
+        adjList_[v].begin(),
+        adjList_[v].end(),
+        std::back_inserter(result),
+        [this, v](int x) { return vertexLabel(edgeOtherEnd(v, x)); }
+    );
+    return result;
+}
+
+Arrayp GenericGraph::edges() const {
+    auto edges = edges_;
+    for (auto& e: edges) {
+        e.first = vertexLabel(e.first);
+        e.second = vertexLabel(e.second);
+    }
+    return edges;
+}
+
+inline void GenericGraph::doShuffle() {
+    if (vertexLabel_.size() < static_cast<size_t>(n())) {
+        vertexLabel_ = Array::id(n());
+    }
+    vertexLabel_.shuffle();
+    vertexByLabel_ = vertexLabel_.inverse();
+
+    if (!directed_) {
+        for (auto& edge: edges_) {
+            if (rnd.next(2)) {
+                std::swap(edge.first, edge.second);
+            }
+        }
+    }
+
+    permuteEdges(Array::id(numEdges_).shuffled());
+}
+
+inline void GenericGraph::extend(size_t size) {
+    size_t oldSize = n();
+    if (size > oldSize) {
+        adjList_.resize(size);
+        vertexLabel_ += Array::id(size - oldSize, oldSize);
+        vertexByLabel_ += Array::id(size - oldSize, oldSize);
+    }
+}
+
+void GenericGraph::addEdgeUnsafe(int u, int v) {
+    int id = numEdges_++;
+    edges_.emplace_back(u, v);
+
+    adjList_[u].push_back(id);
+    if (u != v) {
+        adjList_[v].push_back(id);
+    }
+}
+
+int GenericGraph::edgeOtherEnd(int v, int edgeId) {
+    ensure(edgeId < numEdges_);
+    const auto& edge = edges_[edgeId];
+    if (edge.first == v) {
+        return edge.second;
+    }
+    ensure(!directed_);
+    ensure(edge.second == v);
+    return edge.first;
+}
+
+void GenericGraph::permuteEdges(const Array& order) {
+    edges_ = edges_.subseq(order);
+
+    auto newByOld = order.inverse();
+    for (int v = 0; v < n(); ++v) {
+        for (auto& x: adjList_[v]) {
+            x = newByOld[x];
+        }
+    }
+
+    if (edgeWeights_.hasNonEmpty()) {
+        edgeWeights_.extend(m());
+        edgeWeights_ = edgeWeights_.subseq(order);
+    }
+}
+
+void GenericGraph::normalizeEdges() {
+    ensure(
+        vertexLabel_ == Array::id(n()),
+        "Can call normalizeEdges() only on newly created graph");
+
+    if (!directed_) {
+        for (auto& edge: edges_) {
+            if (edge.first > edge.second) {
+                std::swap(edge.first, edge.second);
+            }
+        }
+    }
+
+    auto order = Array::id(numEdges_).sorted(
+        [this](int i, int j) {
+            return edges_[i] < edges_[j];
+        });
+
+    permuteEdges(order);
+}
+
+inline void GenericGraph::addEdge(int u, int v, const Weight& w) {
     extend(std::max(u, v) + 1);
 
     u = vertexByLabel(u);
@@ -165,13 +236,33 @@ inline void GenericGraph::addEdge(int u, int v) {
 
     dsu_.link(u, v);
     addEdgeUnsafe(u, v);
+
+    if (!w.empty()) {
+        setEdgeWeight(m() - 1, w);
+    }
 }
+
+namespace {
+
+WeightArray prepareWeightArray(WeightArray a, int requiredSize) {
+    ensure(a.hasNonEmpty(), "INTERNAL ASSERT");
+
+    a.extend(requiredSize);
+    int type = a.anyType();
+    for (auto& x: a) {
+        if (x.empty()) {
+            x.setType(type);
+        }
+    }
+
+    return a;
+}
+
+} // namespace
 
 inline void GenericGraph::doPrintEdges(
     std::ostream& out, const OutputModifier& mod) const
 {
-    Arrayp edges = this->edges();
-
     if (mod.printN) {
         out << n();
         if (mod.printM) {
@@ -182,11 +273,36 @@ inline void GenericGraph::doPrintEdges(
         out << m() << "\n";
     }
 
+    if (vertexWeights_.hasNonEmpty()) {
+        auto vertexWeights = prepareWeightArray(vertexWeights_, n());
+        for (int i = 0; i < n(); ++i) {
+            if (i > 0) {
+                out << " ";
+            }
+            JNGEN_PRINT_NO_MOD(vertexWeights[vertexByLabel(i)]);
+        }
+        out << "\n";
+    }
+
     auto t(mod);
     {
         auto mod(t);
+
+        Arrayp edges = this->edges();
         mod.printN = false;
-        JNGEN_PRINT(edges);
+        if (edgeWeights_.hasNonEmpty()) {
+            auto edgeWeights = prepareWeightArray(edgeWeights_, m());
+            for (int i = 0; i < m(); ++i) {
+                if (i > 0) {
+                    out << "\n";
+                }
+                JNGEN_PRINT(edges[i]);
+                out << " ";
+                JNGEN_PRINT_NO_MOD(edgeWeights[i]);
+            }
+        } else {
+            JNGEN_PRINT(edges);
+        }
     }
 }
 

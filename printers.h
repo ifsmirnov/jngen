@@ -77,6 +77,9 @@ void printValue(std::ostream& out, const type& t,\
 #define JNGEN_PRINT(value)\
 printValue(out, value, mod, PTagMax{})
 
+#define JNGEN_PRINT_NO_MOD(value)\
+printValue(out, value, OutputModifier{}, PTagMax{})
+
 JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
     // can't just write 'false' here because assertion always fails

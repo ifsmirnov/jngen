@@ -33,30 +33,29 @@ public:
     void setN(int n);
 
     static Graph random(int n, int m);
-    static Graph randomConnected(int n, int m);
 
     Graph& allowLoops(bool value = true);
     Graph& allowMulti(bool value = true);
     Graph& connected(bool value = true);
 
-    int n() const { return self().GenericGraph::n(); }
-    int m() const { return self().GenericGraph::m(); }
-    void addEdge(int u, int v) {
-        self().GenericGraph::addEdge(u, v);
+    int n() const override { return self().GenericGraph::n(); }
+    int m() const override { return self().GenericGraph::m(); }
+    void addEdge(int u, int v, const Weight& w = Weight{}) override {
+        self().GenericGraph::addEdge(u, v, w);
     }
-    bool isConnected() const {
+    bool isConnected() const override {
         return self().GenericGraph::isConnected();
     }
-    Array edges(int v) const {
+    Array edges(int v) const override {
         return self().GenericGraph::edges(v);
     }
-    Arrayp edges() const {
+    Arrayp edges() const override {
         return self().GenericGraph::edges();
     }
-    int vertexLabel(int v) const {
+    int vertexLabel(int v) const override {
         return self().GenericGraph::vertexLabel(v);
     }
-    int vertexByLabel(int v) const {
+    int vertexByLabel(int v) const override {
         return self().GenericGraph::vertexByLabel(v);
     }
 
