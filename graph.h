@@ -52,6 +52,24 @@ public:
     Arrayp edges() const override {
         return self().GenericGraph::edges();
     }
+    virtual void setVertexWeights(const WeightArray& weights) override {
+        self().GenericGraph::setVertexWeights(weights);
+    }
+    virtual void setVertexWeight(int v, const Weight& weight) override {
+        self().GenericGraph::setVertexWeight(v, weight);
+    }
+    virtual void setEdgeWeights(const WeightArray& weights) override {
+        self().GenericGraph::setEdgeWeights(weights);
+    }
+    virtual void setEdgeWeight(size_t index, const Weight& weight) override {
+        self().GenericGraph::setEdgeWeight(index, weight);
+    }
+    virtual Weight vertexWeight(int v) const override {
+        return self().GenericGraph::vertexWeight(v);
+    }
+    virtual Weight edgeWeight(size_t index) const override {
+        return self().GenericGraph::edgeWeight(index);
+    }
     int vertexLabel(int v) const override {
         return self().GenericGraph::vertexLabel(v);
     }

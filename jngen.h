@@ -1770,6 +1770,9 @@ public:
 using jngen::Point;
 using jngen::Pointf;
 
+using jngen::Polygon;
+using jngen::Polygonf;
+
 using jngen::rndg;
 
 using jngen::eps;
@@ -2474,7 +2477,7 @@ public:
 
     // order: by labels
     // TODO: think about ordering here
-    void setVertexWeights(const WeightArray& weights) {
+    virtual void setVertexWeights(const WeightArray& weights) {
         ensure(static_cast<int>(weights.size()) == n());
         vertexWeights_.resize(n());
         for (int i = 0; i < n(); ++i) {
@@ -2483,7 +2486,7 @@ public:
     }
 
     // v: label
-    void setVertexWeight(int v, const Weight& weight) {
+    virtual void setVertexWeight(int v, const Weight& weight) {
         ensure(v < n());
         v = vertexByLabel(v);
 
@@ -2491,19 +2494,19 @@ public:
         vertexWeights_[v] = weight;
     }
 
-    void setEdgeWeights(const WeightArray& weights) {
+    virtual void setEdgeWeights(const WeightArray& weights) {
         ensure(static_cast<int>(weights.size()) == m());
         edgeWeights_ = weights;
     }
 
-    void setEdgeWeight(size_t index, const Weight& weight) {
+    virtual void setEdgeWeight(size_t index, const Weight& weight) {
         ensure(static_cast<int>(index) < m());
         edgeWeights_.extend(index + 1);
         edgeWeights_[index] = weight;
     }
 
     // v: label
-    Weight vertexWeight(int v) const {
+    virtual Weight vertexWeight(int v) const {
         size_t index = vertexByLabel(v);
         if (index < vertexWeights_.size()) {
             return Weight{};
@@ -2511,7 +2514,7 @@ public:
         return vertexWeights_[index];
     }
 
-    Weight edgeWeight(size_t index) const {
+    virtual Weight edgeWeight(size_t index) const {
         if (index < edgeWeights_.size()) {
             return Weight{};
         }
@@ -3062,6 +3065,24 @@ public:
     }
     Arrayp edges() const override {
         return self().GenericGraph::edges();
+    }
+    virtual void setVertexWeights(const WeightArray& weights) override {
+        self().GenericGraph::setVertexWeights(weights);
+    }
+    virtual void setVertexWeight(int v, const Weight& weight) override {
+        self().GenericGraph::setVertexWeight(v, weight);
+    }
+    virtual void setEdgeWeights(const WeightArray& weights) override {
+        self().GenericGraph::setEdgeWeights(weights);
+    }
+    virtual void setEdgeWeight(size_t index, const Weight& weight) override {
+        self().GenericGraph::setEdgeWeight(index, weight);
+    }
+    virtual Weight vertexWeight(int v) const override {
+        return self().GenericGraph::vertexWeight(v);
+    }
+    virtual Weight edgeWeight(size_t index) const override {
+        return self().GenericGraph::edgeWeight(index);
     }
     int vertexLabel(int v) const override {
         return self().GenericGraph::vertexLabel(v);

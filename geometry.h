@@ -281,6 +281,9 @@ public:
 using jngen::Point;
 using jngen::Pointf;
 
+using jngen::Polygon;
+using jngen::Polygonf;
+
 using jngen::rndg;
 
 using jngen::eps;
