@@ -2,6 +2,7 @@
 
 #include "common.h"
 
+#include <algorithm>
 #include <cctype>
 #include <functional>
 #include <set>
@@ -135,7 +136,7 @@ private:
     }
 
     std::vector<char> parseBlock() {
-        std::set<char> allowed;
+        std::vector<char> allowed;
         char last = -1;
         bool inRange = false;
         while (control(peek()) != ']') {
@@ -148,13 +149,13 @@ private:
             } else if (inRange) {
                 ensure(c >= last);
                 for (char i = last; i <= c; ++i) {
-                    allowed.insert(i);
+                    allowed.push_back(i);
                 }
                 inRange = false;
                 last = -1;
             } else {
                 if (last != -1) {
-                    allowed.insert(last);
+                    allowed.push_back(last);
                 }
                 last = c;
             }
@@ -164,10 +165,11 @@ private:
 
         ensure(!inRange);
         if (last != -1) {
-            allowed.insert(last);
+            allowed.push_back(last);
         }
 
-        return std::vector<char>(allowed.begin(), allowed.end());
+        std::sort(allowed.begin(), allowed.end());
+        return allowed;
     }
 
     Pattern parsePattern() {

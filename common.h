@@ -24,7 +24,7 @@ while (false)
 namespace jngen {
 
 template<typename ... Args>
-std::string format(const std::string& format, Args... args) {
+std::string format(const std::string& fmt, Args... args) {
     constexpr static char BUF_SIZE = 64;
     static char BUFFER[BUF_SIZE];
 
@@ -32,7 +32,7 @@ std::string format(const std::string& format, Args... args) {
     char *buf = BUFFER;
 
     while (true) {
-        int ret = snprintf(buf, bufSize, format.c_str(), args...);
+        int ret = snprintf(buf, bufSize, fmt.c_str(), args...);
         if (ret < bufSize) {
             break;
         }

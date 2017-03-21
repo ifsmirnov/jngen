@@ -134,6 +134,11 @@ public:
         return Pattern(pattern).next([this](int n) { return next(n); });
     }
 
+    template<typename ... Args>
+    std::string next(const std::string& pattern, Args... args) {
+        return next(format(pattern, args...));
+    }
+
     template<typename T, typename ... Args>
     T tnext(Args... args) {
         return TypedRandom<T>{*this}.next(args...);
@@ -240,7 +245,6 @@ struct TypedRandom : public BaseTypedRandom {
     template<typename ... Args>
     T next(Args... args) { return random.next(args...); }
 };
-
 
 struct OrderedPairTag {} opair;
 

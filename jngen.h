@@ -23,7 +23,7 @@ while (false)
 namespace jngen {
 
 template<typename ... Args>
-std::string format(const std::string& format, Args... args) {
+std::string format(const std::string& fmt, Args... args) {
     constexpr static char BUF_SIZE = 64;
     static char BUFFER[BUF_SIZE];
 
@@ -31,7 +31,7 @@ std::string format(const std::string& format, Args... args) {
     char *buf = BUFFER;
 
     while (true) {
-        int ret = snprintf(buf, bufSize, format.c_str(), args...);
+        int ret = snprintf(buf, bufSize, fmt.c_str(), args...);
         if (ret < bufSize) {
             break;
         }
@@ -165,6 +165,7 @@ void getopts(int argc, char *argv[], Args& ...args) {
 using jngen::getopts;
 
 
+#include <algorithm>
 #include <cctype>
 #include <functional>
 #include <set>
@@ -298,7 +299,7 @@ private:
     }
 
     std::vector<char> parseBlock() {
-        std::set<char> allowed;
+        std::vector<char> allowed;
         char last = -1;
         bool inRange = false;
         while (control(peek()) != ']') {
@@ -311,13 +312,13 @@ private:
             } else if (inRange) {
                 ensure(c >= last);
                 for (char i = last; i <= c; ++i) {
-                    allowed.insert(i);
+                    allowed.push_back(i);
                 }
                 inRange = false;
                 last = -1;
             } else {
                 if (last != -1) {
-                    allowed.insert(last);
+                    allowed.push_back(last);
                 }
                 last = c;
             }
@@ -327,10 +328,11 @@ private:
 
         ensure(!inRange);
         if (last != -1) {
-            allowed.insert(last);
+            allowed.push_back(last);
         }
 
-        return std::vector<char>(allowed.begin(), allowed.end());
+        std::sort(allowed.begin(), allowed.end());
+        return allowed;
     }
 
     Pattern parsePattern() {
@@ -546,6 +548,11 @@ public:
         return Pattern(pattern).next([this](int n) { return next(n); });
     }
 
+    template<typename ... Args>
+    std::string next(const std::string& pattern, Args... args) {
+        return next(format(pattern, args...));
+    }
+
     template<typename T, typename ... Args>
     T tnext(Args... args) {
         return TypedRandom<T>{*this}.next(args...);
@@ -652,7 +659,6 @@ struct TypedRandom : public BaseTypedRandom {
     template<typename ... Args>
     T next(Args... args) { return random.next(args...); }
 };
-
 
 struct OrderedPairTag {} opair;
 
