@@ -87,7 +87,11 @@ public:
 
     // TODO: more operators!
     virtual bool operator==(const GenericGraph& other) const;
+    virtual bool operator!=(const GenericGraph& other) const;
     virtual bool operator<(const GenericGraph& other) const;
+    virtual bool operator>(const GenericGraph& other) const;
+    virtual bool operator<=(const GenericGraph& other) const;
+    virtual bool operator>=(const GenericGraph& other) const;
 
 protected:
     void doShuffle();
@@ -175,7 +179,7 @@ void GenericGraph::addEdgeUnsafe(int u, int v) {
     edges_.emplace_back(u, v);
 
     adjList_[u].push_back(id);
-    if (u != v) {
+    if (!directed_ && u != v) {
         adjList_[v].push_back(id);
     }
 }
@@ -310,7 +314,23 @@ inline bool GenericGraph::operator==(const GenericGraph& other) const {
     return compareTo(other) == 0;
 }
 
+inline bool GenericGraph::operator!=(const GenericGraph& other) const {
+    return compareTo(other) != 0;
+}
+
 inline bool GenericGraph::operator<(const GenericGraph& other) const {
+    return compareTo(other) == -1;
+}
+
+inline bool GenericGraph::operator>(const GenericGraph& other) const {
+    return compareTo(other) == 1;
+}
+
+inline bool GenericGraph::operator<=(const GenericGraph& other) const {
+    return compareTo(other) != 1;
+}
+
+inline bool GenericGraph::operator>=(const GenericGraph& other) const {
     return compareTo(other) == -1;
 }
 

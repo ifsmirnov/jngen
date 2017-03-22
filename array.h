@@ -381,16 +381,20 @@ GenericArray<T>::operator std::string() const {
     return std::string(begin(), end());
 }
 
+template<typename T>
+using TArray = GenericArray<T>;
+
 } // namespace jngen
 
-template<typename T>
-using TArray = jngen::GenericArray<T>;
+using jngen::TArray;
 
 using Array = jngen::GenericArray<int>;
 using Array2d = jngen::GenericArray<jngen::GenericArray<int>>;
 using Array64 = jngen::GenericArray<long long>;
 using Arrayf = jngen::GenericArray<double>;
 using Arrayp = jngen::GenericArray<std::pair<int, int>>;
+
+namespace jngen {
 
 template<typename T>
 jngen::GenericArray<T> makeArray(const std::vector<T>& values) {
@@ -401,3 +405,20 @@ template<typename T>
 jngen::GenericArray<T> makeArray(const std::initializer_list<T>& values) {
     return jngen::GenericArray<T>(values);
 }
+
+template<typename T, typename U>
+TArray<std::pair<T, U>> zip(const TArray<T>& lhs, const TArray<U>& rhs) {
+    ensure(
+        lhs.size() == rhs.size(),
+        "In zip(a, b), a and b must have the same size");
+    TArray<std::pair<T, U>> result;
+    for (size_t i = 0; i < lhs.size(); ++i) {
+        result.emplace_back(lhs[i], rhs[i]);
+    }
+    return result;
+}
+
+} // namespace jngen
+
+using jngen::makeArray;
+using jngen::zip;
