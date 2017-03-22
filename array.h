@@ -158,15 +158,16 @@ GenericArray<T> GenericArray<T>::randomfUnique(
     size_t retries = (size + 10) * log(size + 10) * 2;
 
     while (result.size() != size) {
-        if (--retries == 0) {
-            ensure(false, "There are not enough unique elements");
-        }
-
         T t = func(args...);
         if (!set.count(t)) {
             set.insert(t);
             result.push_back(t);
         }
+
+        if (--retries == 0) {
+            ensure(false, "There are not enough unique elements");
+        }
+
     }
 
     return result;
@@ -386,6 +387,7 @@ template<typename T>
 using TArray = jngen::GenericArray<T>;
 
 using Array = jngen::GenericArray<int>;
+using Array2d = jngen::GenericArray<jngen::GenericArray<int>>;
 using Array64 = jngen::GenericArray<long long>;
 using Arrayf = jngen::GenericArray<double>;
 using Arrayp = jngen::GenericArray<std::pair<int, int>>;
