@@ -2,8 +2,11 @@
 #include <boost/test/included/unit_test.hpp>
 #include "../jngen.h"
 
-#include <vector>
+#include <map>
+#include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 template<typename T>
 void checkOutput(const T& t, const std::string& s) {
@@ -45,4 +48,13 @@ BOOST_AUTO_TEST_CASE(array) {
     checkOutput(Arrayp{{1, 2}, {3, 4}}, "1 2\n3 4");
     checkOutput(TArray<std::string>{"hello", "world"}, "hello world");
     checkOutput(TArray<const char*>{"jino", "tega"}, "jino tega");
+}
+
+BOOST_AUTO_TEST_CASE(set_map) {
+    setMod().reset();
+
+    checkOutput(std::set<int>{1, 2, 3}, "1 2 3");
+    checkOutput(std::map<std::string, int>{
+        {"one", 1}, {"two", 2}, {"three", 3}},
+        "one 1\nthree 3\ntwo 2");
 }

@@ -1167,6 +1167,11 @@ JNGEN_DEFINE_FUNCTION_CHECKER(
     std::declval<T>() + 1
 )
 
+JNGEN_DEFINE_FUNCTION_CHECKER(
+    Container,
+    std::distance(std::declval<T>().begin(), std::declval<T>().end())
+)
+
 #define JNGEN_HAS_OSTREAM()\
     (JNGEN_HAS_FUNCTION(OstreamMethod) ||\
         JNGEN_HAS_FUNCTION(OstreamFreeFunction))
@@ -1212,14 +1217,14 @@ JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
     (void)t;
 }
 
-JNGEN_DECLARE_PRINTER(JNGEN_HAS_OSTREAM(), 1)
+JNGEN_DECLARE_PRINTER(JNGEN_HAS_OSTREAM(), 10)
 {
     (void)mod;
     out << t;
 }
 
 JNGEN_DECLARE_PRINTER(
-    JNGEN_HAS_OSTREAM() && JNGEN_HAS_FUNCTION(Plus), 2)
+    JNGEN_HAS_OSTREAM() && JNGEN_HAS_FUNCTION(Plus), 11)
 {
     if (std::is_integral<T>::value) {
         out << t + mod.addition;
@@ -1271,6 +1276,39 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 2, 4)
     for (const auto& x: t) {
         JNGEN_PRINT(x);
         out << "\n";
+    }
+}
+
+JNGEN_DECLARE_PRINTER(JNGEN_HAS_FUNCTION(Container), 2)
+{
+    if (mod.printN) {
+        out << t.size() << "\n";
+    }
+    bool first = true;
+    for (const auto& x: t) {
+        if (first) {
+            first = false;
+        } else {
+            out << " ";
+        }
+        JNGEN_PRINT(x);
+    }
+}
+
+JNGEN_DECLARE_PRINTER(JNGEN_HAS_FUNCTION(Container)
+    && std::tuple_size<typename T::value_type>::value == 2, 3)
+{
+    if (mod.printN) {
+        out << t.size() << "\n";
+    }
+    bool first = true;
+    for (const auto& x: t) {
+        if (first) {
+            first = false;
+        } else {
+            out << "\n";
+        }
+        JNGEN_PRINT(x);
     }
 }
 
