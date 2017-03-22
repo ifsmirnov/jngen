@@ -119,6 +119,18 @@ bool getOpt(const std::string& name, T& var) {
     return readVariable(vmap[name], var);
 }
 
+template<typename T>
+T getOptOr(size_t index, T def) {
+    getOpt(index, def);
+    return def;
+}
+
+template<typename T>
+T getOptOr(const std::string& name, T def) {
+    getOpt(name, def);
+    return def;
+}
+
 inline void parseArgs(int argc, char *argv[]) {
     vmap = parseArguments(std::vector<std::string>(argv + 1, argv + argc));
 }
@@ -204,6 +216,7 @@ int getPositional(Args&... args) {
 
 using jngen::parseArgs;
 using jngen::getOpt;
+using jngen::getOptOr;
 
 using jngen::getPositional;
 
