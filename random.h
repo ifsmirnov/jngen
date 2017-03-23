@@ -246,30 +246,43 @@ struct TypedRandom : public BaseTypedRandom {
     T next(Args... args) { return random.next(args...); }
 };
 
-struct OrderedPairTag {} opair;
+struct RandomPairTraits {
+    const bool ordered;
+    const bool distinct;
+};
+
+RandomPairTraits opair{true, false};
+RandomPairTraits dpair{false, true};
+RandomPairTraits odpair{true, true};
+RandomPairTraits dopair{true, true};
 
 template<>
 struct TypedRandom<std::pair<int, int>> : public BaseTypedRandom {
     using BaseTypedRandom::BaseTypedRandom;
 
     std::pair<int, int> next(int n) {
-        // can't write 'return {random.next(n), random.next(n)}' because order of
-        // evaluation of function arguments is unspecified.
-        int first = random.next(n);
-        int second = random.next(n);
-        return {first, second};
+        return next(n, {false, false});
     }
     std::pair<int, int> next(int l, int r) {
-        int first = random.next(l, r);
-        int second = random.next(l, r);
-        return {first, second};
+        return next(l, r, {false, false});
     }
 
-    std::pair<int, int> next(int n, OrderedPairTag) {
-        return ordered(next(n));
+    std::pair<int, int> next(int n, RandomPairTraits traits) {
+        int first = rnd.next(n);
+        int second;
+        do {
+            second = rnd.next(n);
+        } while (traits.distinct && first == second);
+        if (traits.ordered && first > second) {
+            std::swap(first, second);
+        }
+        return {first, second};
     }
-    std::pair<int, int> next(int l, int r, OrderedPairTag) {
-        return ordered(next(l, r));
+    std::pair<int, int> next(int l, int r, RandomPairTraits traits) {
+        auto res = next(r-l+1, traits);
+        res.first += l;
+        res.second += l;
+        return res;
     }
 
 private:
@@ -287,6 +300,9 @@ using jngen::Random;
 
 using jngen::rnd;
 using jngen::opair;
+using jngen::dpair;
+using jngen::dopair;
+using jngen::odpair;
 
 void registerGen(int argc, char *argv[], int version = 1) {
     (void)version; // unused, only for testlib.h compatibility

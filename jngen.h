@@ -830,30 +830,43 @@ struct TypedRandom : public BaseTypedRandom {
     T next(Args... args) { return random.next(args...); }
 };
 
-struct OrderedPairTag {} opair;
+struct RandomPairTraits {
+    const bool ordered;
+    const bool distinct;
+};
+
+RandomPairTraits opair{true, false};
+RandomPairTraits dpair{false, true};
+RandomPairTraits odpair{true, true};
+RandomPairTraits dopair{true, true};
 
 template<>
 struct TypedRandom<std::pair<int, int>> : public BaseTypedRandom {
     using BaseTypedRandom::BaseTypedRandom;
 
     std::pair<int, int> next(int n) {
-        // can't write 'return {random.next(n), random.next(n)}' because order of
-        // evaluation of function arguments is unspecified.
-        int first = random.next(n);
-        int second = random.next(n);
-        return {first, second};
+        return next(n, {false, false});
     }
     std::pair<int, int> next(int l, int r) {
-        int first = random.next(l, r);
-        int second = random.next(l, r);
-        return {first, second};
+        return next(l, r, {false, false});
     }
 
-    std::pair<int, int> next(int n, OrderedPairTag) {
-        return ordered(next(n));
+    std::pair<int, int> next(int n, RandomPairTraits traits) {
+        int first = rnd.next(n);
+        int second;
+        do {
+            second = rnd.next(n);
+        } while (traits.distinct && first == second);
+        if (traits.ordered && first > second) {
+            std::swap(first, second);
+        }
+        return {first, second};
     }
-    std::pair<int, int> next(int l, int r, OrderedPairTag) {
-        return ordered(next(l, r));
+    std::pair<int, int> next(int l, int r, RandomPairTraits traits) {
+        auto res = next(r-l+1, traits);
+        res.first += l;
+        res.second += l;
+        return res;
     }
 
 private:
@@ -871,6 +884,9 @@ using jngen::Random;
 
 using jngen::rnd;
 using jngen::opair;
+using jngen::dpair;
+using jngen::dopair;
+using jngen::odpair;
 
 void registerGen(int argc, char *argv[], int version = 1) {
     (void)version; // unused, only for testlib.h compatibility
@@ -1438,11 +1454,15 @@ public:
     template<typename F, typename ...Args>
     static GenericArray<T> randomfUnique(
             size_t size, F func, const Args& ... args);
+    template<typename F, typename ...Args>
+    static GenericArray<T> randomfAll(F func, const Args& ... args);
 
     template<typename ...Args>
     static GenericArray<T> random(size_t size, const Args& ... args);
     template<typename ...Args>
     static GenericArray<T> randomUnique(size_t size, const Args& ... args);
+    template<typename ...Args>
+    static GenericArray<T> randomAll(const Args& ... args);
 
     static GenericArray<T> id(size_t size, T start = T{});
 
@@ -1560,6 +1580,43 @@ GenericArray<T> GenericArray<T>::randomUnique(
 {
     return GenericArray<T>::randomfUnique(
         size,
+        [](Args... args) { return rnd.tnext<T>(args...); },
+        args...);
+}
+
+template<typename T>
+template<typename F, typename ...Args>
+GenericArray<T> GenericArray<T>::randomfAll(
+        F func,
+        const Args& ... args)
+{
+    typename detail::DictContainer<T>::type set;
+    GenericArray<T> result;
+
+    int timeAfterLastHit = 0;
+
+    while (true) {
+        T t = func(args...);
+        if (!set.count(t)) {
+            set.insert(t);
+            result.push_back(t);
+            timeAfterLastHit = 0;
+        }
+
+        ++timeAfterLastHit;
+
+        // Probability of finding not all elements is about e^{-20} ~= 1e-9
+        if (timeAfterLastHit > (result.size() + 10) * 20) {
+            return result;
+        }
+    }
+}
+
+template<typename T>
+template<typename ...Args>
+GenericArray<T> GenericArray<T>::randomAll(const Args& ... args)
+{
+    return GenericArray<T>::randomfAll(
         [](Args... args) { return rnd.tnext<T>(args...); },
         args...);
 }
@@ -2057,6 +2114,15 @@ public:
     {
         typedef decltype(func(args...)) T;
         return GenericArray<T>::randomfUnique(size, func, args...);
+    }
+
+    template<typename F, typename ...Args>
+    static auto randomfAll(
+            F func,
+            Args... args) -> GenericArray<decltype(func(args...))>
+    {
+        typedef decltype(func(args...)) T;
+        return GenericArray<T>::randomfAll(size, func, args...);
     }
 } rnda;
 

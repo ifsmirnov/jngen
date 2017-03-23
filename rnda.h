@@ -32,6 +32,15 @@ public:
         typedef decltype(func(args...)) T;
         return GenericArray<T>::randomfUnique(size, func, args...);
     }
+
+    template<typename F, typename ...Args>
+    static auto randomfAll(
+            F func,
+            Args... args) -> GenericArray<decltype(func(args...))>
+    {
+        typedef decltype(func(args...)) T;
+        return GenericArray<T>::randomfAll(size, func, args...);
+    }
 } rnda;
 
 } // namespace jngen
