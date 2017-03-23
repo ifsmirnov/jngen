@@ -1227,7 +1227,7 @@ printValue(out, value, OutputModifier{}, PTagMax{})
 JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
     // can't just write 'false' here because assertion always fails
-    static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
+//     static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
     (void)out;
     (void)mod;
     (void)t;
@@ -1356,7 +1356,9 @@ auto operator<<(std::ostream& out, const T& t)
             std::ostream&
         >::type
 {
-    jngen::printValue(out, t, jngen::defaultMod, jngen::PTagMax{});
+    // not jngen::printValue, because relying on ADL here for printers declared
+    // later (see, e.g., http://stackoverflow.com/questions/42833134)
+    printValue(out, t, jngen::defaultMod, jngen::PTagMax{});
     return out;
 }
 
@@ -2122,7 +2124,7 @@ public:
             Args... args) -> GenericArray<decltype(func(args...))>
     {
         typedef decltype(func(args...)) T;
-        return GenericArray<T>::randomfAll(size, func, args...);
+        return GenericArray<T>::randomfAll(func, args...);
     }
 } rnda;
 
@@ -2397,7 +2399,9 @@ public:
 
         return res.subseq(Array::id(res.size()).choice(n).sort());
     }
-} rndg;
+};
+
+GeometryRandom rndgeo;
 
 } // namespace jngen
 
@@ -2407,7 +2411,7 @@ using jngen::Pointf;
 using jngen::Polygon;
 using jngen::Polygonf;
 
-using jngen::rndg;
+using jngen::rndgeo;
 
 using jngen::eps;
 using jngen::setEps;
@@ -3172,11 +3176,15 @@ protected:
 
     void extend(size_t size);
 
-    // u, v: edge numbers
+    // v: vertex number
+    // returns: array<number>
+    Array internalEdges(int v) const;
+
+    // u, v: vertex numbers
     void addEdgeUnsafe(int u, int v);
 
-    // v: edge number
-    // returns: edge number
+    // v: vertex number
+    // returns: vertex number
     int edgeOtherEnd(int v, int edgeId);
 
     void permuteEdges(const Array& order);
@@ -3202,13 +3210,11 @@ protected:
 Array GenericGraph::edges(int v) const {
     v = vertexByLabel(v);
 
-    Array result;
-    std::transform(
-        adjList_[v].begin(),
-        adjList_[v].end(),
-        std::back_inserter(result),
-        [this, v](int x) { return vertexLabel(edgeOtherEnd(v, x)); }
-    );
+    Array result = internalEdges(v);
+    for (auto& x: result) {
+        x = vertexLabel(x);
+    }
+
     return result;
 }
 
@@ -3246,6 +3252,17 @@ inline void GenericGraph::extend(size_t size) {
         vertexLabel_ += Array::id(size - oldSize, oldSize);
         vertexByLabel_ += Array::id(size - oldSize, oldSize);
     }
+}
+
+Array GenericGraph::internalEdges(int v) const {
+    Array result;
+    std::transform(
+        adjList_[v].begin(),
+        adjList_[v].end(),
+        std::back_inserter(result),
+        [this, v](int x) { return edgeOtherEnd(v, x); }
+    );
+    return result;
 }
 
 void GenericGraph::addEdgeUnsafe(int u, int v) {
@@ -3442,6 +3459,8 @@ public:
 
     void addEdge(int u, int v, const Weight& w = Weight{}) override;
 
+    Array parents(int root) const;
+
     Tree& shuffle();
     Tree shuffled() const;
 
@@ -3450,7 +3469,7 @@ public:
 
     static Tree bamboo(size_t size);
     static Tree randomPrufer(size_t size);
-    static Tree random(size_t size, double elongation = 1.0);
+    static Tree random(size_t size, int elongation = 0);
     static Tree star(size_t size);
     static Tree caterpillar(size_t length, size_t size);
 };
@@ -3469,6 +3488,31 @@ inline void Tree::addEdge(int u, int v, const Weight& w) {
     if (!w.empty()) {
         setEdgeWeight(m() - 1, w);
     }
+}
+
+inline Array Tree::parents(int root) const {
+    root = vertexByLabel(root);
+
+    Array parents(n());
+    parents[root] = root;
+    std::vector<int> used(n());
+    std::vector<int> queue{root};
+    for (size_t i = 0; i < queue.size(); ++i) {
+        int v = queue[i];
+        used[v] = true;
+        for (auto to: internalEdges(v)) {
+            if (!used[to]) {
+                parents[to] = v;
+                queue.push_back(to);
+            }
+        }
+    }
+
+    for (auto& x: parents) {
+        x = vertexLabel(x);
+    }
+
+    return parents;
 }
 
 inline Tree& Tree::shuffle() {
@@ -3574,10 +3618,10 @@ inline Tree Tree::randomPrufer(size_t size) {
     return t;
 }
 
-inline Tree Tree::random(size_t size, double elongation) {
+inline Tree Tree::random(size_t size, int elongation) {
     Tree t;
     for (size_t v = 1; v < size; ++v) {
-        int parent = rnd.tnext<int>(v-1 - (v-1) * elongation, v-1);
+        int parent = rnd.wnext(v, elongation);
         t.addEdge(parent, v);
     }
     t.normalizeEdges();
@@ -3613,17 +3657,10 @@ using jngen::Tree;
 #include <utility>
 #include <vector>
 
-/* Directed graphs are not supported yet, and Graph class itself
- * is pretty useless. Sorry for now.
- */
-
 namespace jngen {
 
-// TODO: make GraphBuilder subclass of Graph
-class GraphBuilder;
-
 class Graph : public ReprProxy<Graph>, public GenericGraph {
-    friend class GraphBuilder;
+    friend class GraphRandom;
 public:
     virtual ~Graph() {}
     Graph() {}
@@ -3636,101 +3673,8 @@ public:
 
     void setN(int n);
 
-    static Graph random(int n, int m);
-
-    Graph& allowLoops(bool value = true);
-    Graph& allowMulti(bool value = true);
-    Graph& connected(bool value = true);
-
-    int n() const override { return self().GenericGraph::n(); }
-    int m() const override { return self().GenericGraph::m(); }
-    void addEdge(int u, int v, const Weight& w = Weight{}) override {
-        self().GenericGraph::addEdge(u, v, w);
-    }
-    bool isConnected() const override {
-        return self().GenericGraph::isConnected();
-    }
-    Array edges(int v) const override {
-        return self().GenericGraph::edges(v);
-    }
-    Arrayp edges() const override {
-        return self().GenericGraph::edges();
-    }
-    virtual void setVertexWeights(const WeightArray& weights) override {
-        self().GenericGraph::setVertexWeights(weights);
-    }
-    virtual void setVertexWeight(int v, const Weight& weight) override {
-        self().GenericGraph::setVertexWeight(v, weight);
-    }
-    virtual void setEdgeWeights(const WeightArray& weights) override {
-        self().GenericGraph::setEdgeWeights(weights);
-    }
-    virtual void setEdgeWeight(size_t index, const Weight& weight) override {
-        self().GenericGraph::setEdgeWeight(index, weight);
-    }
-    virtual Weight vertexWeight(int v) const override {
-        return self().GenericGraph::vertexWeight(v);
-    }
-    virtual Weight edgeWeight(size_t index) const override {
-        return self().GenericGraph::edgeWeight(index);
-    }
-    int vertexLabel(int v) const override {
-        return self().GenericGraph::vertexLabel(v);
-    }
-    int vertexByLabel(int v) const override {
-        return self().GenericGraph::vertexByLabel(v);
-    }
-
     Graph& shuffle();
     Graph shuffled() const;
-
-private:
-    void setBuilder(std::shared_ptr<GraphBuilder> builder) {
-        builder_ = builder;
-    }
-
-    const Graph& self() const;
-    Graph& self();
-
-    std::shared_ptr<GraphBuilder> builder_;
-};
-
-class GraphBuilder {
-public:
-    const Graph& graph() {
-        if (!finalized_) {
-            build();
-        }
-        return graph_;
-    }
-
-    GraphBuilder(int n, int m) :
-        n_(n), m_(m)
-    {  }
-
-    void allowLoops(bool value) {
-        loops_ = value;
-    }
-
-    void allowMulti(bool value) {
-        multiEdges_ = value;
-    }
-
-    void connected(bool value) {
-        connected_ = value;
-    }
-
-private:
-    void build();
-
-    int n_;
-    int m_;
-    bool connected_ = false;
-    bool multiEdges_ = false;
-    bool loops_ = false;
-
-    bool finalized_ = false;
-    Graph graph_;
 };
 
 inline void Graph::setN(int n) {
@@ -3738,107 +3682,14 @@ inline void Graph::setN(int n) {
     extend(n);
 }
 
-inline Graph& Graph::allowLoops(bool value) {
-    ensure(builder_, "Cannot modify the graph which is already built");
-    builder_->allowLoops(value);
-    return *this;
-}
-
-inline Graph& Graph::allowMulti(bool value) {
-    ensure(builder_, "Cannot modify the graph which is already built");
-    builder_->allowMulti(value);
-    return *this;
-}
-
-inline Graph& Graph::connected(bool value) {
-    ensure(builder_, "Cannot modify the graph which is already built");
-    builder_->connected(value);
-    return *this;
-}
-
-inline void GraphBuilder::build() {
-    // the probability distribution is not uniform in some cases
-    // but we forget about it for now.
-
-    ensure(!finalized_);
-    finalized_ = true;
-
-    int n = n_;
-    int m = m_;
-
-    if (!multiEdges_) {
-        long long maxEdges = static_cast<long long>(n) *
-            (n + (loops_ ? 1 : -1)) / 2;
-        ensure(m_ <= maxEdges, "Too many edges in the graph");
-    }
-
-    std::set<std::pair<int, int>> usedEdges;
-
-    if (connected_) {
-        ensure(m_ >= n_ - 1, "Not enough edges for a connected graph");
-        auto treeEdges = Tree::randomPrufer(n).edges();
-        usedEdges.insert(treeEdges.begin(), treeEdges.end());
-        ensure(usedEdges.size() == static_cast<size_t>(n - 1));
-    }
-
-    auto edgeIsGood = [&usedEdges, this](const std::pair<int, int>& edge) {
-        if (!loops_ && edge.first == edge.second) {
-            return false;
-        }
-        if (!multiEdges_ && usedEdges.count(edge)) {
-            return false;
-        }
-        return true;
-    };
-
-    Arrayp result(usedEdges.begin(), usedEdges.end());
-
-    while (result.size() < static_cast<size_t>(m)) {
-        auto edge = rnd.tnext<std::pair<int, int>>(n, opair);
-        if (edgeIsGood(edge)) {
-            usedEdges.insert(edge);
-            result.push_back(edge);
-        }
-    }
-
-    ensure(result.size() == static_cast<size_t>(m),
-        "[INTERNAL ASSERT] Not enough edges found");
-
-    graph_.setN(n);
-    for (const auto& edge: result) {
-        graph_.addEdge(edge.first, edge.second);
-    }
-
-    graph_.normalizeEdges();
-}
-
-Graph Graph::random(int n, int m) {
-    Graph g;
-    auto builder = std::make_shared<GraphBuilder>(n, m);
-    g.setBuilder(builder);
-    return g;
-}
-
 inline Graph& Graph::shuffle() {
-    self().doShuffle();
+    doShuffle();
     return *this;
 }
 
 inline Graph Graph::shuffled() const {
-    Graph g = self();
+    Graph g(*this);
     return g.shuffle();
-}
-
-const Graph& Graph::self() const {
-    return builder_ ? builder_->graph() : *this;
-}
-
-Graph& Graph::self() {
-    if (builder_) {
-        *this = builder_->graph();
-        builder_.reset();
-    }
-    return *this;
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Graph, 2) {
@@ -3848,3 +3699,247 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Graph, 2) {
 } // namespace jngen
 
 using jngen::Graph;
+
+#include <algorithm>
+#include <set>
+
+
+namespace jngen {
+
+class GraphRandom;
+
+namespace graph_detail {
+
+struct Traits {
+    int n;
+    int m;
+    bool directed = false;
+    bool allowLoops = false;
+    bool allowMulti = false;
+    bool connected = false;
+
+    Traits() {}
+    explicit Traits(int n) : n(n) {}
+    Traits(int n, int m) : n(n), m(m) {}
+};
+
+class BuilderProxy {
+public:
+    BuilderProxy(
+            Traits traits,
+            std::function<Graph(Traits)> builder) :
+        traits_(traits),
+        builder_(builder)
+    {  }
+
+    Graph g() const;
+    operator Graph() const { return g(); };
+
+    BuilderProxy& allowLoops(bool value = true) {
+        traits_.allowLoops = value;
+        return *this;
+    }
+
+    BuilderProxy& allowMulti(bool value = true) {
+        traits_.allowMulti = value;
+        return *this;
+    }
+
+    BuilderProxy& connected(bool value = true) {
+        traits_.connected = value;
+        return *this;
+    }
+
+private:
+    Traits traits_;
+    std::function<Graph(Traits)> builder_;
+};
+
+Graph BuilderProxy::g() const {
+    return builder_(traits_);
+}
+
+} // namespace graph_detail
+
+// TODO: set directedness in graphs
+class GraphRandom {
+    using BuilderProxy = graph_detail::BuilderProxy;
+    using Traits = graph_detail::Traits;
+
+public:
+    GraphRandom() {
+        static bool created = false;
+        ensure(!created, "jngen::GraphRandom should be created only once");
+        created = true;
+    }
+
+    static BuilderProxy random(int n, int m) {
+        return BuilderProxy(Traits(n, m), &doRandom);
+    }
+
+    static BuilderProxy complete(int n) {
+        return BuilderProxy(Traits(n), [](Traits t) {
+            Graph g;
+            for (int i = 0; i < t.n; ++i) {
+                for (int j = 0; j < t.n; ++j) {
+                    if (i < j ||
+                        (i == j && t.allowLoops) ||
+                        (i > j && t.directed))
+                    {
+                        g.addEdge(i, j);
+                    }
+                }
+            }
+            g.normalizeEdges();
+            return g;
+        });
+    }
+
+    static BuilderProxy empty(int n) {
+        return BuilderProxy(Traits(n), [](Traits t) {
+            Graph g;
+            g.setN(t.n);
+            return g;
+        });
+    }
+
+    static BuilderProxy cycle(int n) {
+        return BuilderProxy(Traits(n), [](Traits t) {
+            Graph g;
+            for (int i = 0; i < t.n; ++i) {
+                g.addEdge(i, (i+1)%t.n);
+            }
+            g.normalizeEdges();
+            return g;
+        });
+    }
+
+    static BuilderProxy randomStretched(
+            int n, int m, int elongation, int spread) {
+        return BuilderProxy(Traits(n, m), [elongation, spread](Traits t) {
+            return doRandomStretched(t, elongation, spread);
+        });
+    }
+
+public:
+    static Graph doRandom(Traits t) {
+        int n = t.n;
+        int m = t.m;
+
+        if (!t.allowMulti) {
+            ensure(m <= maxEdges(n, t), "Too many edges in the graph");
+        }
+
+        std::set<std::pair<int, int>> usedEdges;
+
+        if (t.connected) {
+            ensure(m >= n - 1, "Not enough edges for a connected graph");
+            auto treeEdges = Tree::randomPrufer(n).edges();
+            usedEdges.insert(treeEdges.begin(), treeEdges.end());
+            ensure(usedEdges.size() == static_cast<size_t>(n - 1));
+        }
+
+        auto edgeIsGood = [&usedEdges, t](std::pair<int, int> edge) {
+            // TODO: move this check to edges generation loop
+            if (!t.allowLoops && edge.first == edge.second) {
+                ensure(false);
+                return false;
+            }
+            if (!t.directed && edge.first > edge.second) {
+                ensure(false);
+                std::swap(edge.first, edge.second);
+            }
+
+            if (!t.allowMulti && usedEdges.count(edge)) {
+                return false;
+            }
+            return true;
+        };
+
+        Arrayp result(usedEdges.begin(), usedEdges.end());
+
+        while (result.size() < static_cast<size_t>(m)) {
+            auto edge = randomEdge(n, t);
+            if (edgeIsGood(edge)) {
+                usedEdges.insert(edge);
+                result.push_back(edge);
+            }
+        }
+
+        ensure(result.size() == static_cast<size_t>(m),
+            "[INTERNAL ASSERT] Not enough edges found");
+
+        Graph graph;
+
+        graph.setN(n);
+        for (const auto& edge: result) {
+            graph.addEdge(edge.first, edge.second);
+        }
+
+        graph.normalizeEdges();
+
+        return graph;
+    }
+
+    static Graph doRandomStretched(Traits t, int elongation, int spread) {
+        Tree tree = Tree::random(t.n, elongation);
+        Array parents = tree.parents(0);
+
+        Graph graph(tree);
+
+        auto treeEdges = tree.edges();
+        std::set<std::pair<int, int>> usedEdges(
+            treeEdges.begin(), treeEdges.end());
+
+        while (graph.m() != t.m) {
+            int u = rnd.next(t.n);
+            int up = rnd.next(0, spread);
+            int v = u;
+            for (int iter = 0; iter < up; ++iter) {
+                v = parents[v];
+            }
+
+            ensure(v <= u);
+
+            if (!t.allowLoops && u == v) {
+                continue;
+            }
+
+            if (!t.allowMulti && usedEdges.count({v, u})) {
+                continue;
+            }
+
+            graph.addEdge(u, v);
+            usedEdges.emplace(u, v);
+        }
+
+        graph.normalizeEdges();
+        return graph;
+    }
+
+    static std::pair<int, int> randomEdge(int n, const Traits& t) {
+        return rnd.nextp(n, RandomPairTraits{!t.directed, !t.allowLoops});
+    }
+
+    static long long maxEdges(int n, const Traits& t) {
+        ensure(!t.allowMulti);
+        long long res = static_cast<long long>(n) * (n-1);
+        if (!t.directed) {
+            res /= 2;
+        }
+        if (t.allowLoops) {
+            res += n;
+        }
+        return res;
+    }
+};
+
+GraphRandom rndg;
+
+JNGEN_DECLARE_SIMPLE_PRINTER(graph_detail::BuilderProxy, 2) {
+    JNGEN_PRINT(t.g());
+}
+
+} // namespace jngen
+
+using jngen::rndg;

@@ -98,11 +98,15 @@ protected:
 
     void extend(size_t size);
 
-    // u, v: edge numbers
+    // v: vertex number
+    // returns: array<number>
+    Array internalEdges(int v) const;
+
+    // u, v: vertex numbers
     void addEdgeUnsafe(int u, int v);
 
-    // v: edge number
-    // returns: edge number
+    // v: vertex number
+    // returns: vertex number
     int edgeOtherEnd(int v, int edgeId);
 
     void permuteEdges(const Array& order);
@@ -128,13 +132,11 @@ protected:
 Array GenericGraph::edges(int v) const {
     v = vertexByLabel(v);
 
-    Array result;
-    std::transform(
-        adjList_[v].begin(),
-        adjList_[v].end(),
-        std::back_inserter(result),
-        [this, v](int x) { return vertexLabel(edgeOtherEnd(v, x)); }
-    );
+    Array result = internalEdges(v);
+    for (auto& x: result) {
+        x = vertexLabel(x);
+    }
+
     return result;
 }
 
@@ -172,6 +174,17 @@ inline void GenericGraph::extend(size_t size) {
         vertexLabel_ += Array::id(size - oldSize, oldSize);
         vertexByLabel_ += Array::id(size - oldSize, oldSize);
     }
+}
+
+Array GenericGraph::internalEdges(int v) const {
+    Array result;
+    std::transform(
+        adjList_[v].begin(),
+        adjList_[v].end(),
+        std::back_inserter(result),
+        [this, v](int x) { return edgeOtherEnd(v, x); }
+    );
+    return result;
 }
 
 void GenericGraph::addEdgeUnsafe(int u, int v) {

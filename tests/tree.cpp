@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE(generators) {
     c = Tree::caterpillar(1000, 1005);
     BOOST_CHECK_EQUAL(findDiameter(c, centers, dist), 999);
 
-    auto t = Tree::random(150, 0);
+    auto t = Tree::random(150, 1000);
     BOOST_CHECK_EQUAL(t, Tree::bamboo(150));
 }
 
