@@ -20,7 +20,7 @@ class StringRandom {
 public:
     StringRandom() {
         static bool created = false;
-        ensure(!created, "jngen::StringRandom should be created only once");
+        ENSURE(!created, "jngen::StringRandom should be created only once");
         created = true;
     }
 
@@ -47,7 +47,7 @@ inline int popcount(long long x) {
 
 inline int trailingZeroes(long long x) {
     int res = 0;
-    ensure(x != 0);
+    ENSURE(x != 0);
     while (!(x&1)) {
         ++res;
         x >>= 1;
@@ -78,7 +78,7 @@ inline std::vector<std::string> extendAntiHash(
         HashBase base,
         int count)
 {
-    ensure(count == 2, "Count != 2 is not supported (yet)");
+    ENSURE(count == 2, "Count != 2 is not supported (yet)");
 
     size_t baseLength = chars[0].size();
     for (const auto& s: chars) {
@@ -115,7 +115,7 @@ inline std::vector<std::string> extendAntiHash(
     if (count == 2) {
         needForMatch = 5 * pow(double(mod), 0.5);
     } else {
-        ensure(false, "Only count = 2 is supported yet");
+        ENSURE(false, "Only count = 2 is supported yet");
     }
 
     int length = 2;
@@ -165,7 +165,7 @@ inline StringPair minimalAntiHashTest(
     for (auto base: bases) {
         ensure(base.first >= 0, "0 < MOD must hold");
         ensure(
-            base.first < (long long)(2e9),
+            base.first <= (long long)(2e9),
             "Modules larger than 2'000'000'000 are not supported yet");
         ensure(
             0 < base.second && base.second < base.first,
@@ -198,6 +198,7 @@ inline StringPair minimalAntiHashTest(
 } // namespace detail
 
 std::string StringRandom::thueMorse(int len, char first, char second) {
+    ensure(len >= 0);
     std::string res(len, ' ');
     for (int i = 0; i < len; ++i) {
         res[i] = detail::popcount(i)%2 == 0 ? first : second;
@@ -206,6 +207,7 @@ std::string StringRandom::thueMorse(int len, char first, char second) {
 }
 
 std::string StringRandom::abacaba(int len, char first) {
+    ensure(len >= 0);
     std::string res(len, ' ');
     for (int i = 0; i < len; ++i) {
         res[i] = first + detail::trailingZeroes(~i);

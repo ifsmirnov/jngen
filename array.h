@@ -313,6 +313,10 @@ GenericArray<T> GenericArray<T>::inverse() const {
         "Can only take inverse permutation of integral array");
     int n = size();
 
+    if (n == 0) {
+        return *this;
+    }
+
     // sanity check
     ensure(*max_element(begin(), end()) == n-1 &&
         *min_element(begin(), end()) == 0,
@@ -358,7 +362,9 @@ T GenericArray<T>::choice() const {
 
 template<typename T>
 GenericArray<T> GenericArray<T>::choice(size_t count) const {
-    ensure(count <= size());
+    ensure(
+        count <= size(),
+        "Use Array::choiceWithRepetition to select more than size() elements");
 
     size_t n = size();
 

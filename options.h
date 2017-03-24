@@ -196,7 +196,7 @@ int doGetNamed(const std::string& names, Args&... args) {
 
     auto namesSplit = detail::splitByComma(names);
 
-    ensure(
+    ENSURE(
         namesSplit.size() == sizeof...(args),
         "Number of names is not equal to number of variables");
 

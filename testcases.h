@@ -23,7 +23,7 @@ void startTest(int testNo) {
     char filename[10];
     std::sprintf(filename, "%d", testNo);
     if (!std::freopen(filename, "w", stdout)) {
-        ensure(false, "Cannot open the file");
+        ensure(false, format("Cannot open the file `%s'", filename));
     }
 }
 

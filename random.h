@@ -18,9 +18,12 @@ namespace jngen {
 
 static void assertRandomEngineConsistency() {
     std::mt19937 engine(1234);
-    ensure(engine() == 822569775);
-    ensure(engine() == 2137449171);
-    ensure(engine() == 2671936806);
+    ENSURE(engine() == 822569775,
+        "std::mt19937 doesn't conform to the C++ standard");
+    ENSURE(engine() == 2137449171,
+        "std::mt19937 doesn't conform to the C++ standard");
+    ENSURE(engine() == 2671936806,
+        "std::mt19937 doesn't conform to the C++ standard");
 }
 
 class Random;

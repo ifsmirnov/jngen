@@ -40,7 +40,7 @@ inline void Tree::addEdge(int u, int v, const Weight& w) {
     v = vertexByLabel(v);
 
     int ret = dsu_.link(u, v);
-    ensure(ret, "A cycle appeared in the tree :(");
+    ensure(ret, "A cycle appeared in the tree");
 
     addEdgeUnsafe(u, v);
 
@@ -60,6 +60,9 @@ inline Tree Tree::shuffled() const {
 }
 
 Tree Tree::link(int vInThis, const Tree& other, int vInOther) {
+    ensure(vInThis < n(), "Cannot link a nonexistent vertex");
+    ensure(vInOther < other.n(), "Cannot link to a nonexistent vertex");
+
     Tree t(*this);
 
     for (const auto& e: other.edges()) {
@@ -72,6 +75,9 @@ Tree Tree::link(int vInThis, const Tree& other, int vInOther) {
 }
 
 Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
+    ensure(vInThis < n(), "Cannot glue a nonexistent vertex");
+    ensure(vInOther < other.n(), "Cannot glue to a nonexistent vertex");
+
     auto newLabel = [vInThis, vInOther, &other, this] (int v) {
         if (v < vInOther) {
             return n() + v;
@@ -88,20 +94,21 @@ Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
         t.addEdge(newLabel(e.first), newLabel(e.second));
     }
 
-    assert(t.n() == n() + other.n() - 1);
+    ensure(t.n() == n() + other.n() - 1);
 
     return t;
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
-    ensure(t.isConnected(), "Tree is not connected :(");
+    ensure(t.isConnected(), "Cannot print a tree: it is not connected");
 
     if (mod.printParents) {
-        out << "Printing parents is not supported yet";
+        ensure(false, "Printing parents is not implemented");
     } else if (mod.printEdges) {
         t.doPrintEdges(out, mod);
     } else {
-        ensure(false, "Print mode is unknown");
+        ensure(false, "Print mode is not set, select one of 'printParents'"
+            " or 'printEdges'");
     }
 }
 
@@ -136,7 +143,7 @@ inline Tree Tree::randomPrufer(size_t size) {
 
     Tree t;
     for (int v: code) {
-        ensure(!leaves.empty());
+        ENSURE(!leaves.empty());
         int to = *leaves.begin();
         leaves.erase(leaves.begin());
         if (--degree[v] == 1) {
@@ -146,7 +153,7 @@ inline Tree Tree::randomPrufer(size_t size) {
         t.addEdge(v, to);
     }
 
-    ensure(leaves.size() == 2u);
+    ENSURE(leaves.size() == 2u);
     t.addEdge(*leaves.begin(), *leaves.rbegin());
     t.normalizeEdges();
     return t;

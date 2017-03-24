@@ -1,24 +1,53 @@
 
-#include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
-#define JNGEN_ENSURE1(cond)\
-    assert(cond)
+namespace jngen {
 
-#define JNGEN_ENSURE2(cond, msg)\
+class Exception : public std::runtime_error {
+public:
+    explicit Exception(const std::string& s) :
+        std::runtime_error("Assertion `" + s + "' failed.")
+    {  }
+
+    Exception(const std::string& assertMsg, const std::string& expl) :
+        std::runtime_error(expl + " (assertion `" + assertMsg + "' failed).")
+    {  }
+};
+
+class InternalException : public Exception {
+public:
+    explicit InternalException(const std::string& s) : Exception(s) {}
+
+    InternalException(const std::string& assertMsg, const std::string& expl) :
+        Exception(assertMsg, expl)
+    {  }
+};
+
+} // namespace jngen
+
+#define JNGEN_ENSURE1(exType, cond)\
 do\
     if (!(cond)) {\
-        std::cerr << "Error: " << msg << std::endl;\
-        assert(cond);\
+        throw exType(#cond);\
+    }\
+while (false)
+
+#define JNGEN_ENSURE2(exType, cond, msg)\
+do\
+    if (!(cond)) {\
+        throw exType(#cond, msg);\
     }\
 while (false)
 
 #define JNGEN_GET_MACRO(_1, _2, NAME, ...) NAME
 
 #define ensure(...) JNGEN_GET_MACRO(__VA_ARGS__, JNGEN_ENSURE2, JNGEN_ENSURE1)\
-    (__VA_ARGS__)
+    (jngen::Exception, __VA_ARGS__)
+#define ENSURE(...) JNGEN_GET_MACRO(__VA_ARGS__, JNGEN_ENSURE2, JNGEN_ENSURE1)\
+    (jngen::InternalException, __VA_ARGS__)
 
 namespace jngen {
 
@@ -308,7 +337,7 @@ int doGetNamed(const std::string& names, Args&... args) {
 
     auto namesSplit = detail::splitByComma(names);
 
-    ensure(
+    ENSURE(
         namesSplit.size() == sizeof...(args),
         "Number of names is not equal to number of variables");
 
@@ -428,7 +457,7 @@ private:
 
     // TODO: catch overflows
     int readInt() {
-        ensure(std::isdigit(peek()));
+        ENSURE(std::isdigit(peek()));
 
         int res = 0;
         while (std::isdigit(peek())) {
@@ -438,7 +467,7 @@ private:
     }
 
     std::pair<int, int> parseRange() {
-        ensure(control(next()) == '{');
+        ENSURE(control(next()) == '{');
 
         int from = readInt();
 
@@ -447,10 +476,10 @@ private:
             return {from, from};
         } else if (nxt == ',' || nxt == '-') {
             int to = readInt();
-            ensure(control(next()) == '}');
+            ENSURE(control(next()) == '}');
             return {from, to};
         } else {
-            ensure(false, "cannot parseRange");
+            ensure(false, "cannot parse character range");
         }
     }
 
@@ -474,13 +503,13 @@ private:
         bool inRange = false;
         while (control(peek()) != ']') {
             char c = next(); // buggy on cases like [a-}]
-            ensure(c != -1);
+            ENSURE(c != -1);
 
             if (c == '-') {
-                ensure(!inRange);
+                ensure(!inRange, "invalid pattern");
                 inRange = true;
             } else if (inRange) {
-                ensure(c >= last);
+                ensure(c >= last, "invalid pattern");
                 for (char i = last; i <= c; ++i) {
                     allowed.push_back(i);
                 }
@@ -494,9 +523,9 @@ private:
             }
         }
 
-        ensure(control(next()) == ']');
+        ENSURE(control(next()) == ']');
 
-        ensure(!inRange);
+        ENSURE(!inRange);
         if (last != -1) {
             allowed.push_back(last);
         }
@@ -524,7 +553,7 @@ private:
                 if (control(nxt) == '[') {
                     chars = parseBlock();
                 } else {
-                    ensure(!control(nxt));
+                    ENSURE(!control(nxt));
                     chars = {static_cast<char>(nxt)};
                 }
 
@@ -555,11 +584,11 @@ Pattern::Pattern(const std::string& s) {
 
 std::string Pattern::next(std::function<int(int)> rnd) const {
     if (isOrPattern) {
-        ensure(!children.empty());
+        ENSURE(!children.empty());
         return children[rnd(children.size())].next(rnd);
     }
 
-    ensure( (!!chars.empty()) ^ (!!children.empty()) );
+    ENSURE( (!!chars.empty()) ^ (!!children.empty()) );
 
     int count;
     if (min == max) {
@@ -602,9 +631,12 @@ namespace jngen {
 
 static void assertRandomEngineConsistency() {
     std::mt19937 engine(1234);
-    ensure(engine() == 822569775);
-    ensure(engine() == 2137449171);
-    ensure(engine() == 2671936806);
+    ENSURE(engine() == 822569775,
+        "std::mt19937 doesn't conform to the C++ standard");
+    ENSURE(engine() == 2137449171,
+        "std::mt19937 doesn't conform to the C++ standard");
+    ENSURE(engine() == 2671936806,
+        "std::mt19937 doesn't conform to the C++ standard");
 }
 
 class Random;
@@ -1709,6 +1741,10 @@ GenericArray<T> GenericArray<T>::inverse() const {
         "Can only take inverse permutation of integral array");
     int n = size();
 
+    if (n == 0) {
+        return *this;
+    }
+
     // sanity check
     ensure(*max_element(begin(), end()) == n-1 &&
         *min_element(begin(), end()) == 0,
@@ -1754,7 +1790,9 @@ T GenericArray<T>::choice() const {
 
 template<typename T>
 GenericArray<T> GenericArray<T>::choice(size_t count) const {
-    ensure(count <= size());
+    ensure(
+        count <= size(),
+        "Use Array::choiceWithRepetition to select more than size() elements");
 
     size_t n = size();
 
@@ -1976,6 +2014,8 @@ bool isPrime(long long n) {
     const static std::vector<long long> LONG_LONG_WITNESSES
         {2, 3, 5, 7, 11, 13, 17, 19, 23};
 
+    ensure(n > 0, "isPrime() is undefined for negative numbers");
+
     if (n < std::numeric_limits<int>::max()) {
         return detail::millerRabinTest<int>(n, INT_WITNESSES);
     } else {
@@ -1992,6 +2032,7 @@ public:
     }
 
     static long long randomPrime(long long n) {
+        ensure(n > 2, format("There are no primes below %lld", n));
         return randomPrime(2, n - 1);
     }
 
@@ -2015,46 +2056,52 @@ public:
         }
     }
 
-    static Array partition(int n, size_t numParts) {
-        auto res = partition(static_cast<long long>(n), numParts);
+    static Array partition(int n, int numParts) {
+        auto res = partition(
+            static_cast<long long>(n), static_cast<long long>(numParts));
         return Array(res.begin(), res.end());
     }
 
-    static Array64 partition(long long n, size_t numParts) {
-        auto res = partitionNonEmpty(
-            static_cast<long long>(n + numParts), numParts);
+    static Array64 partition(long long n, long long numParts) {
+        auto res = partitionNonEmpty(n + numParts, numParts);
         for (auto& x: res) {
             --x;
         }
         return res;
     }
 
-    static Array partitionNonEmpty(int n, size_t numParts) {
-        auto res = partitionNonEmpty(static_cast<long long>(n), numParts);
+    static Array partitionNonEmpty(int n, int numParts) {
+        auto res = partitionNonEmpty(
+            static_cast<long long>(n), static_cast<long long>(numParts));
         return Array(res.begin(), res.end());
     }
 
-    static Array64 partitionNonEmpty(long long n, size_t numParts) {
-        ensure(static_cast<long long>(numParts) <= n);
+    static Array64 partitionNonEmpty(long long n, long long numParts) {
+        ensure(numParts > 0);
+        ensure(
+            numParts <= n,
+            format("Cannot divide %lld into %lld nonempty parts",
+                n, numParts));
+
         auto delimiters = Array64::randomUnique(numParts - 1, 1, n - 1).sorted();
         delimiters.insert(delimiters.begin(), 0);
         delimiters.push_back(n);
         Array64 res(numParts);
-        for (size_t i = 0; i < numParts; ++i) {
+        for (long long i = 0; i < numParts; ++i) {
             res[i] = delimiters[i + 1] - delimiters[i];
         }
         return res;
     }
 
     template<typename T>
-    TArray<TArray<T>> partition(TArray<T> elements, size_t numParts) {
+    TArray<TArray<T>> partition(TArray<T> elements, int numParts) {
         return partition(
             std::move(elements),
             partition(static_cast<int>(elements.size()), numParts));
     }
 
     template<typename T>
-    TArray<TArray<T>> partitionNonEmpty(TArray<T> elements, size_t numParts) {
+    TArray<TArray<T>> partitionNonEmpty(TArray<T> elements, int numParts) {
         return partition(
             std::move(elements),
             partitionNonEmpty(static_cast<int>(elements.size()), numParts));
@@ -2062,6 +2109,8 @@ public:
 
     template<typename T>
     TArray<TArray<T>> partition(TArray<T> elements, const Array& sizes) {
+        size_t total = std::accumulate(sizes.begin(), sizes.end(), size_t(0));
+        ensure(total == elements.size(), "sum(sizes) != elements.size()");
         elements.shuffle();
         TArray<TArray<T>> res;
         auto it = elements.begin();
@@ -2070,8 +2119,6 @@ public:
             std::copy(it, it + size, std::back_inserter(res.back()));
             it += size;
         }
-
-        ensure(it == elements.end(), "sum(sizes) != elements.size()");
 
         return res;
     }
@@ -2092,7 +2139,7 @@ class ArrayRandom {
 public:
     ArrayRandom() {
         static bool created = false;
-        ensure(!created, "jngen::ArrayRandom should be created only once");
+        ENSURE(!created, "jngen::ArrayRandom should be created only once");
         created = true;
     }
 
@@ -2429,7 +2476,7 @@ class StringRandom {
 public:
     StringRandom() {
         static bool created = false;
-        ensure(!created, "jngen::StringRandom should be created only once");
+        ENSURE(!created, "jngen::StringRandom should be created only once");
         created = true;
     }
 
@@ -2456,7 +2503,7 @@ inline int popcount(long long x) {
 
 inline int trailingZeroes(long long x) {
     int res = 0;
-    ensure(x != 0);
+    ENSURE(x != 0);
     while (!(x&1)) {
         ++res;
         x >>= 1;
@@ -2487,7 +2534,7 @@ inline std::vector<std::string> extendAntiHash(
         HashBase base,
         int count)
 {
-    ensure(count == 2, "Count != 2 is not supported (yet)");
+    ENSURE(count == 2, "Count != 2 is not supported (yet)");
 
     size_t baseLength = chars[0].size();
     for (const auto& s: chars) {
@@ -2524,7 +2571,7 @@ inline std::vector<std::string> extendAntiHash(
     if (count == 2) {
         needForMatch = 5 * pow(double(mod), 0.5);
     } else {
-        ensure(false, "Only count = 2 is supported yet");
+        ENSURE(false, "Only count = 2 is supported yet");
     }
 
     int length = 2;
@@ -2574,7 +2621,7 @@ inline StringPair minimalAntiHashTest(
     for (auto base: bases) {
         ensure(base.first >= 0, "0 < MOD must hold");
         ensure(
-            base.first < (long long)(2e9),
+            base.first <= (long long)(2e9),
             "Modules larger than 2'000'000'000 are not supported yet");
         ensure(
             0 < base.second && base.second < base.first,
@@ -2607,6 +2654,7 @@ inline StringPair minimalAntiHashTest(
 } // namespace detail
 
 std::string StringRandom::thueMorse(int len, char first, char second) {
+    ensure(len >= 0);
     std::string res(len, ' ');
     for (int i = 0; i < len; ++i) {
         res[i] = detail::popcount(i)%2 == 0 ? first : second;
@@ -2615,6 +2663,7 @@ std::string StringRandom::thueMorse(int len, char first, char second) {
 }
 
 std::string StringRandom::abacaba(int len, char first) {
+    ensure(len >= 0);
     std::string res(len, ' ');
     for (int i = 0; i < len; ++i) {
         res[i] = first + detail::trailingZeroes(~i);
@@ -2677,7 +2726,7 @@ void startTest(int testNo) {
     char filename[10];
     std::sprintf(filename, "%d", testNo);
     if (!std::freopen(filename, "w", stdout)) {
-        ensure(false, "Cannot open the file");
+        ensure(false, format("Cannot open the file `%s'", filename));
     }
 }
 
@@ -3112,7 +3161,9 @@ public:
     // order: by labels
     // TODO: think about ordering here
     virtual void setVertexWeights(const WeightArray& weights) {
-        ensure(static_cast<int>(weights.size()) == n());
+        ensure(
+            static_cast<int>(weights.size()) == n(),
+            "The argument of setVertexWeights must have exactly n elements");
         vertexWeights_.resize(n());
         for (int i = 0; i < n(); ++i) {
             vertexWeights_[i] = weights[vertexByLabel(i)];
@@ -3121,7 +3172,7 @@ public:
 
     // v: label
     virtual void setVertexWeight(int v, const Weight& weight) {
-        ensure(v < n());
+        ensure(v < n(), "setVertexWeight");
         v = vertexByLabel(v);
 
         vertexWeights_.extend(v + 1);
@@ -3129,18 +3180,21 @@ public:
     }
 
     virtual void setEdgeWeights(const WeightArray& weights) {
-        ensure(static_cast<int>(weights.size()) == m());
+        ensure(
+            static_cast<int>(weights.size()) == m(),
+            "The argument of setEdgeWeights must have exactly m elements");
         edgeWeights_ = weights;
     }
 
     virtual void setEdgeWeight(size_t index, const Weight& weight) {
-        ensure(static_cast<int>(index) < m());
+        ensure(static_cast<int>(index) < m(), "setEdgeWeight");
         edgeWeights_.extend(index + 1);
         edgeWeights_[index] = weight;
     }
 
     // v: label
     virtual Weight vertexWeight(int v) const {
+        ensure(v < n(), "vertexWeight");
         size_t index = vertexByLabel(v);
         if (index < vertexWeights_.size()) {
             return Weight{};
@@ -3149,6 +3203,7 @@ public:
     }
 
     virtual Weight edgeWeight(size_t index) const {
+        ensure(static_cast<int>(index) < m(), "edgeWeight");
         if (index < edgeWeights_.size()) {
             return Weight{};
         }
@@ -3200,6 +3255,7 @@ protected:
 };
 
 Array GenericGraph::edges(int v) const {
+    ensure(v < n(), "Graph::edges(v)");
     v = vertexByLabel(v);
 
     Array result;
@@ -3222,9 +3278,12 @@ Arrayp GenericGraph::edges() const {
 }
 
 inline void GenericGraph::doShuffle() {
+    // this if is to be removed after all checks pass
     if (vertexLabel_.size() < static_cast<size_t>(n())) {
+        ENSURE(false, "GenericGraph::doShuffle");
         vertexLabel_ = Array::id(n());
     }
+
     vertexLabel_.shuffle();
     vertexByLabel_ = vertexLabel_.inverse();
 
@@ -3252,6 +3311,8 @@ void GenericGraph::addEdgeUnsafe(int u, int v) {
     int id = numEdges_++;
     edges_.emplace_back(u, v);
 
+    ENSURE(u < n() && v < n(), "GenericGraph::addEdgeUnsafe");
+
     adjList_[u].push_back(id);
     if (!directed_ && u != v) {
         adjList_[v].push_back(id);
@@ -3259,17 +3320,19 @@ void GenericGraph::addEdgeUnsafe(int u, int v) {
 }
 
 int GenericGraph::edgeOtherEnd(int v, int edgeId) {
-    ensure(edgeId < numEdges_);
+    ENSURE(edgeId < numEdges_);
     const auto& edge = edges_[edgeId];
     if (edge.first == v) {
         return edge.second;
     }
-    ensure(!directed_);
-    ensure(edge.second == v);
+    ENSURE(!directed_);
+    ENSURE(edge.second == v);
     return edge.first;
 }
 
 void GenericGraph::permuteEdges(const Array& order) {
+    ENSURE(static_cast<int>(order.size()) == m(), "GenericGraph::permuteEdges");
+
     edges_ = edges_.subseq(order);
 
     auto newByOld = order.inverse();
@@ -3286,7 +3349,7 @@ void GenericGraph::permuteEdges(const Array& order) {
 }
 
 void GenericGraph::normalizeEdges() {
-    ensure(
+    ENSURE(
         vertexLabel_ == Array::id(n()),
         "Can call normalizeEdges() only on newly created graph");
 
@@ -3323,7 +3386,7 @@ inline void GenericGraph::addEdge(int u, int v, const Weight& w) {
 namespace {
 
 WeightArray prepareWeightArray(WeightArray a, int requiredSize) {
-    ensure(a.hasNonEmpty(), "INTERNAL ASSERT");
+    ENSURE(a.hasNonEmpty(), "Attempt to print empty weight array");
 
     a.extend(requiredSize);
     int type = a.anyType();
@@ -3462,7 +3525,7 @@ inline void Tree::addEdge(int u, int v, const Weight& w) {
     v = vertexByLabel(v);
 
     int ret = dsu_.link(u, v);
-    ensure(ret, "A cycle appeared in the tree :(");
+    ensure(ret, "A cycle appeared in the tree");
 
     addEdgeUnsafe(u, v);
 
@@ -3482,6 +3545,9 @@ inline Tree Tree::shuffled() const {
 }
 
 Tree Tree::link(int vInThis, const Tree& other, int vInOther) {
+    ensure(vInThis < n(), "Cannot link a nonexistent vertex");
+    ensure(vInOther < other.n(), "Cannot link to a nonexistent vertex");
+
     Tree t(*this);
 
     for (const auto& e: other.edges()) {
@@ -3494,6 +3560,9 @@ Tree Tree::link(int vInThis, const Tree& other, int vInOther) {
 }
 
 Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
+    ensure(vInThis < n(), "Cannot glue a nonexistent vertex");
+    ensure(vInOther < other.n(), "Cannot glue to a nonexistent vertex");
+
     auto newLabel = [vInThis, vInOther, &other, this] (int v) {
         if (v < vInOther) {
             return n() + v;
@@ -3510,20 +3579,21 @@ Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
         t.addEdge(newLabel(e.first), newLabel(e.second));
     }
 
-    assert(t.n() == n() + other.n() - 1);
+    ensure(t.n() == n() + other.n() - 1);
 
     return t;
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
-    ensure(t.isConnected(), "Tree is not connected :(");
+    ensure(t.isConnected(), "Cannot print a tree: it is not connected");
 
     if (mod.printParents) {
-        out << "Printing parents is not supported yet";
+        ensure(false, "Printing parents is not implemented");
     } else if (mod.printEdges) {
         t.doPrintEdges(out, mod);
     } else {
-        ensure(false, "Print mode is unknown");
+        ensure(false, "Print mode is not set, select one of 'printParents'"
+            " or 'printEdges'");
     }
 }
 
@@ -3558,7 +3628,7 @@ inline Tree Tree::randomPrufer(size_t size) {
 
     Tree t;
     for (int v: code) {
-        ensure(!leaves.empty());
+        ENSURE(!leaves.empty());
         int to = *leaves.begin();
         leaves.erase(leaves.begin());
         if (--degree[v] == 1) {
@@ -3568,7 +3638,7 @@ inline Tree Tree::randomPrufer(size_t size) {
         t.addEdge(v, to);
     }
 
-    ensure(leaves.size() == 2u);
+    ENSURE(leaves.size() == 2u);
     t.addEdge(*leaves.begin(), *leaves.rbegin());
     t.normalizeEdges();
     return t;
