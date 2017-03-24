@@ -69,14 +69,13 @@ inline VariableMap parseArguments(const std::vector<std::string>& args) {
                 }
             }
         }
-        if (foundEq) {
-            ensure(
-                !result.named.count(value),
-                "Named arguments must have distinct names");
-            result.named[name] = value;
-        } else {
-            result.positional.push_back(name);
+        if (!foundEq) {
+            value = "1";
         }
+        ensure(
+            !result.count(value),
+            "Named arguments must have distinct names");
+        result.named[name] = value;
     }
 
     result.initialized = true;
