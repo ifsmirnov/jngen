@@ -17,7 +17,7 @@ Default initialized *Random* is seeded with some hardware-generated random value
 #### int next(int l, int r) // also for long long, size\_t, double
 * Returns: random integer in range [l, r]
 #### int wnext(int n, int w) // also for long long, size\_t, double
-* If w > 0, returns max(next(n), ..., next(n)) (w times). If w < 0, returns min(next(n), ..., next(n)) (-w times). If w = 0, similar to next(n).
+* If w > 0, returns max(next(n), ..., next(n)) (w times). If w < 0, returns min(next(n), ..., next(n)) (-w times). If w = 0, same as next(n).
 #### int wnext(int l, int r, int w) // also for long long, size\_t, double
 * Same as wnext(n, w), but the range is [l, r].
 #### std::string next(const std::string& pattern)

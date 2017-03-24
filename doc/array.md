@@ -23,7 +23,7 @@ In this document *Array* will be mostly used instead of *TArray&lt;T>*. Usually 
     * *randomfUnique*: approiximately *O(size log size)* calls of *func*;
     * *randomfAll*: approximately *O(size log size)* calls of *func*, where *size* is the number of generated elements.
 * Example:
-```
+```cpp
 TArray<std::string>::randomf(
 	10,
 	[](const char* pattern) { return rnd.next(pattern); },
@@ -55,7 +55,7 @@ Most of modifiers have two versions: the one which modifies the object itself an
 #### Array Array::sorted() const
 * Sort the array in non-decreasing order.
 
-####  `template&lt;typename Comp> <br> Array& Array::sort(Comp&& comp)`
+####  template&lt;typename Comp> <br> Array& Array::sort(Comp&& comp)
 #### template&lt;typename Comp> <br> Array Array::sorted(Comp&& comp)
 * Sort the array in non-decreasing order using *comp* as a comparator.
 
