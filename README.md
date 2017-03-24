@@ -1,5 +1,11 @@
 ## Jngen: library which makes preparing tests for contest problems easier
 
+* [Overview](#overview)
+* [Examples](#examples)
+* [Reference](#reference)
+
+### Overview
+
 Jngen library provides several handy instruments for generating various kinds of competitive programming problems. It contains (but is not limited to):
 * random number generator with uniform and off-center distribution (known as wnext);
 * command-line options parser, supporting named and positional arguments;
