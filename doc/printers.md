@@ -1,6 +1,6 @@
 ## Printing to ostreams
 
-Tired of writing `cout << a[i] << " \n"[i+1 == n`? We have a solution! Jngen declares ostream operators for all standard containers. Moreover, for Jngen containers there is a bunch of output modifiers which can toggle 0/1 numeration, automatically print the size of the array and something else.
+Tired of writing `cout << a[i] << " \n"[i+1 == n]`? We have a solution! Jngen declares ostream operators for all standard containers. Moreover, for Jngen containers there is a bunch of output modifiers which can toggle 0/1 numeration, automatically print the size of the array and something else.
 
 ### Outline
 As a quick start, try to write something like
@@ -48,7 +48,7 @@ Sometimes it may be more convenient to set modifiers once for the entire program
 setMod().printN().add1();
 // now printN() and add1() modifiers apply to everything being printed
 setMod().reset();
-// global modifier is returned to default state, you should specify local modifiers manually.
+// global modifier has returned to default state, you should specify local modifiers manually
 ```
 
 Note that Jngen does not interact with stl-defined operators. That mean that writing `cout << 123 << endl;` will print *123* regardless of which global modifiers are set. However, printing a std::vector **will** use global modifiers.
