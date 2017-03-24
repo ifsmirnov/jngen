@@ -55,7 +55,7 @@ Most of modifiers have two versions: the one which modifies the object itself an
 #### Array Array::sorted() const
 * Sort the array in non-decreasing order.
 
-#### template&lt;typename Comp> <br> Array& Array::sort(Comp&& comp)
+####  `template&lt;typename Comp> <br> Array& Array::sort(Comp&& comp)`
 #### template&lt;typename Comp> <br> Array Array::sorted(Comp&& comp)
 * Sort the array in non-decreasing order using *comp* as a comparator.
 
