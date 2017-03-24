@@ -39,7 +39,7 @@ public:
             Args... args) -> GenericArray<decltype(func(args...))>
     {
         typedef decltype(func(args...)) T;
-        return GenericArray<T>::randomfAll(size, func, args...);
+        return GenericArray<T>::randomfAll(func, args...);
     }
 } rnda;
 
