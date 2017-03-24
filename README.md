@@ -1,8 +1,8 @@
-## Jngen: library which makes preparing tests for contest problems easier
+## Jngen: preparing tests made simpler
 
 * [Overview](#overview)
-* [Examples](#examples)
 * [Reference](#reference)
+* [Examples](#examples)
 
 ### Overview
 
@@ -15,6 +15,12 @@ Jngen library provides several handy instruments for generating various kinds of
 * generating random geometrical primitives (including large convex polygons) and built-in drawing geometry in SVG; 
 * random primes, partitions, highly composite numbers, anti-hash tests;
 * and else.
+
+### Reference
+* [[random.h] Random numbers generation](/doc/random.md)
+* [[options.h] Parsing command-line options](/doc/getopt.md)
+* [[array.h] Array: wrapper for std::vector](/doc/array.md)
+* [[repr.h, printers.h] Printers and output modifiers](/doc/printers.md)
 
 ### Examples
 Generate a random tree on *n* vertices with a 3-letter string assigned to each edge:
@@ -65,8 +71,3 @@ Generate a connected graph with multi-edges:
 // rndg stands for "random graphs"
 cout << rndg.random(n, m).connected().allowMulti() << endl;
 ```
-### Reference
-* [[random.h] Random numbers generation](/doc/random.md)
-* [[options.h] Parsing command-line options](/doc/getopt.md)
-* [[array.h] Array: wrapper for std::vector](/doc/array.md)
-* [[repr.h, printers.h] Printers and output modifiers](/doc/printers.md)

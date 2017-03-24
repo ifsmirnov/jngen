@@ -11,8 +11,8 @@ int main(int argc, char *argv[]) {
     getPositional(n, m); // n = 10, m = 20
     getNamed(hw, pi); // hw = "hello-world", pi = 3.14
 
-	int otherN;
-	double otherPi;
+    int otherN;
+    double otherPi;
     getOpt(0, otherN); // otherN = 10, 0 is an index
     getOpt("pi", otherPi); // otherPi = 3.14, "pi" is a name
     cout << getOptOr("none", 10) << endl; // 10 as there is no "none" option
