@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <string>
 
@@ -111,7 +112,17 @@ private:
     std::chrono::steady_clock::time_point start_;
 };
 
+template<typename F>
+auto distribution(int n, F&& f) -> std::map<decltype(f()), int> {
+    std::map<decltype(f()), int> dist;
+    for (int i = 0; i < n; ++i) {
+        ++dist[f()];
+    }
+    return dist;
+}
+
 } // namespace jngen
 
 using jngen::format;
 using jngen::ContextTimer;
+using jngen::distribution;
