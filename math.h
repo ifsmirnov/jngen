@@ -167,7 +167,7 @@ public:
         return Array(res.begin(), res.end());
     }
 
-    static Array64 partition(long long n, long long numParts) {
+    static Array64 partition(long long n, int numParts) {
         auto res = partitionNonEmpty(n + numParts, numParts);
         for (auto& x: res) {
             --x;
@@ -181,7 +181,7 @@ public:
         return Array(res.begin(), res.end());
     }
 
-    static Array64 partitionNonEmpty(long long n, long long numParts) {
+    static Array64 partitionNonEmpty(long long n, int numParts) {
         ensure(numParts > 0);
         ensure(
             numParts <= n,

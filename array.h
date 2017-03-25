@@ -465,7 +465,13 @@ TArray<std::pair<T, U>> zip(const TArray<T>& lhs, const TArray<U>& rhs) {
     return result;
 }
 
+template<typename T, typename U>
+TArray<T> arrayCast(const TArray<U>& array) {
+    return TArray<T>(array.begin(), array.end());
+}
+
 } // namespace jngen
 
 using jngen::makeArray;
 using jngen::zip;
+using jngen::arrayCast;
