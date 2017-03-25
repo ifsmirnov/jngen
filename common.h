@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
@@ -83,6 +84,34 @@ std::string format(const std::string& fmt, Args... args) {
     return result;
 }
 
+class ContextTimer {
+public:
+    ContextTimer(const std::string& name) : name_(name) {
+        start_ = std::chrono::steady_clock::now();
+    }
+
+    ContextTimer() : ContextTimer("") {}
+
+    ContextTimer(const ContextTimer&) = delete;
+    ContextTimer& operator=(const ContextTimer&) = delete;
+    ContextTimer(ContextTimer&&) = delete;
+    ContextTimer& operator=(ContextTimer&&) = delete;
+
+    ~ContextTimer() {
+        auto dif = std::chrono::steady_clock::now() - start_;
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dif);
+        if (!name_.empty()) {
+            std::cerr << "[" << name_ << "] ";
+        }
+        std::cerr << ms.count() << " ms\n";
+    }
+
+private:
+    std::string name_;
+    std::chrono::steady_clock::time_point start_;
+};
+
 } // namespace jngen
 
 using jngen::format;
+using jngen::ContextTimer;
