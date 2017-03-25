@@ -153,3 +153,11 @@ BOOST_AUTO_TEST_CASE(wnext) {
     ensure(a[0] == 1);
     ensure(a[9] == 10);
 }
+
+BOOST_AUTO_TEST_CASE(signed_bounds) {
+    BOOST_CHECK(true);
+
+    rnd.next(int(-2e9), int(2e9));
+    rnd.wnext((long long)(-6e18), (long long)(6e18), 10);
+    rnd.wnext((long long)(-6e18), (long long)(6e18), -4);
+}

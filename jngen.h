@@ -1,6 +1,8 @@
 
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 #include <stdexcept>
 #include <string>
 
@@ -82,9 +84,47 @@ std::string format(const std::string& fmt, Args... args) {
     return result;
 }
 
+class ContextTimer {
+public:
+    ContextTimer(const std::string& name) : name_(name) {
+        start_ = std::chrono::steady_clock::now();
+    }
+
+    ContextTimer() : ContextTimer("") {}
+
+    ContextTimer(const ContextTimer&) = delete;
+    ContextTimer& operator=(const ContextTimer&) = delete;
+    ContextTimer(ContextTimer&&) = delete;
+    ContextTimer& operator=(ContextTimer&&) = delete;
+
+    ~ContextTimer() {
+        auto dif = std::chrono::steady_clock::now() - start_;
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(dif);
+        if (!name_.empty()) {
+            std::cerr << "[" << name_ << "] ";
+        }
+        std::cerr << ms.count() << " ms\n";
+    }
+
+private:
+    std::string name_;
+    std::chrono::steady_clock::time_point start_;
+};
+
+template<typename F>
+auto distribution(int n, F&& f) -> std::map<decltype(f()), int> {
+    std::map<decltype(f()), int> dist;
+    for (int i = 0; i < n; ++i) {
+        ++dist[f()];
+    }
+    return dist;
+}
+
 } // namespace jngen
 
 using jngen::format;
+using jngen::ContextTimer;
+using jngen::distribution;
 
 #include <algorithm>
 #include <vector>
@@ -730,11 +770,27 @@ public:
         return nextf() * n;
     }
 
-    int next(int l, int r);
-    long long next(long long l, long long r);
-    size_t next(size_t l, size_t r);
-    double next(double l, double r);
+    int next(int l, int r) {
+        uint32_t n = static_cast<uint32_t>(r) - l + 1;
+        return l + uniformRandom(
+            n, *this, (uint32_t (Random::*)())&Random::next);
+    }
 
+    long long next(long long l, long long r) {
+        uint64_t n = static_cast<uint64_t>(r) - l + 1;
+        return l + uniformRandom(n, *this, &Random::next64);
+    }
+
+    size_t next(size_t l, size_t r) {
+        uint64_t n = static_cast<uint64_t>(r) - l + 1;
+        return l + uniformRandom(n, *this, &Random::next64);
+    }
+
+    double next(double l, double r) {
+        return l + next(r-l);
+    }
+
+    //  implemented in random_inl.h
     int wnext(int n, int w);
     long long wnext(long long n, int w);
     size_t wnext(size_t n, int w);
@@ -780,37 +836,29 @@ public:
     }
 
 private:
-    template<typename T>
-    T baseWnext(T n, int w) {
-        static_assert(std::is_arithmetic<T>::value,
-            "Only numeric types allowed for baseWnext<T>(T n, int w)");
-        if (std::abs(w) <= WNEXT_LIMIT) {
-            T result = next(n);
-            while (w > 0) {
-                result = std::max(result, next(n));
-                --w;
-            }
-            while (w < 0) {
-                result = std::min(result, next(n));
-                ++w;
-            }
-            return result;
+    template<typename T, typename ...Args>
+    T smallWnext(int w, Args... args) {
+        ENSURE(std::abs(w) <= WNEXT_LIMIT);
+        T result = next(args...);
+        while (w > 0) {
+            result = std::max(result, next(args...));
+            --w;
         }
-
-        if (w < 0) {
-            if (std::is_integral<T>::value) {
-                return n - 1 - baseWnext(n, -w);
-            } else {
-                return n - baseWnext(n, -w);
-            }
+        while (w < 0) {
+            result = std::min(result, next(args...));
+            ++w;
         }
+        return result;
+    }
 
-        T upperLimit =
-            std::is_integral<T>::value ? n-1 : n;
-
-        double val = std::pow(nextf(), 1.0 / (w + 1));
-        T result = val * n;
-        return std::max(T(0), std::min(result, upperLimit));
+    double realWnext(int w) {
+        if (w == 0) {
+            return nextf();
+        } else if (w > 0) {
+            return std::pow(nextf(), 1.0 / (w + 1));
+        } else {
+            return 1.0 - std::pow(nextf(), 1.0 / (-w + 1));
+        }
     }
 
     std::mt19937 randomEngine_;
@@ -941,52 +989,81 @@ void registerGen(int argc, char *argv[], int version = 1) {
 
 namespace jngen {
 
-int Random::next(int l, int r) {
-    return l + next(r-l+1);
-}
-
-long long Random::next(long long l, long long r) {
-    return l + next(r-l+1);
-}
-
-size_t Random::next(size_t l, size_t r) {
-    return l + next(r-l+1);
-}
-
-double Random::next(double l, double r) {
-    return l + next(r-l);
-}
-
 int Random::wnext(int n, int w) {
-    return baseWnext(n, w);
+    ensure(n > 0);
+    if (std::abs(w) <= WNEXT_LIMIT) {
+        return smallWnext<int>(w, n);
+    } else {
+        double t = realWnext(w);
+        std::cerr << "t = " << t << std::endl;
+        return n * t;
+    }
 }
 
 long long Random::wnext(long long n, int w) {
-    return baseWnext(n, w);
+    ensure(n > 0);
+    if (std::abs(w) <= WNEXT_LIMIT) {
+        return smallWnext<long long>(w, n);
+    } else {
+        return n * realWnext(w);
+    }
 }
 
 size_t Random::wnext(size_t n, int w) {
-    return baseWnext(n, w);
+    ensure(n > 0);
+    if (std::abs(w) <= WNEXT_LIMIT) {
+        return smallWnext<size_t>(w, n);
+    } else {
+        return n * realWnext(w);
+    }
 }
 
 double Random::wnext(double n, int w) {
-    return baseWnext(n, w);
+    ensure(n >= 0);
+    if (std::abs(w) <= WNEXT_LIMIT) {
+        return smallWnext<double>(w, n);
+    } else {
+        return realWnext(w) * n;
+    }
 }
 
 int Random::wnext(int l, int r, int w) {
-    return l + wnext(r-l+1, w);
+    ensure(l <= r);
+    if (std::abs(w) <= WNEXT_LIMIT) {
+        return smallWnext<int>(w, l, r);
+    } else {
+        uint32_t n = static_cast<uint32_t>(r) - l + 1;
+        return l + static_cast<uint32_t>(n * realWnext(w));
+    }
 }
 
 long long Random::wnext(long long l, long long r, int w) {
-    return l + wnext(r-l+1, w);
+    ensure(l <= r);
+    if (std::abs(w) <= WNEXT_LIMIT) {
+        return smallWnext<long long>(w, l, r);
+    } else {
+        uint64_t n = static_cast<uint64_t>(r) - l + 1;
+        return l + static_cast<uint64_t>(n * realWnext(w));
+    }
 }
 
 size_t Random::wnext(size_t l, size_t r, int w) {
-    return l + wnext(r-l+1, w);
+    ensure(l <= r);
+    if (std::abs(w) <= WNEXT_LIMIT) {
+        return smallWnext<size_t>(w, l, r);
+    } else {
+        uint64_t n = static_cast<uint64_t>(r) - l + 1;
+        return l + static_cast<uint64_t>(n * realWnext(w));
+    }
 }
 
 double Random::wnext(double l, double r, int w) {
-    return l + wnext(r-l, w);
+    ensure(l <= r);
+    if (std::abs(w) <= WNEXT_LIMIT) {
+        return smallWnext<double>(w, l, r);
+    } else {
+        return realWnext(w) * (r - l) + l;
+    }
 }
 
 } // namespace jngen
