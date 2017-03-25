@@ -78,7 +78,7 @@ class VariantImpl<Size, T, Args...> : public VariantImpl<
 {
     using Base = VariantImpl<(sizeof(T) > Size ? sizeof(T) : Size), Args...>;
 
-    constexpr static size_t MY_ID = sizeof...(Args);
+    constexpr static int MY_ID = sizeof...(Args);
 
 protected:
     void doDestroy() {

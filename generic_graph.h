@@ -109,7 +109,7 @@ protected:
 
     // v: edge number
     // returns: edge number
-    int edgeOtherEnd(int v, int edgeId);
+    int edgeOtherEnd(int v, int edgeId) const;
 
     void permuteEdges(const Array& order);
 
@@ -196,7 +196,7 @@ void GenericGraph::addEdgeUnsafe(int u, int v) {
     }
 }
 
-int GenericGraph::edgeOtherEnd(int v, int edgeId) {
+int GenericGraph::edgeOtherEnd(int v, int edgeId) const {
     ENSURE(edgeId < numEdges_);
     const auto& edge = edges_[edgeId];
     if (edge.first == v) {
