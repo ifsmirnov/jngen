@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_CASE(output) {
 BOOST_AUTO_TEST_CASE(weights_and_labelling) {
     rnd.seed(123);
 
-    Graph g = Graph::random(10, 20);
+    Graph g = rndg.random(10, 20);
 
     g.setVertexWeights(Array::random(g.n(), 100));
     g.setEdgeWeights(Arrayf::random(g.m(), 1.5, 1.8));

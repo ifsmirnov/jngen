@@ -20,6 +20,8 @@ public:
 
     void addEdge(int u, int v, const Weight& w = Weight{}) override;
 
+    Array parents(int root) const;
+
     Tree& shuffle();
     Tree shuffled() const;
 
@@ -28,7 +30,7 @@ public:
 
     static Tree bamboo(size_t size);
     static Tree randomPrufer(size_t size);
-    static Tree random(size_t size, double elongation = 1.0);
+    static Tree random(size_t size, int elongation = 0);
     static Tree star(size_t size);
     static Tree caterpillar(size_t length, size_t size);
 };
@@ -47,6 +49,31 @@ inline void Tree::addEdge(int u, int v, const Weight& w) {
     if (!w.empty()) {
         setEdgeWeight(m() - 1, w);
     }
+}
+
+inline Array Tree::parents(int root) const {
+    root = vertexByLabel(root);
+
+    Array parents(n());
+    parents[root] = root;
+    std::vector<int> used(n());
+    std::vector<int> queue{root};
+    for (size_t i = 0; i < queue.size(); ++i) {
+        int v = queue[i];
+        used[v] = true;
+        for (auto to: internalEdges(v)) {
+            if (!used[to]) {
+                parents[to] = v;
+                queue.push_back(to);
+            }
+        }
+    }
+
+    for (auto& x: parents) {
+        x = vertexLabel(x);
+    }
+
+    return parents;
 }
 
 inline Tree& Tree::shuffle() {
@@ -159,10 +186,10 @@ inline Tree Tree::randomPrufer(size_t size) {
     return t;
 }
 
-inline Tree Tree::random(size_t size, double elongation) {
+inline Tree Tree::random(size_t size, int elongation) {
     Tree t;
     for (size_t v = 1; v < size; ++v) {
-        int parent = rnd.tnext<int>(v-1 - (v-1) * elongation, v-1);
+        int parent = rnd.wnext(v, elongation);
         t.addEdge(parent, v);
     }
     t.normalizeEdges();
