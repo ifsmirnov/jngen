@@ -79,6 +79,8 @@ Graphs and trees are printed as following. If *.printN()* and *.printM()* modifi
 All things you will probably ever do with *Weight* or *WeightArray* are shown in this snippet.
 
 ```cpp
+Graph g(3); // construct an empty graph on 3 vertices
+
 graph.setVertexWeight(1, 123);
 int v = graph.vertexWeight(1); // v = 123
 string s = graph.vertexWeight(1); // s = "" because weight holds int now.
@@ -88,10 +90,8 @@ graph.setVertexWeight(2, graph.vertexWeight(1)); // Weight is copyable as wwell.
 Array a{1, 2, 3};
 graph.setVertexWeights(a); // implicit cast from std::vector<T> to WeightArray
 // is supported for each T which can be held by Weight.
-a = graph.vertexWeights(); // ...and also in the opposite direction.
-std::vector<std::string> s{"hello", "world", "42"};
-graph.setVertexWeights(s);
-cout << graph.vertexWeigts() << endl; // WeightArray can be printed as well
+std::vector<std::string> vs{"hello", "world", "42"};
+graph.setVertexWeights(vs);
 ```
 
 *Weight* type is implemented as a *jngen::Variant* class. Basically it is a type-safe union which can store the value of any of the predefined types. *jngen::Variant* is a bit different from *boost::variant* and *std::variant*. The first notable exception is that valueless state is valid, i.e. variant can be empty. The second is that *jngen::Variant* allows implicit casts to any of containing types which allows you writing something like
