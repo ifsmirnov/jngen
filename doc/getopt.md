@@ -19,6 +19,14 @@ int main(int argc, char *argv[]) {
 }
 ```
 
+### Options format
+* Any option not starting with "-" sign is a positional option;
+* positional options are numbered from 0 sequentially (e.g. if there is a positional option, then named, then again positional, two positional options will have indices 0 and 1);
+* option in form "-name=value" is a named option;
+* option in form "-name" is a named option with value equal to 1;
+* single "-" sign is ignored;
+* anything after "&dash;&dash;" (two minus signs) is ignored;
+
 ### Documentation
 #### void parseArgs(int argc, char *argv)
 
