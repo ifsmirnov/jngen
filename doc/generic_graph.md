@@ -36,7 +36,7 @@ Graphs and trees are printed as following. If *.printN()* and *.printM()* modifi
 
 **Output modifiers do not apply to vertex/edge weights**. When you set edge length to 10, you probably don't want it to increase to 11 when you switch to 1-numeration, right?
 
-### Documentation of GenericGraph methods ###
+### Documentation
 
 #### int n() const
 * Returns: the number of vertices in the graph.
@@ -86,7 +86,8 @@ cout << graph.vertexWeight(1) << endl; // 123. Value which is now held is printe
 graph.setVertexWeight(2, graph.vertexWeight(1)); // Weight is copyable as wwell.
 
 Array a{1, 2, 3};
-graph.setVertexWeights(a); // implicit cast from std::vector<T> to WeightArray is supported for each T which can be held by Weight.
+graph.setVertexWeights(a); // implicit cast from std::vector<T> to WeightArray
+// is supported for each T which can be held by Weight.
 a = graph.vertexWeights(); // ...and also in the opposite direction.
 std::vector<std::string> s{"hello", "world", "42"};
 graph.setVertexWeights(s);
