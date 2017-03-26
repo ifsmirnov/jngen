@@ -21,6 +21,7 @@ Jngen library provides several handy instruments for generating various kinds of
 * [[options.h] Parsing command-line options](/doc/getopt.md)
 * [[array.h] Array: wrapper for std::vector](/doc/array.md)
 * [[repr.h, printers.h] Printers and output modifiers](/doc/printers.md)
+* [[generic_graph.h] Graphs and trees: bacics](/doc/generic_graph.md)
 
 ### Examples
 Generate a random tree on *n* vertices with a 3-letter string assigned to each edge:
