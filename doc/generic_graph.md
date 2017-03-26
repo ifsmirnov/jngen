@@ -91,6 +91,7 @@ graph.setVertexWeights(a); // implicit cast from std::vector<T> to WeightArray
 a = graph.vertexWeights(); // ...and also in the opposite direction.
 std::vector<std::string> s{"hello", "world", "42"};
 graph.setVertexWeights(s);
+cout << graph.vertexWeigts() << endl; // WeightArray can be printed as well
 ```
 
 *Weight* type is implemented as a *jngen::Variant* class. Basically it is a type-safe union which can store the value of any of the predefined types. *jngen::Variant* is a bit different from *boost::variant* and *std::variant*. The first notable exception is that valueless state is valid, i.e. variant can be empty. The second is that *jngen::Variant* allows implicit casts to any of containing types which allows you writing something like
