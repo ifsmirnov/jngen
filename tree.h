@@ -20,6 +20,8 @@ public:
 
     void addEdge(int u, int v, const Weight& w = Weight{}) override;
 
+    Array parents(int root) const;
+
     Tree& shuffle();
     Tree shuffled() const;
 
@@ -28,7 +30,7 @@ public:
 
     static Tree bamboo(size_t size);
     static Tree randomPrufer(size_t size);
-    static Tree random(size_t size, double elongation = 1.0);
+    static Tree random(size_t size, int elongation = 0);
     static Tree star(size_t size);
     static Tree caterpillar(size_t length, size_t size);
 };
@@ -40,13 +42,38 @@ inline void Tree::addEdge(int u, int v, const Weight& w) {
     v = vertexByLabel(v);
 
     int ret = dsu_.link(u, v);
-    ensure(ret, "A cycle appeared in the tree :(");
+    ensure(ret, "A cycle appeared in the tree");
 
     addEdgeUnsafe(u, v);
 
     if (!w.empty()) {
         setEdgeWeight(m() - 1, w);
     }
+}
+
+inline Array Tree::parents(int root) const {
+    root = vertexByLabel(root);
+
+    Array parents(n());
+    parents[root] = root;
+    std::vector<int> used(n());
+    std::vector<int> queue{root};
+    for (size_t i = 0; i < queue.size(); ++i) {
+        int v = queue[i];
+        used[v] = true;
+        for (auto to: internalEdges(v)) {
+            if (!used[to]) {
+                parents[to] = v;
+                queue.push_back(to);
+            }
+        }
+    }
+
+    for (auto& x: parents) {
+        x = vertexLabel(x);
+    }
+
+    return parents;
 }
 
 inline Tree& Tree::shuffle() {
@@ -60,6 +87,9 @@ inline Tree Tree::shuffled() const {
 }
 
 Tree Tree::link(int vInThis, const Tree& other, int vInOther) {
+    ensure(vInThis < n(), "Cannot link a nonexistent vertex");
+    ensure(vInOther < other.n(), "Cannot link to a nonexistent vertex");
+
     Tree t(*this);
 
     for (const auto& e: other.edges()) {
@@ -72,6 +102,9 @@ Tree Tree::link(int vInThis, const Tree& other, int vInOther) {
 }
 
 Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
+    ensure(vInThis < n(), "Cannot glue a nonexistent vertex");
+    ensure(vInOther < other.n(), "Cannot glue to a nonexistent vertex");
+
     auto newLabel = [vInThis, vInOther, &other, this] (int v) {
         if (v < vInOther) {
             return n() + v;
@@ -88,20 +121,21 @@ Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
         t.addEdge(newLabel(e.first), newLabel(e.second));
     }
 
-    assert(t.n() == n() + other.n() - 1);
+    ensure(t.n() == n() + other.n() - 1);
 
     return t;
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
-    ensure(t.isConnected(), "Tree is not connected :(");
+    ensure(t.isConnected(), "Cannot print a tree: it is not connected");
 
     if (mod.printParents) {
-        out << "Printing parents is not supported yet";
+        ensure(false, "Printing parents is not implemented");
     } else if (mod.printEdges) {
         t.doPrintEdges(out, mod);
     } else {
-        ensure(false, "Print mode is unknown");
+        ensure(false, "Print mode is not set, select one of 'printParents'"
+            " or 'printEdges'");
     }
 }
 
@@ -136,7 +170,7 @@ inline Tree Tree::randomPrufer(size_t size) {
 
     Tree t;
     for (int v: code) {
-        ensure(!leaves.empty());
+        ENSURE(!leaves.empty());
         int to = *leaves.begin();
         leaves.erase(leaves.begin());
         if (--degree[v] == 1) {
@@ -146,16 +180,16 @@ inline Tree Tree::randomPrufer(size_t size) {
         t.addEdge(v, to);
     }
 
-    ensure(leaves.size() == 2u);
+    ENSURE(leaves.size() == 2u);
     t.addEdge(*leaves.begin(), *leaves.rbegin());
     t.normalizeEdges();
     return t;
 }
 
-inline Tree Tree::random(size_t size, double elongation) {
+inline Tree Tree::random(size_t size, int elongation) {
     Tree t;
     for (size_t v = 1; v < size; ++v) {
-        int parent = rnd.tnext<int>(v-1 - (v-1) * elongation, v-1);
+        int parent = rnd.wnext(v, elongation);
         t.addEdge(parent, v);
     }
     t.normalizeEdges();

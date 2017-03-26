@@ -38,7 +38,9 @@ public:
     // order: by labels
     // TODO: think about ordering here
     virtual void setVertexWeights(const WeightArray& weights) {
-        ensure(static_cast<int>(weights.size()) == n());
+        ensure(
+            static_cast<int>(weights.size()) == n(),
+            "The argument of setVertexWeights must have exactly n elements");
         vertexWeights_.resize(n());
         for (int i = 0; i < n(); ++i) {
             vertexWeights_[i] = weights[vertexByLabel(i)];
@@ -47,7 +49,7 @@ public:
 
     // v: label
     virtual void setVertexWeight(int v, const Weight& weight) {
-        ensure(v < n());
+        ensure(v < n(), "setVertexWeight");
         v = vertexByLabel(v);
 
         vertexWeights_.extend(v + 1);
@@ -55,27 +57,31 @@ public:
     }
 
     virtual void setEdgeWeights(const WeightArray& weights) {
-        ensure(static_cast<int>(weights.size()) == m());
+        ensure(
+            static_cast<int>(weights.size()) == m(),
+            "The argument of setEdgeWeights must have exactly m elements");
         edgeWeights_ = weights;
     }
 
     virtual void setEdgeWeight(size_t index, const Weight& weight) {
-        ensure(static_cast<int>(index) < m());
+        ensure(static_cast<int>(index) < m(), "setEdgeWeight");
         edgeWeights_.extend(index + 1);
         edgeWeights_[index] = weight;
     }
 
     // v: label
     virtual Weight vertexWeight(int v) const {
+        ensure(v < n(), "vertexWeight");
         size_t index = vertexByLabel(v);
-        if (index < vertexWeights_.size()) {
+        if (index >= vertexWeights_.size()) {
             return Weight{};
         }
         return vertexWeights_[index];
     }
 
     virtual Weight edgeWeight(size_t index) const {
-        if (index < edgeWeights_.size()) {
+        ensure(static_cast<int>(index) < m(), "edgeWeight");
+        if (index >= edgeWeights_.size()) {
             return Weight{};
         }
         return edgeWeights_[index];
@@ -98,12 +104,16 @@ protected:
 
     void extend(size_t size);
 
-    // u, v: edge numbers
+    // v: vertex number
+    // returns: array<number>
+    Array internalEdges(int v) const;
+
+    // u, v: vertex numbers
     void addEdgeUnsafe(int u, int v);
 
-    // v: edge number
-    // returns: edge number
-    int edgeOtherEnd(int v, int edgeId);
+    // v: vertex number
+    // returns: vertex number
+    int edgeOtherEnd(int v, int edgeId) const;
 
     void permuteEdges(const Array& order);
 
@@ -126,15 +136,14 @@ protected:
 };
 
 Array GenericGraph::edges(int v) const {
+    ensure(v < n(), "Graph::edges(v)");
     v = vertexByLabel(v);
 
-    Array result;
-    std::transform(
-        adjList_[v].begin(),
-        adjList_[v].end(),
-        std::back_inserter(result),
-        [this, v](int x) { return vertexLabel(edgeOtherEnd(v, x)); }
-    );
+    Array result = internalEdges(v);
+    for (auto& x: result) {
+        x = vertexLabel(x);
+    }
+
     return result;
 }
 
@@ -148,9 +157,12 @@ Arrayp GenericGraph::edges() const {
 }
 
 inline void GenericGraph::doShuffle() {
+    // this if is to be removed after all checks pass
     if (vertexLabel_.size() < static_cast<size_t>(n())) {
+        ENSURE(false, "GenericGraph::doShuffle");
         vertexLabel_ = Array::id(n());
     }
+
     vertexLabel_.shuffle();
     vertexByLabel_ = vertexLabel_.inverse();
 
@@ -174,9 +186,22 @@ inline void GenericGraph::extend(size_t size) {
     }
 }
 
+Array GenericGraph::internalEdges(int v) const {
+    Array result;
+    std::transform(
+        adjList_[v].begin(),
+        adjList_[v].end(),
+        std::back_inserter(result),
+        [this, v](int x) { return edgeOtherEnd(v, x); }
+    );
+    return result;
+}
+
 void GenericGraph::addEdgeUnsafe(int u, int v) {
     int id = numEdges_++;
     edges_.emplace_back(u, v);
+
+    ENSURE(u < n() && v < n(), "GenericGraph::addEdgeUnsafe");
 
     adjList_[u].push_back(id);
     if (!directed_ && u != v) {
@@ -184,18 +209,20 @@ void GenericGraph::addEdgeUnsafe(int u, int v) {
     }
 }
 
-int GenericGraph::edgeOtherEnd(int v, int edgeId) {
-    ensure(edgeId < numEdges_);
+int GenericGraph::edgeOtherEnd(int v, int edgeId) const {
+    ENSURE(edgeId < numEdges_);
     const auto& edge = edges_[edgeId];
     if (edge.first == v) {
         return edge.second;
     }
-    ensure(!directed_);
-    ensure(edge.second == v);
+    ENSURE(!directed_);
+    ENSURE(edge.second == v);
     return edge.first;
 }
 
 void GenericGraph::permuteEdges(const Array& order) {
+    ENSURE(static_cast<int>(order.size()) == m(), "GenericGraph::permuteEdges");
+
     edges_ = edges_.subseq(order);
 
     auto newByOld = order.inverse();
@@ -212,7 +239,7 @@ void GenericGraph::permuteEdges(const Array& order) {
 }
 
 void GenericGraph::normalizeEdges() {
-    ensure(
+    ENSURE(
         vertexLabel_ == Array::id(n()),
         "Can call normalizeEdges() only on newly created graph");
 
@@ -249,7 +276,7 @@ inline void GenericGraph::addEdge(int u, int v, const Weight& w) {
 namespace {
 
 WeightArray prepareWeightArray(WeightArray a, int requiredSize) {
-    ensure(a.hasNonEmpty(), "INTERNAL ASSERT");
+    ENSURE(a.hasNonEmpty(), "Attempt to print empty weight array");
 
     a.extend(requiredSize);
     int type = a.anyType();

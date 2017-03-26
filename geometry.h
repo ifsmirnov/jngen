@@ -274,7 +274,9 @@ public:
 
         return res.subseq(Array::id(res.size()).choice(n).sort());
     }
-} rndg;
+};
+
+GeometryRandom rndgeo;
 
 } // namespace jngen
 
@@ -284,7 +286,7 @@ using jngen::Pointf;
 using jngen::Polygon;
 using jngen::Polygonf;
 
-using jngen::rndg;
+using jngen::rndgeo;
 
 using jngen::eps;
 using jngen::setEps;

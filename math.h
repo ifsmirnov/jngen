@@ -119,6 +119,8 @@ bool isPrime(long long n) {
     const static std::vector<long long> LONG_LONG_WITNESSES
         {2, 3, 5, 7, 11, 13, 17, 19, 23};
 
+    ensure(n > 0, "isPrime() is undefined for negative numbers");
+
     if (n < std::numeric_limits<int>::max()) {
         return detail::millerRabinTest<int>(n, INT_WITNESSES);
     } else {
@@ -135,6 +137,7 @@ public:
     }
 
     static long long randomPrime(long long n) {
+        ensure(n > 2, format("There are no primes below %lld", n));
         return randomPrime(2, n - 1);
     }
 
@@ -158,46 +161,52 @@ public:
         }
     }
 
-    static Array partition(int n, size_t numParts) {
-        auto res = partition(static_cast<long long>(n), numParts);
+    static Array partition(int n, int numParts) {
+        auto res = partition(
+            static_cast<long long>(n), static_cast<long long>(numParts));
         return Array(res.begin(), res.end());
     }
 
-    static Array64 partition(long long n, size_t numParts) {
-        auto res = partitionNonEmpty(
-            static_cast<long long>(n + numParts), numParts);
+    static Array64 partition(long long n, int numParts) {
+        auto res = partitionNonEmpty(n + numParts, numParts);
         for (auto& x: res) {
             --x;
         }
         return res;
     }
 
-    static Array partitionNonEmpty(int n, size_t numParts) {
-        auto res = partitionNonEmpty(static_cast<long long>(n), numParts);
+    static Array partitionNonEmpty(int n, int numParts) {
+        auto res = partitionNonEmpty(
+            static_cast<long long>(n), static_cast<long long>(numParts));
         return Array(res.begin(), res.end());
     }
 
-    static Array64 partitionNonEmpty(long long n, size_t numParts) {
-        ensure(static_cast<long long>(numParts) <= n);
+    static Array64 partitionNonEmpty(long long n, int numParts) {
+        ensure(numParts > 0);
+        ensure(
+            numParts <= n,
+            format("Cannot divide %lld into %lld nonempty parts",
+                n, numParts));
+
         auto delimiters = Array64::randomUnique(numParts - 1, 1, n - 1).sorted();
         delimiters.insert(delimiters.begin(), 0);
         delimiters.push_back(n);
         Array64 res(numParts);
-        for (size_t i = 0; i < numParts; ++i) {
+        for (long long i = 0; i < numParts; ++i) {
             res[i] = delimiters[i + 1] - delimiters[i];
         }
         return res;
     }
 
     template<typename T>
-    TArray<TArray<T>> partition(TArray<T> elements, size_t numParts) {
+    TArray<TArray<T>> partition(TArray<T> elements, int numParts) {
         return partition(
             std::move(elements),
             partition(static_cast<int>(elements.size()), numParts));
     }
 
     template<typename T>
-    TArray<TArray<T>> partitionNonEmpty(TArray<T> elements, size_t numParts) {
+    TArray<TArray<T>> partitionNonEmpty(TArray<T> elements, int numParts) {
         return partition(
             std::move(elements),
             partitionNonEmpty(static_cast<int>(elements.size()), numParts));
@@ -205,6 +214,8 @@ public:
 
     template<typename T>
     TArray<TArray<T>> partition(TArray<T> elements, const Array& sizes) {
+        size_t total = std::accumulate(sizes.begin(), sizes.end(), size_t(0));
+        ensure(total == elements.size(), "sum(sizes) != elements.size()");
         elements.shuffle();
         TArray<TArray<T>> res;
         auto it = elements.begin();
@@ -213,8 +224,6 @@ public:
             std::copy(it, it + size, std::back_inserter(res.back()));
             it += size;
         }
-
-        ensure(it == elements.end(), "sum(sizes) != elements.size()");
 
         return res;
     }

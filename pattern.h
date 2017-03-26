@@ -95,7 +95,7 @@ private:
 
     // TODO: catch overflows
     int readInt() {
-        ensure(std::isdigit(peek()));
+        ENSURE(std::isdigit(peek()));
 
         int res = 0;
         while (std::isdigit(peek())) {
@@ -105,7 +105,7 @@ private:
     }
 
     std::pair<int, int> parseRange() {
-        ensure(control(next()) == '{');
+        ENSURE(control(next()) == '{');
 
         int from = readInt();
 
@@ -114,10 +114,10 @@ private:
             return {from, from};
         } else if (nxt == ',' || nxt == '-') {
             int to = readInt();
-            ensure(control(next()) == '}');
+            ENSURE(control(next()) == '}');
             return {from, to};
         } else {
-            ensure(false, "cannot parseRange");
+            ensure(false, "cannot parse character range");
         }
     }
 
@@ -141,13 +141,13 @@ private:
         bool inRange = false;
         while (control(peek()) != ']') {
             char c = next(); // buggy on cases like [a-}]
-            ensure(c != -1);
+            ENSURE(c != -1);
 
             if (c == '-') {
-                ensure(!inRange);
+                ensure(!inRange, "invalid pattern");
                 inRange = true;
             } else if (inRange) {
-                ensure(c >= last);
+                ensure(c >= last, "invalid pattern");
                 for (char i = last; i <= c; ++i) {
                     allowed.push_back(i);
                 }
@@ -161,9 +161,9 @@ private:
             }
         }
 
-        ensure(control(next()) == ']');
+        ENSURE(control(next()) == ']');
 
-        ensure(!inRange);
+        ENSURE(!inRange);
         if (last != -1) {
             allowed.push_back(last);
         }
@@ -191,7 +191,7 @@ private:
                 if (control(nxt) == '[') {
                     chars = parseBlock();
                 } else {
-                    ensure(!control(nxt));
+                    ENSURE(!control(nxt));
                     chars = {static_cast<char>(nxt)};
                 }
 
@@ -222,11 +222,11 @@ Pattern::Pattern(const std::string& s) {
 
 std::string Pattern::next(std::function<int(int)> rnd) const {
     if (isOrPattern) {
-        ensure(!children.empty());
+        ENSURE(!children.empty());
         return children[rnd(children.size())].next(rnd);
     }
 
-    ensure( (!!chars.empty()) ^ (!!children.empty()) );
+    ENSURE( (!!chars.empty()) ^ (!!children.empty()) );
 
     int count;
     if (min == max) {

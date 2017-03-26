@@ -88,7 +88,7 @@ printValue(out, value, OutputModifier{}, PTagMax{})
 JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
     // can't just write 'false' here because assertion always fails
-    static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
+//     static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
     (void)out;
     (void)mod;
     (void)t;
@@ -217,7 +217,9 @@ auto operator<<(std::ostream& out, const T& t)
             std::ostream&
         >::type
 {
-    jngen::printValue(out, t, jngen::defaultMod, jngen::PTagMax{});
+    // not jngen::printValue, because relying on ADL here for printers declared
+    // later (see, e.g., http://stackoverflow.com/questions/42833134)
+    printValue(out, t, jngen::defaultMod, jngen::PTagMax{});
     return out;
 }
 

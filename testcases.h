@@ -1,7 +1,10 @@
 #pragma once
 
+#include "array.h"
 #include "common.h"
+#include "math.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 
@@ -23,7 +26,7 @@ void startTest(int testNo) {
     char filename[10];
     std::sprintf(filename, "%d", testNo);
     if (!std::freopen(filename, "w", stdout)) {
-        ensure(false, "Cannot open the file");
+        ensure(false, format("Cannot open the file `%s'", filename));
     }
 }
 
@@ -39,7 +42,62 @@ void setNextTestNumber(int testNo) {
     nextTestNo = testNo;
 }
 
+Array64 randomTestSizes(
+    long long totalSize,
+    int count,
+    long long minSize,
+    long long maxSize,
+    const Array64& predefined)
+{
+    for (auto x: predefined) {
+        totalSize -= x;
+    }
+    ensure(totalSize >= 0, "Sum of predefined test sizes exceeds total size");
+    ensure(count * minSize <= totalSize, "minSize is too large");
+    ensure(minSize <= maxSize);
+
+    auto partition = rndm.partition(totalSize - count * minSize, count)
+        .sort().reverse();
+    long long remaining = 0;
+
+    long long localMax = maxSize - minSize;
+    for (auto& x: partition) {
+        if (x > localMax) {
+            remaining += x - localMax;
+            x = localMax;
+        } else {
+            long long add = std::min(remaining, localMax - x);
+            x += add;
+            remaining -= add;
+        }
+
+        x += minSize;
+    }
+
+    ensure(remaining == 0, "maxSize is too small");
+
+    return (partition + predefined).shuffled();
+}
+
+Array randomTestSizes(
+    int totalSize,
+    int count,
+    int minSize,
+    int maxSize,
+    const Array& predefined)
+{
+    return arrayCast<int>(randomTestSizes(
+        static_cast<long long>(totalSize),
+        count,
+        static_cast<long long>(minSize),
+        static_cast<long long>(maxSize),
+        arrayCast<long long>(predefined)
+    ));
+}
+
 } // namespace jngen
 
 using jngen::startTest;
 using jngen::setNextTestNumber;
+
+using jngen::randomTestSizes;

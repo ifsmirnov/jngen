@@ -18,9 +18,26 @@ namespace jngen {
 
 static void assertRandomEngineConsistency() {
     std::mt19937 engine(1234);
-    ensure(engine() == 822569775);
-    ensure(engine() == 2137449171);
-    ensure(engine() == 2671936806);
+    ENSURE(engine() == 822569775,
+        "std::mt19937 doesn't conform to the C++ standard");
+    ENSURE(engine() == 2137449171,
+        "std::mt19937 doesn't conform to the C++ standard");
+    ENSURE(engine() == 2671936806,
+        "std::mt19937 doesn't conform to the C++ standard");
+}
+
+static void assertIntegerSizes() {
+    static_assert(
+        std::numeric_limits<unsigned char>::max() == 255,
+        "max(unsigned char) != 255");
+    static_assert(sizeof(int) == 4, "sizeof(int) != 4");
+    static_assert(sizeof(long long) == 8, "sizeof(int) != 8");
+    static_assert(
+        sizeof(size_t) == 4 || sizeof(size_t) == 8,
+        "sizeof(size_t) is neither 4 nor 8");
+    static_assert(
+        sizeof(std::size_t) == sizeof(size_t),
+        "sizeof(size_t) != sizeof(std::size_t)");
 }
 
 class Random;
@@ -69,6 +86,7 @@ class Random {
 public:
     Random() {
         assertRandomEngineConsistency();
+        assertIntegerSizes();
         seed(std::random_device{}());
     }
 
@@ -115,11 +133,27 @@ public:
         return nextf() * n;
     }
 
-    int next(int l, int r);
-    long long next(long long l, long long r);
-    size_t next(size_t l, size_t r);
-    double next(double l, double r);
+    int next(int l, int r) {
+        uint32_t n = static_cast<uint32_t>(r) - l + 1;
+        return l + uniformRandom(
+            n, *this, (uint32_t (Random::*)())&Random::next);
+    }
 
+    long long next(long long l, long long r) {
+        uint64_t n = static_cast<uint64_t>(r) - l + 1;
+        return l + uniformRandom(n, *this, &Random::next64);
+    }
+
+    size_t next(size_t l, size_t r) {
+        uint64_t n = static_cast<uint64_t>(r) - l + 1;
+        return l + uniformRandom(n, *this, &Random::next64);
+    }
+
+    double next(double l, double r) {
+        return l + next(r-l);
+    }
+
+    //  implemented in random_inl.h
     int wnext(int n, int w);
     long long wnext(long long n, int w);
     size_t wnext(size_t n, int w);
@@ -165,37 +199,29 @@ public:
     }
 
 private:
-    template<typename T>
-    T baseWnext(T n, int w) {
-        static_assert(std::is_arithmetic<T>::value,
-            "Only numeric types allowed for baseWnext<T>(T n, int w)");
-        if (std::abs(w) <= WNEXT_LIMIT) {
-            T result = next(n);
-            while (w > 0) {
-                result = std::max(result, next(n));
-                --w;
-            }
-            while (w < 0) {
-                result = std::min(result, next(n));
-                ++w;
-            }
-            return result;
+    template<typename T, typename ...Args>
+    T smallWnext(int w, Args... args) {
+        ENSURE(std::abs(w) <= WNEXT_LIMIT);
+        T result = next(args...);
+        while (w > 0) {
+            result = std::max(result, next(args...));
+            --w;
         }
-
-        if (w < 0) {
-            if (std::is_integral<T>::value) {
-                return n - 1 - baseWnext(n, -w);
-            } else {
-                return n - baseWnext(n, -w);
-            }
+        while (w < 0) {
+            result = std::min(result, next(args...));
+            ++w;
         }
+        return result;
+    }
 
-        T upperLimit =
-            std::is_integral<T>::value ? n-1 : n;
-
-        double val = std::pow(nextf(), 1.0 / (w + 1));
-        T result = val * n;
-        return std::max(T(0), std::min(result, upperLimit));
+    double realWnext(int w) {
+        if (w == 0) {
+            return nextf();
+        } else if (w > 0) {
+            return std::pow(nextf(), 1.0 / (w + 1));
+        } else {
+            return 1.0 - std::pow(nextf(), 1.0 / (-w + 1));
+        }
     }
 
     std::mt19937 randomEngine_;

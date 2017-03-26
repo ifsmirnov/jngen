@@ -9,7 +9,7 @@ class ArrayRandom {
 public:
     ArrayRandom() {
         static bool created = false;
-        ensure(!created, "jngen::ArrayRandom should be created only once");
+        ENSURE(!created, "jngen::ArrayRandom should be created only once");
         created = true;
     }
 
@@ -39,7 +39,7 @@ public:
             Args... args) -> GenericArray<decltype(func(args...))>
     {
         typedef decltype(func(args...)) T;
-        return GenericArray<T>::randomfAll(size, func, args...);
+        return GenericArray<T>::randomfAll(func, args...);
     }
 } rnda;
 
