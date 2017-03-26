@@ -2112,8 +2112,15 @@ bool isPrime(long long n) {
     const static std::vector<int> INT_WITNESSES{2, 7, 61};
     const static std::vector<long long> LONG_LONG_WITNESSES
         {2, 3, 5, 7, 11, 13, 17, 19, 23};
+    // todo: experiment with base
+    // 2, 325, 9375, 28178, 450775, 9780504, and 1795265022
+    // (guaranteed for all integers < 2^64)
 
+    // first strong pseudoprime to i64 bases is 3825123056546413051 ~= 3.8e18
     ensure(n > 0, "isPrime() is undefined for negative numbers");
+    ensure(
+        n <= static_cast<long long>(3.8e18),
+        "isPrime() supports only numbers not greater than 3.8 * 10^18");
 
     if (n < std::numeric_limits<int>::max()) {
         return detail::millerRabinTest<int>(n, INT_WITNESSES);
@@ -2137,22 +2144,30 @@ public:
 
     static long long randomPrime(long long l, long long r) {
         ensure(l <= r);
-        int retries = std::log(l) * std::log(l);
-        while (true) {
-            long long x = rnd.next(l, r);
-            if (isPrime(x)) {
-                return x;
+        constexpr static long long SIMPLE_INTERVAL_BOUND = 50;
+        if (l + SIMPLE_INTERVAL_BOUND >= r) {
+            for (long long x: Array64::id(r-l+1, l).shuffled()) {
+                if (isPrime(x)) {
+                    return x;
+                }
             }
+        } else {
+            int retries = std::log(r) * 20;
+            while (retries-- > 0) {
+                long long x = rnd.next(l, r);
+                if (isPrime(x)) {
+                    return x;
+                }
 
-            if (--retries == 0) {
-                ensure(
-                    false,
-                    format(
-                        "There are no primes between %lld and %lld",
-                        l, r)
-                );
             }
         }
+
+        ensure(
+            false,
+            format(
+                "There are no primes between %lld and %lld",
+                l, r)
+        );
     }
 
     static Array partition(int n, int numParts) {
