@@ -1,5 +1,9 @@
 ## Graph generation
 
+* [rndg documentation](#rndg-documentation)
+* [Modifiers](#modifiers)
+* [Graph methods](#graph-methods)
+
 This page is about *Graph* class and graph generators. To see the list of generic graphs methods please visit [this page](/generic_graph.md).
 
 Graphs are generated with a special class *GraphRandom*, specifically with its global instance *rndg* (stands for RaNDom Graphs). The source of randomness is *rnd*.
