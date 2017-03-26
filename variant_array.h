@@ -5,6 +5,7 @@
 #include "variant.h"
 
 #include <iterator>
+#include <vector>
 #include <type_traits>
 
 namespace jngen {
@@ -25,13 +26,13 @@ public:
 
     template<typename T, typename = typename std::enable_if<
         BaseVariant::template hasType<T>()>::type>
-    VariantArray(const GenericArray<T>& other) {
+    VariantArray(const std::vector<T>& other) {
         std::copy(other.begin(), other.end(), std::back_inserter(*this));
     }
 
     template<typename T, typename = typename std::enable_if<
         BaseVariant::template hasType<T>()>::type>
-    VariantArray(GenericArray<T>&& other) {
+    VariantArray(std::vector<T>&& other) {
         std::move(other.begin(), other.end(), std::back_inserter(*this));
         GenericArray<T>().swap(other);
     }

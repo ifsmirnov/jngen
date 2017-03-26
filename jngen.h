@@ -3202,6 +3202,7 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Variant<Args...>, 5) {
 
 
 #include <iterator>
+#include <vector>
 #include <type_traits>
 
 namespace jngen {
@@ -3222,13 +3223,13 @@ public:
 
     template<typename T, typename = typename std::enable_if<
         BaseVariant::template hasType<T>()>::type>
-    VariantArray(const GenericArray<T>& other) {
+    VariantArray(const std::vector<T>& other) {
         std::copy(other.begin(), other.end(), std::back_inserter(*this));
     }
 
     template<typename T, typename = typename std::enable_if<
         BaseVariant::template hasType<T>()>::type>
-    VariantArray(GenericArray<T>&& other) {
+    VariantArray(std::vector<T>&& other) {
         std::move(other.begin(), other.end(), std::back_inserter(*this));
         GenericArray<T>().swap(other);
     }
@@ -3353,7 +3354,7 @@ public:
     virtual Weight vertexWeight(int v) const {
         ensure(v < n(), "vertexWeight");
         size_t index = vertexByLabel(v);
-        if (index < vertexWeights_.size()) {
+        if (index >= vertexWeights_.size()) {
             return Weight{};
         }
         return vertexWeights_[index];
@@ -3361,7 +3362,7 @@ public:
 
     virtual Weight edgeWeight(size_t index) const {
         ensure(static_cast<int>(index) < m(), "edgeWeight");
-        if (index < edgeWeights_.size()) {
+        if (index >= edgeWeights_.size()) {
             return Weight{};
         }
         return edgeWeights_[index];

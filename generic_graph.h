@@ -73,7 +73,7 @@ public:
     virtual Weight vertexWeight(int v) const {
         ensure(v < n(), "vertexWeight");
         size_t index = vertexByLabel(v);
-        if (index < vertexWeights_.size()) {
+        if (index >= vertexWeights_.size()) {
             return Weight{};
         }
         return vertexWeights_[index];
@@ -81,7 +81,7 @@ public:
 
     virtual Weight edgeWeight(size_t index) const {
         ensure(static_cast<int>(index) < m(), "edgeWeight");
-        if (index < edgeWeights_.size()) {
+        if (index >= edgeWeights_.size()) {
             return Weight{};
         }
         return edgeWeights_[index];
