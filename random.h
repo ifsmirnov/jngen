@@ -53,7 +53,7 @@ protected:
 template<typename T>
 struct TypedRandom;
 
-uint64_t maskForBound(uint64_t bound) {
+inline uint64_t maskForBound(uint64_t bound) {
     --bound;
     uint64_t mask = ~0;
     if ((mask >> 32) >= bound) mask >>= 32;
@@ -228,7 +228,7 @@ private:
     constexpr static int WNEXT_LIMIT = 8;
 };
 
-Random rnd;
+JNGEN_EXTERN Random rnd;
 
 template<>
 struct TypedRandom<int> : public BaseTypedRandom {
@@ -277,10 +277,14 @@ struct RandomPairTraits {
     const bool distinct;
 };
 
+#ifdef JNGEN_DECLARE_ONLY
+extern RandomPairTraits opair, dpair, odpair, dopair;
+#else
 RandomPairTraits opair{true, false};
 RandomPairTraits dpair{false, true};
 RandomPairTraits odpair{true, true};
 RandomPairTraits dopair{true, true};
+#endif
 
 template<>
 struct TypedRandom<std::pair<int, int>> : public BaseTypedRandom {
@@ -330,7 +334,7 @@ using jngen::dpair;
 using jngen::dopair;
 using jngen::odpair;
 
-void registerGen(int argc, char *argv[], int version = 1) {
+inline void registerGen(int argc, char *argv[], int version = 1) {
     (void)version; // unused, only for testlib.h compatibility
 
     std::vector<uint32_t> seed;
@@ -345,6 +349,8 @@ void registerGen(int argc, char *argv[], int version = 1) {
     rnd.seed(seed);
 }
 
+#ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_RANDOM_INL_H
 #include "random_inl.h"
 #undef JNGEN_INCLUDE_RANDOM_INL_H
+#endif // JNGEN_DECLARE_ONLY

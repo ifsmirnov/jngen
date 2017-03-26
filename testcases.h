@@ -10,7 +10,7 @@
 
 namespace jngen {
 
-int getInitialTestNo() {
+inline int getInitialTestNo() {
     char *envvar = getenv("TESTNO");
     int testno;
     if (!envvar || 1 != std::sscanf(envvar, "%d", &testno)) {
@@ -19,9 +19,13 @@ int getInitialTestNo() {
     return testno;
 }
 
+#ifdef JNGEN_DECLARE_ONLY
+extern int nextTestNo;
+#else
 int nextTestNo = -1;
+#endif // JNGEN_DECLARE_ONLY
 
-void startTest(int testNo) {
+inline void startTest(int testNo) {
     nextTestNo = testNo + 1;
     char filename[10];
     std::sprintf(filename, "%d", testNo);
@@ -30,7 +34,7 @@ void startTest(int testNo) {
     }
 }
 
-void startTest() {
+inline void startTest() {
     if (nextTestNo == -1) {
         nextTestNo = getInitialTestNo();
     }
@@ -38,11 +42,11 @@ void startTest() {
     startTest(nextTestNo);
 }
 
-void setNextTestNumber(int testNo) {
+inline void setNextTestNumber(int testNo) {
     nextTestNo = testNo;
 }
 
-Array64 randomTestSizes(
+inline Array64 randomTestSizes(
     long long totalSize,
     int count,
     long long minSize,
@@ -79,7 +83,7 @@ Array64 randomTestSizes(
     return (partition + predefined).shuffled();
 }
 
-Array randomTestSizes(
+inline Array randomTestSizes(
     int totalSize,
     int count,
     int minSize,

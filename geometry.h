@@ -276,7 +276,7 @@ public:
     }
 };
 
-GeometryRandom rndgeo;
+JNGEN_EXTERN GeometryRandom rndgeo;
 
 } // namespace jngen
 

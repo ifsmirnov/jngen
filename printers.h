@@ -76,7 +76,7 @@ auto printValue(\
     -> typename std::enable_if<constraint, void>::type
 
 #define JNGEN_DECLARE_SIMPLE_PRINTER(type, priority)\
-void printValue(std::ostream& out, const type& t,\
+inline void printValue(std::ostream& out, const type& t,\
     const OutputModifier& mod, PTag<priority>)
 
 #define JNGEN_PRINT(value)\

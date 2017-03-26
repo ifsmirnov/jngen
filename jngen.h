@@ -6,6 +6,12 @@
 #include <stdexcept>
 #include <string>
 
+#ifdef JNGEN_DECLARE_ONLY
+#define JNGEN_EXTERN extern
+#else
+#define JNGEN_EXTERN
+#endif
+
 namespace jngen {
 
 class Exception : public std::runtime_error {
@@ -263,7 +269,7 @@ inline VariableMap parseArguments(const std::vector<std::string>& args) {
     return result;
 }
 
-VariableMap vmap;
+JNGEN_EXTERN VariableMap vmap;
 
 template<typename T>
 bool readVariable(const std::string& value, T& var) {
@@ -617,6 +623,7 @@ private:
     size_t pos;
 };
 
+#ifndef JNGEN_DECLARE_ONLY
 Pattern::Pattern(const std::string& s) {
     *this = Parser().parse(s);
 }
@@ -649,6 +656,7 @@ std::string Pattern::next(std::function<int(int)> rnd) const {
 
     return result;
 }
+#endif
 
 } // namespace jngen
 
@@ -705,7 +713,7 @@ protected:
 template<typename T>
 struct TypedRandom;
 
-uint64_t maskForBound(uint64_t bound) {
+inline uint64_t maskForBound(uint64_t bound) {
     --bound;
     uint64_t mask = ~0;
     if ((mask >> 32) >= bound) mask >>= 32;
@@ -880,7 +888,7 @@ private:
     constexpr static int WNEXT_LIMIT = 8;
 };
 
-Random rnd;
+JNGEN_EXTERN Random rnd;
 
 template<>
 struct TypedRandom<int> : public BaseTypedRandom {
@@ -929,10 +937,14 @@ struct RandomPairTraits {
     const bool distinct;
 };
 
+#ifdef JNGEN_DECLARE_ONLY
+extern RandomPairTraits opair, dpair, odpair, dopair;
+#else
 RandomPairTraits opair{true, false};
 RandomPairTraits dpair{false, true};
 RandomPairTraits odpair{true, true};
 RandomPairTraits dopair{true, true};
+#endif
 
 template<>
 struct TypedRandom<std::pair<int, int>> : public BaseTypedRandom {
@@ -982,7 +994,7 @@ using jngen::dpair;
 using jngen::dopair;
 using jngen::odpair;
 
-void registerGen(int argc, char *argv[], int version = 1) {
+inline void registerGen(int argc, char *argv[], int version = 1) {
     (void)version; // unused, only for testlib.h compatibility
 
     std::vector<uint32_t> seed;
@@ -997,6 +1009,7 @@ void registerGen(int argc, char *argv[], int version = 1) {
     rnd.seed(seed);
 }
 
+#ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_RANDOM_INL_H
 #ifndef JNGEN_INCLUDE_RANDOM_INL_H
 #error File "random_inl.h" must not be included directly.
@@ -1083,6 +1096,7 @@ double Random::wnext(double l, double r, int w) {
 
 } // namespace jngen
 #undef JNGEN_INCLUDE_RANDOM_INL_H
+#endif // JNGEN_DECLARE_ONLY
 
 #include <iostream>
 #include <type_traits>
@@ -1104,7 +1118,7 @@ struct OutputModifier {
     char sep = ' ';
 };
 
-OutputModifier defaultMod;
+JNGEN_EXTERN OutputModifier defaultMod;
 
 template<typename T>
 class Repr {
@@ -1253,7 +1267,7 @@ public:
     }
 };
 
-DefaultModSetter setMod() {
+inline DefaultModSetter setMod() {
     static int dummy = 0;
     return DefaultModSetter(dummy);
 }
@@ -1338,7 +1352,7 @@ auto printValue(\
     -> typename std::enable_if<constraint, void>::type
 
 #define JNGEN_DECLARE_SIMPLE_PRINTER(type, priority)\
-void printValue(std::ostream& out, const type& t,\
+inline void printValue(std::ostream& out, const type& t,\
     const OutputModifier& mod, PTag<priority>)
 
 #define JNGEN_PRINT(value)\
@@ -2009,11 +2023,11 @@ namespace jngen {
 
 namespace detail {
 
-int multiply(int x, int y, int mod) {
+inline int multiply(int x, int y, int mod) {
     return static_cast<long long>(x) * y % mod;
 }
 
-long long multiply(long long x, long long y, long long mod) {
+inline long long multiply(long long x, long long y, long long mod) {
 #if defined(__SIZEOF_INT128__)
     return static_cast<__int128>(x) * y % mod;
 #else
@@ -2029,7 +2043,7 @@ long long multiply(long long x, long long y, long long mod) {
 #endif
 }
 
-int power(int x, int k, int mod) {
+inline int power(int x, int k, int mod) {
     int res = 1;
     while (k) {
         if (k&1) {
@@ -2041,7 +2055,7 @@ int power(int x, int k, int mod) {
     return res;
 }
 
-long long power(long long x, long long k, long long mod) {
+inline long long power(long long x, long long k, long long mod) {
     long long res = 1;
     while (k) {
         if (k&1) {
@@ -2108,7 +2122,7 @@ bool millerRabinTest(I n, const std::vector<I>& witnesses) {
 
 } // namespace detail
 
-bool isPrime(long long n) {
+inline bool isPrime(long long n) {
     const static std::vector<int> INT_WITNESSES{2, 7, 61};
     const static std::vector<long long> LONG_LONG_WITNESSES
         {2, 3, 5, 7, 11, 13, 17, 19, 23};
@@ -2238,7 +2252,7 @@ public:
     }
 };
 
-MathRandom rndm;
+JNGEN_EXTERN MathRandom rndm;
 
 } // namespace jngen
 
@@ -2285,7 +2299,9 @@ public:
         typedef decltype(func(args...)) T;
         return GenericArray<T>::randomfAll(func, args...);
     }
-} rnda;
+};
+
+JNGEN_EXTERN ArrayRandom rnda;
 
 } // namespace jngen
 
@@ -2560,7 +2576,7 @@ public:
     }
 };
 
-GeometryRandom rndgeo;
+JNGEN_EXTERN GeometryRandom rndgeo;
 
 } // namespace jngen
 
@@ -2604,7 +2620,9 @@ public:
             const std::vector<HashBase>& bases,
             const std::string& alphabet = "a-z",
             int length = -1);
-} rnds;
+};
+
+JNGEN_EXTERN StringRandom rnds;
 
 namespace detail {
 
@@ -2769,6 +2787,8 @@ inline StringPair minimalAntiHashTest(
 
 } // namespace detail
 
+#ifndef JNGEN_DECLARE_ONLY
+
 std::string StringRandom::thueMorse(int len, char first, char second) {
     ensure(len >= 0);
     std::string res(len, ' ');
@@ -2816,6 +2836,8 @@ StringPair StringRandom::antiHash(
     };
 }
 
+#endif
+
 } // namespace jngen
 
 using jngen::rnds;
@@ -2827,7 +2849,7 @@ using jngen::rnds;
 
 namespace jngen {
 
-int getInitialTestNo() {
+inline int getInitialTestNo() {
     char *envvar = getenv("TESTNO");
     int testno;
     if (!envvar || 1 != std::sscanf(envvar, "%d", &testno)) {
@@ -2836,9 +2858,13 @@ int getInitialTestNo() {
     return testno;
 }
 
+#ifdef JNGEN_DECLARE_ONLY
+extern int nextTestNo;
+#else
 int nextTestNo = -1;
+#endif // JNGEN_DECLARE_ONLY
 
-void startTest(int testNo) {
+inline void startTest(int testNo) {
     nextTestNo = testNo + 1;
     char filename[10];
     std::sprintf(filename, "%d", testNo);
@@ -2847,7 +2873,7 @@ void startTest(int testNo) {
     }
 }
 
-void startTest() {
+inline void startTest() {
     if (nextTestNo == -1) {
         nextTestNo = getInitialTestNo();
     }
@@ -2855,11 +2881,11 @@ void startTest() {
     startTest(nextTestNo);
 }
 
-void setNextTestNumber(int testNo) {
+inline void setNextTestNumber(int testNo) {
     nextTestNo = testNo;
 }
 
-Array64 randomTestSizes(
+inline Array64 randomTestSizes(
     long long totalSize,
     int count,
     long long minSize,
@@ -2896,7 +2922,7 @@ Array64 randomTestSizes(
     return (partition + predefined).shuffled();
 }
 
-Array randomTestSizes(
+inline Array randomTestSizes(
     int totalSize,
     int count,
     int minSize,
@@ -3431,6 +3457,8 @@ protected:
     WeightArray edgeWeights_;
 };
 
+#ifndef JNGEN_DECLARE_ONLY
+
 Array GenericGraph::edges(int v) const {
     ensure(v < n(), "Graph::edges(v)");
     v = vertexByLabel(v);
@@ -3452,7 +3480,7 @@ Arrayp GenericGraph::edges() const {
     return edges;
 }
 
-inline void GenericGraph::doShuffle() {
+void GenericGraph::doShuffle() {
     // this if is to be removed after all checks pass
     if (vertexLabel_.size() < static_cast<size_t>(n())) {
         ENSURE(false, "GenericGraph::doShuffle");
@@ -3473,7 +3501,7 @@ inline void GenericGraph::doShuffle() {
     permuteEdges(Array::id(numEdges_).shuffled());
 }
 
-inline void GenericGraph::extend(size_t size) {
+void GenericGraph::extend(size_t size) {
     size_t oldSize = n();
     if (size > oldSize) {
         adjList_.resize(size);
@@ -3555,7 +3583,7 @@ void GenericGraph::normalizeEdges() {
     permuteEdges(order);
 }
 
-inline void GenericGraph::addEdge(int u, int v, const Weight& w) {
+void GenericGraph::addEdge(int u, int v, const Weight& w) {
     extend(std::max(u, v) + 1);
 
     u = vertexByLabel(u);
@@ -3587,7 +3615,7 @@ WeightArray prepareWeightArray(WeightArray a, int requiredSize) {
 
 } // namespace
 
-inline void GenericGraph::doPrintEdges(
+void GenericGraph::doPrintEdges(
     std::ostream& out, const OutputModifier& mod) const
 {
     if (mod.printN) {
@@ -3633,31 +3661,31 @@ inline void GenericGraph::doPrintEdges(
     }
 }
 
-inline bool GenericGraph::operator==(const GenericGraph& other) const {
+bool GenericGraph::operator==(const GenericGraph& other) const {
     return compareTo(other) == 0;
 }
 
-inline bool GenericGraph::operator!=(const GenericGraph& other) const {
+bool GenericGraph::operator!=(const GenericGraph& other) const {
     return compareTo(other) != 0;
 }
 
-inline bool GenericGraph::operator<(const GenericGraph& other) const {
+bool GenericGraph::operator<(const GenericGraph& other) const {
     return compareTo(other) == -1;
 }
 
-inline bool GenericGraph::operator>(const GenericGraph& other) const {
+bool GenericGraph::operator>(const GenericGraph& other) const {
     return compareTo(other) == 1;
 }
 
-inline bool GenericGraph::operator<=(const GenericGraph& other) const {
+bool GenericGraph::operator<=(const GenericGraph& other) const {
     return compareTo(other) != 1;
 }
 
-inline bool GenericGraph::operator>=(const GenericGraph& other) const {
+bool GenericGraph::operator>=(const GenericGraph& other) const {
     return compareTo(other) == -1;
 }
 
-inline int GenericGraph::compareTo(const GenericGraph& other) const {
+int GenericGraph::compareTo(const GenericGraph& other) const {
     if (n() != other.n()) {
         return n() < other.n() ? -1 : 1;
     }
@@ -3670,6 +3698,8 @@ inline int GenericGraph::compareTo(const GenericGraph& other) const {
     }
     return 0;
 }
+
+#endif // JNGEN_DECLARE_ONLY
 
 } // namespace jngen
 
@@ -3706,7 +3736,9 @@ public:
     static Tree caterpillar(size_t length, size_t size);
 };
 
-inline void Tree::addEdge(int u, int v, const Weight& w) {
+#ifndef JNGEN_DECLARE_ONLY
+
+void Tree::addEdge(int u, int v, const Weight& w) {
     extend(std::max(u, v) + 1);
 
     u = vertexByLabel(u);
@@ -3722,7 +3754,7 @@ inline void Tree::addEdge(int u, int v, const Weight& w) {
     }
 }
 
-inline Array Tree::parents(int root) const {
+Array Tree::parents(int root) const {
     root = vertexByLabel(root);
 
     Array parents(n());
@@ -3747,12 +3779,12 @@ inline Array Tree::parents(int root) const {
     return parents;
 }
 
-inline Tree& Tree::shuffle() {
+Tree& Tree::shuffle() {
     doShuffle();
     return *this;
 }
 
-inline Tree Tree::shuffled() const {
+Tree Tree::shuffled() const {
     Tree t = *this;
     return t.shuffle();
 }
@@ -3812,7 +3844,7 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
 
 // Tree generators go here
 
-inline Tree Tree::bamboo(size_t size) {
+Tree Tree::bamboo(size_t size) {
     Tree t;
     for (size_t i = 0; i + 1 < size; ++i) {
         t.addEdge(i, i+1);
@@ -3821,7 +3853,7 @@ inline Tree Tree::bamboo(size_t size) {
     return t;
 }
 
-inline Tree Tree::randomPrufer(size_t size) {
+Tree Tree::randomPrufer(size_t size) {
     if (size == 1) {
         return Tree();
     }
@@ -3857,7 +3889,7 @@ inline Tree Tree::randomPrufer(size_t size) {
     return t;
 }
 
-inline Tree Tree::random(size_t size, int elongation) {
+Tree Tree::random(size_t size, int elongation) {
     Tree t;
     for (size_t v = 1; v < size; ++v) {
         int parent = rnd.wnext(v, elongation);
@@ -3867,7 +3899,7 @@ inline Tree Tree::random(size_t size, int elongation) {
     return t;
 }
 
-inline Tree Tree::star(size_t size) {
+Tree Tree::star(size_t size) {
     Tree t;
     for (size_t i = 1; i < size; ++i) {
         t.addEdge(0, i);
@@ -3876,7 +3908,7 @@ inline Tree Tree::star(size_t size) {
     return t;
 }
 
-inline Tree Tree::caterpillar(size_t length, size_t size) {
+Tree Tree::caterpillar(size_t length, size_t size) {
     ensure(length <= size);
     Tree t = Tree::bamboo(length);
     for (size_t i = length; i < size; ++i) {
@@ -3885,6 +3917,8 @@ inline Tree Tree::caterpillar(size_t length, size_t size) {
     t.normalizeEdges();
     return t;
 }
+
+#endif // JNGEN_DECLARE_ONLY
 
 } // namespace jngen
 
@@ -3971,7 +4005,10 @@ public:
         builder_(builder)
     {  }
 
-    Graph g() const;
+    Graph g() const {
+        return builder_(traits_);
+    }
+
     operator Graph() const { return g(); };
 
     BuilderProxy& allowLoops(bool value = true) {
@@ -3993,10 +4030,6 @@ private:
     Traits traits_;
     std::function<Graph(Traits)> builder_;
 };
-
-Graph BuilderProxy::g() const {
-    return builder_(traits_);
-}
 
 } // namespace graph_detail
 
@@ -4173,7 +4206,7 @@ public:
     }
 };
 
-GraphRandom rndg;
+JNGEN_EXTERN GraphRandom rndg;
 
 JNGEN_DECLARE_SIMPLE_PRINTER(graph_detail::BuilderProxy, 2) {
     JNGEN_PRINT(t.g());

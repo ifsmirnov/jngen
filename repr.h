@@ -20,7 +20,7 @@ struct OutputModifier {
     char sep = ' ';
 };
 
-OutputModifier defaultMod;
+JNGEN_EXTERN OutputModifier defaultMod;
 
 template<typename T>
 class Repr {
@@ -169,7 +169,7 @@ public:
     }
 };
 
-DefaultModSetter setMod() {
+inline DefaultModSetter setMod() {
     static int dummy = 0;
     return DefaultModSetter(dummy);
 }

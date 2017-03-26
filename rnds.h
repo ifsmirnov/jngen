@@ -32,7 +32,9 @@ public:
             const std::vector<HashBase>& bases,
             const std::string& alphabet = "a-z",
             int length = -1);
-} rnds;
+};
+
+JNGEN_EXTERN StringRandom rnds;
 
 namespace detail {
 
@@ -197,6 +199,8 @@ inline StringPair minimalAntiHashTest(
 
 } // namespace detail
 
+#ifndef JNGEN_DECLARE_ONLY
+
 std::string StringRandom::thueMorse(int len, char first, char second) {
     ensure(len >= 0);
     std::string res(len, ' ');
@@ -243,6 +247,8 @@ StringPair StringRandom::antiHash(
         left + result.second + right
     };
 }
+
+#endif
 
 } // namespace jngen
 

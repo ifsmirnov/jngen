@@ -7,6 +7,12 @@
 #include <stdexcept>
 #include <string>
 
+#ifdef JNGEN_DECLARE_ONLY
+#define JNGEN_EXTERN extern
+#else
+#define JNGEN_EXTERN
+#endif
+
 namespace jngen {
 
 class Exception : public std::runtime_error {

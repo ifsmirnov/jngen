@@ -216,6 +216,7 @@ private:
     size_t pos;
 };
 
+#ifndef JNGEN_DECLARE_ONLY
 Pattern::Pattern(const std::string& s) {
     *this = Parser().parse(s);
 }
@@ -248,6 +249,7 @@ std::string Pattern::next(std::function<int(int)> rnd) const {
 
     return result;
 }
+#endif
 
 } // namespace jngen
 

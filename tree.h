@@ -35,7 +35,9 @@ public:
     static Tree caterpillar(size_t length, size_t size);
 };
 
-inline void Tree::addEdge(int u, int v, const Weight& w) {
+#ifndef JNGEN_DECLARE_ONLY
+
+void Tree::addEdge(int u, int v, const Weight& w) {
     extend(std::max(u, v) + 1);
 
     u = vertexByLabel(u);
@@ -51,7 +53,7 @@ inline void Tree::addEdge(int u, int v, const Weight& w) {
     }
 }
 
-inline Array Tree::parents(int root) const {
+Array Tree::parents(int root) const {
     root = vertexByLabel(root);
 
     Array parents(n());
@@ -76,12 +78,12 @@ inline Array Tree::parents(int root) const {
     return parents;
 }
 
-inline Tree& Tree::shuffle() {
+Tree& Tree::shuffle() {
     doShuffle();
     return *this;
 }
 
-inline Tree Tree::shuffled() const {
+Tree Tree::shuffled() const {
     Tree t = *this;
     return t.shuffle();
 }
@@ -141,7 +143,7 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
 
 // Tree generators go here
 
-inline Tree Tree::bamboo(size_t size) {
+Tree Tree::bamboo(size_t size) {
     Tree t;
     for (size_t i = 0; i + 1 < size; ++i) {
         t.addEdge(i, i+1);
@@ -150,7 +152,7 @@ inline Tree Tree::bamboo(size_t size) {
     return t;
 }
 
-inline Tree Tree::randomPrufer(size_t size) {
+Tree Tree::randomPrufer(size_t size) {
     if (size == 1) {
         return Tree();
     }
@@ -186,7 +188,7 @@ inline Tree Tree::randomPrufer(size_t size) {
     return t;
 }
 
-inline Tree Tree::random(size_t size, int elongation) {
+Tree Tree::random(size_t size, int elongation) {
     Tree t;
     for (size_t v = 1; v < size; ++v) {
         int parent = rnd.wnext(v, elongation);
@@ -196,7 +198,7 @@ inline Tree Tree::random(size_t size, int elongation) {
     return t;
 }
 
-inline Tree Tree::star(size_t size) {
+Tree Tree::star(size_t size) {
     Tree t;
     for (size_t i = 1; i < size; ++i) {
         t.addEdge(0, i);
@@ -205,7 +207,7 @@ inline Tree Tree::star(size_t size) {
     return t;
 }
 
-inline Tree Tree::caterpillar(size_t length, size_t size) {
+Tree Tree::caterpillar(size_t length, size_t size) {
     ensure(length <= size);
     Tree t = Tree::bamboo(length);
     for (size_t i = length; i < size; ++i) {
@@ -214,6 +216,8 @@ inline Tree Tree::caterpillar(size_t length, size_t size) {
     t.normalizeEdges();
     return t;
 }
+
+#endif // JNGEN_DECLARE_ONLY
 
 } // namespace jngen
 

@@ -15,11 +15,11 @@ namespace jngen {
 
 namespace detail {
 
-int multiply(int x, int y, int mod) {
+inline int multiply(int x, int y, int mod) {
     return static_cast<long long>(x) * y % mod;
 }
 
-long long multiply(long long x, long long y, long long mod) {
+inline long long multiply(long long x, long long y, long long mod) {
 #if defined(__SIZEOF_INT128__)
     return static_cast<__int128>(x) * y % mod;
 #else
@@ -35,7 +35,7 @@ long long multiply(long long x, long long y, long long mod) {
 #endif
 }
 
-int power(int x, int k, int mod) {
+inline int power(int x, int k, int mod) {
     int res = 1;
     while (k) {
         if (k&1) {
@@ -47,7 +47,7 @@ int power(int x, int k, int mod) {
     return res;
 }
 
-long long power(long long x, long long k, long long mod) {
+inline long long power(long long x, long long k, long long mod) {
     long long res = 1;
     while (k) {
         if (k&1) {
@@ -114,7 +114,7 @@ bool millerRabinTest(I n, const std::vector<I>& witnesses) {
 
 } // namespace detail
 
-bool isPrime(long long n) {
+inline bool isPrime(long long n) {
     const static std::vector<int> INT_WITNESSES{2, 7, 61};
     const static std::vector<long long> LONG_LONG_WITNESSES
         {2, 3, 5, 7, 11, 13, 17, 19, 23};
@@ -244,7 +244,7 @@ public:
     }
 };
 
-MathRandom rndm;
+JNGEN_EXTERN MathRandom rndm;
 
 } // namespace jngen
 

@@ -36,7 +36,10 @@ public:
         builder_(builder)
     {  }
 
-    Graph g() const;
+    Graph g() const {
+        return builder_(traits_);
+    }
+
     operator Graph() const { return g(); };
 
     BuilderProxy& allowLoops(bool value = true) {
@@ -58,10 +61,6 @@ private:
     Traits traits_;
     std::function<Graph(Traits)> builder_;
 };
-
-Graph BuilderProxy::g() const {
-    return builder_(traits_);
-}
 
 } // namespace graph_detail
 
@@ -238,7 +237,7 @@ public:
     }
 };
 
-GraphRandom rndg;
+JNGEN_EXTERN GraphRandom rndg;
 
 JNGEN_DECLARE_SIMPLE_PRINTER(graph_detail::BuilderProxy, 2) {
     JNGEN_PRINT(t.g());

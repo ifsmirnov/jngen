@@ -135,6 +135,8 @@ protected:
     WeightArray edgeWeights_;
 };
 
+#ifndef JNGEN_DECLARE_ONLY
+
 Array GenericGraph::edges(int v) const {
     ensure(v < n(), "Graph::edges(v)");
     v = vertexByLabel(v);
@@ -156,7 +158,7 @@ Arrayp GenericGraph::edges() const {
     return edges;
 }
 
-inline void GenericGraph::doShuffle() {
+void GenericGraph::doShuffle() {
     // this if is to be removed after all checks pass
     if (vertexLabel_.size() < static_cast<size_t>(n())) {
         ENSURE(false, "GenericGraph::doShuffle");
@@ -177,7 +179,7 @@ inline void GenericGraph::doShuffle() {
     permuteEdges(Array::id(numEdges_).shuffled());
 }
 
-inline void GenericGraph::extend(size_t size) {
+void GenericGraph::extend(size_t size) {
     size_t oldSize = n();
     if (size > oldSize) {
         adjList_.resize(size);
@@ -259,7 +261,7 @@ void GenericGraph::normalizeEdges() {
     permuteEdges(order);
 }
 
-inline void GenericGraph::addEdge(int u, int v, const Weight& w) {
+void GenericGraph::addEdge(int u, int v, const Weight& w) {
     extend(std::max(u, v) + 1);
 
     u = vertexByLabel(u);
@@ -291,7 +293,7 @@ WeightArray prepareWeightArray(WeightArray a, int requiredSize) {
 
 } // namespace
 
-inline void GenericGraph::doPrintEdges(
+void GenericGraph::doPrintEdges(
     std::ostream& out, const OutputModifier& mod) const
 {
     if (mod.printN) {
@@ -337,31 +339,31 @@ inline void GenericGraph::doPrintEdges(
     }
 }
 
-inline bool GenericGraph::operator==(const GenericGraph& other) const {
+bool GenericGraph::operator==(const GenericGraph& other) const {
     return compareTo(other) == 0;
 }
 
-inline bool GenericGraph::operator!=(const GenericGraph& other) const {
+bool GenericGraph::operator!=(const GenericGraph& other) const {
     return compareTo(other) != 0;
 }
 
-inline bool GenericGraph::operator<(const GenericGraph& other) const {
+bool GenericGraph::operator<(const GenericGraph& other) const {
     return compareTo(other) == -1;
 }
 
-inline bool GenericGraph::operator>(const GenericGraph& other) const {
+bool GenericGraph::operator>(const GenericGraph& other) const {
     return compareTo(other) == 1;
 }
 
-inline bool GenericGraph::operator<=(const GenericGraph& other) const {
+bool GenericGraph::operator<=(const GenericGraph& other) const {
     return compareTo(other) != 1;
 }
 
-inline bool GenericGraph::operator>=(const GenericGraph& other) const {
+bool GenericGraph::operator>=(const GenericGraph& other) const {
     return compareTo(other) == -1;
 }
 
-inline int GenericGraph::compareTo(const GenericGraph& other) const {
+int GenericGraph::compareTo(const GenericGraph& other) const {
     if (n() != other.n()) {
         return n() < other.n() ? -1 : 1;
     }
@@ -374,6 +376,8 @@ inline int GenericGraph::compareTo(const GenericGraph& other) const {
     }
     return 0;
 }
+
+#endif // JNGEN_DECLARE_ONLY
 
 } // namespace jngen
 

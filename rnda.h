@@ -41,7 +41,9 @@ public:
         typedef decltype(func(args...)) T;
         return GenericArray<T>::randomfAll(func, args...);
     }
-} rnda;
+};
+
+JNGEN_EXTERN ArrayRandom rnda;
 
 } // namespace jngen
 

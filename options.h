@@ -82,7 +82,7 @@ inline VariableMap parseArguments(const std::vector<std::string>& args) {
     return result;
 }
 
-VariableMap vmap;
+JNGEN_EXTERN VariableMap vmap;
 
 template<typename T>
 bool readVariable(const std::string& value, T& var) {
