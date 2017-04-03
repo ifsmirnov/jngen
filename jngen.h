@@ -1929,6 +1929,8 @@ GenericArray<T>& GenericArray<T>::operator*=(int k) {
         return *this;
     }
 
+    this->reserve(this->size() * k);
+
     size_t size = this->size();
     while (k-- > 1) {
         insert(end(), begin(), begin() + size);
