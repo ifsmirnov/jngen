@@ -9,6 +9,7 @@
 #include <iterator>
 #include <limits>
 #include <type_traits>
+#include <unordered_set>
 #include <vector>
 
 namespace jngen {
@@ -150,24 +151,17 @@ public:
 
     static long long randomPrime(long long l, long long r) {
         ensure(l <= r);
-        constexpr static long long SIMPLE_INTERVAL_BOUND = 50;
-        if (l + SIMPLE_INTERVAL_BOUND >= r) {
-            for (long long x: Array64::id(r-l+1, l).shuffled()) {
-                if (isPrime(x)) {
-                    return x;
-                }
+        std::unordered_set<long long> used;
+        while (static_cast<long long>(used.size()) < r - l + 1) {
+            long long x = rnd.next(l, r);
+            if (used.count(x)) {
+                continue;
             }
-        } else {
-            int retries = std::log(r) * 20;
-            while (retries-- > 0) {
-                long long x = rnd.next(l, r);
-                if (isPrime(x)) {
-                    return x;
-                }
-
+            used.insert(x);
+            if (isPrime(x)) {
+                return x;
             }
         }
-
         ensure(
             false,
             format(
