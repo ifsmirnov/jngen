@@ -4303,11 +4303,11 @@ public:
     Tree link(int vInThis, const Tree& other, int vInOther);
     Tree glue(int vInThis, const Tree& other, int vInOther);
 
-    static Tree bamboo(size_t size);
-    static Tree randomPrufer(size_t size);
-    static Tree random(size_t size, int elongation = 0);
-    static Tree star(size_t size);
-    static Tree caterpillar(size_t length, size_t size);
+    static Tree bamboo(int size);
+    static Tree randomPrufer(int size);
+    static Tree random(int size, int elongation = 0);
+    static Tree star(int size);
+    static Tree caterpillar(int size, int length);
 };
 
 #ifndef JNGEN_DECLARE_ONLY
@@ -4418,16 +4418,16 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
 
 // Tree generators go here
 
-Tree Tree::bamboo(size_t size) {
+Tree Tree::bamboo(int size) {
     Tree t;
-    for (size_t i = 0; i + 1 < size; ++i) {
+    for (int i = 0; i + 1 < size; ++i) {
         t.addEdge(i, i+1);
     }
     t.normalizeEdges();
     return t;
 }
 
-Tree Tree::randomPrufer(size_t size) {
+Tree Tree::randomPrufer(int size) {
     if (size == 1) {
         return Tree();
     }
@@ -4439,7 +4439,7 @@ Tree Tree::randomPrufer(size_t size) {
     }
 
     std::set<int> leaves;
-    for (size_t v = 0; v < size; ++v) {
+    for (int v = 0; v < size; ++v) {
         if (degree[v] == 1) {
             leaves.insert(v);
         }
@@ -4463,9 +4463,9 @@ Tree Tree::randomPrufer(size_t size) {
     return t;
 }
 
-Tree Tree::random(size_t size, int elongation) {
+Tree Tree::random(int size, int elongation) {
     Tree t;
-    for (size_t v = 1; v < size; ++v) {
+    for (int v = 1; v < size; ++v) {
         int parent = rnd.wnext(v, elongation);
         t.addEdge(parent, v);
     }
@@ -4473,19 +4473,19 @@ Tree Tree::random(size_t size, int elongation) {
     return t;
 }
 
-Tree Tree::star(size_t size) {
+Tree Tree::star(int size) {
     Tree t;
-    for (size_t i = 1; i < size; ++i) {
+    for (int i = 1; i < size; ++i) {
         t.addEdge(0, i);
     }
     t.normalizeEdges();
     return t;
 }
 
-Tree Tree::caterpillar(size_t length, size_t size) {
+Tree Tree::caterpillar(int size, int length) {
     ensure(length <= size);
     Tree t = Tree::bamboo(length);
-    for (size_t i = length; i < size; ++i) {
+    for (int i = length; i < size; ++i) {
         t.addEdge(rnd.next(length), i);
     }
     t.normalizeEdges();
