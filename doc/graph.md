@@ -1,6 +1,6 @@
 ## Graph generation
 
-* [Generators](#graph-generators
+* [Generators](#generators)
 * [Modifiers](#modifiers)
 * [Graph methods](#graph-methods)
 

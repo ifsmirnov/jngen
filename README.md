@@ -23,7 +23,7 @@ Jngen library provides several handy instruments for generating various kinds of
 * [[repr.h, printers.h] Printers and output modifiers](/doc/printers.md)
 * [[generic_graph.h] Graphs and trees: bacics](/doc/generic_graph.md)
     * [[graph.h] Graphs generation](/doc/graph.md)
-    * [[tree.h] Trees generation](/doc/graph.md)
+    * [[tree.h] Trees generation](/doc/tree.md)
 
 ### Examples
 Generate a random tree on *n* vertices with a 3-letter string assigned to each edge:
