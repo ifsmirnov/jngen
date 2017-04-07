@@ -276,7 +276,7 @@ public:
     }
 };
 
-JNGEN_EXTERN GeometryRandom rndgeo;
+JNGEN_EXTERN GeometryRandom rndg;
 
 } // namespace jngen
 
@@ -286,7 +286,7 @@ using jngen::Pointf;
 using jngen::Polygon;
 using jngen::Polygonf;
 
-using jngen::rndgeo;
+using jngen::rndg;
 
 using jngen::eps;
 using jngen::setEps;

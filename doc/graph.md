@@ -1,14 +1,14 @@
 ## Graph generation
 
-* [rndg documentation](#rndg-documentation)
+* [Generators](#graph-generators
 * [Modifiers](#modifiers)
 * [Graph methods](#graph-methods)
 
 This page is about *Graph* class and graph generators. To see the list of generic graphs methods please visit [this page](/generic_graph.md).
 
-Graphs are generated with a special class *GraphRandom*, specifically with its global instance *rndg* (stands for RaNDom Graphs). The source of randomness is *rnd*.
+The *Graph* class has several static methods to generate random and special graphs, like *random(n, m)* or *complete(n)*. The source of randomness is *rnd*.
 
-*rndg* has several generation methods, like *.random(n, m)* or *.complete(n)*, etc. After calling a method you can add modifiers to allow or disallow loops, make graph connected etc. As you can see from the following example,*chaining* semantics is used. To support this semantics generation methods return not *Graph* itself but a special proxy class. To get a *Graph* itself, you may do one of the following:
+After calling a method you can add modifiers to allow or disallow loops, make graph connected etc. As you can see from the following example, *chaining* semantics is used. To support this semantics generation methods return not *Graph* itself but a special proxy class. To get a *Graph* itself, you may do one of the following:
 * call *.g()* method after modifiers chain:
 * cast the returned object to *Graph*;
 * or directly print the proxy class to the stream, in this case the generated graph will be printed.
@@ -16,16 +16,16 @@ Graphs are generated with a special class *GraphRandom*, specifically with its g
 See the example for further clarifications.
 
 ```cpp
-auto g = rndg.random(10, 20).connected().allowMulti().g().shuffled();
-Graph g = rndg.randomStretched(100, 200, 2, 5);
-cout << rndg.complete().allowLoops() << endl;
+auto g = Graph::random(10, 20).connected().allowMulti().g().shuffled();
+Graph g2 = Graph::randomStretched(100, 200, 2, 5);
+cout << Graph::complete(5).allowLoops() << endl;
 ```
 
 All graph generators return graph with sorted edges to make tests more human-readable. If you want to have your graph shuffled, use *.shuffle()* method, as in the example.
 
 Currently only generation of undirected graphs is supported.
 
-### rndg documentation
+### Generators
 #### random(int n, int m)
 * Returns: a random graph with *n* vertices and *m* edges.
 * Available modifiers: *connected*, *allowLoops*, *allowMulti*.

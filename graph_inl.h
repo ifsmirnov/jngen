@@ -1,70 +1,23 @@
-#pragma once
-
-#include <algorithm>
-#include <set>
+#ifndef JNGEN_INCLUDE_GRAPH_INL_H
+#error File "graph_inl.h" must not be included directly.
+#endif
 
 #include "array.h"
 #include "common.h"
-#include "graph.h"
 #include "printers.h"
 
 namespace jngen {
 
-class GraphRandom;
-
 namespace graph_detail {
 
-struct Traits {
-    int n;
-    int m;
-    bool directed = false;
-    bool allowLoops = false;
-    bool allowMulti = false;
-    bool connected = false;
+Graph BuilderProxy::g() const {
+    return builder_(traits_);
+}
 
-    Traits() {}
-    explicit Traits(int n) : n(n) {}
-    Traits(int n, int m) : n(n), m(m) {}
-};
+BuilderProxy::operator Graph() const {
+    return g();
+}
 
-class BuilderProxy {
-public:
-    BuilderProxy(
-            Traits traits,
-            std::function<Graph(Traits)> builder) :
-        traits_(traits),
-        builder_(builder)
-    {  }
-
-    Graph g() const {
-        return builder_(traits_);
-    }
-
-    operator Graph() const { return g(); };
-
-    BuilderProxy& allowLoops(bool value = true) {
-        traits_.allowLoops = value;
-        return *this;
-    }
-
-    BuilderProxy& allowMulti(bool value = true) {
-        traits_.allowMulti = value;
-        return *this;
-    }
-
-    BuilderProxy& connected(bool value = true) {
-        traits_.connected = value;
-        return *this;
-    }
-
-private:
-    Traits traits_;
-    std::function<Graph(Traits)> builder_;
-};
-
-} // namespace graph_detail
-
-// TODO: set directedness in graphs
 class GraphRandom {
     using BuilderProxy = graph_detail::BuilderProxy;
     using Traits = graph_detail::Traits;
@@ -124,7 +77,7 @@ public:
         });
     }
 
-public:
+private:
     static Graph doRandom(Traits t) {
         int n = t.n;
         int m = t.m;
@@ -237,12 +190,31 @@ public:
     }
 };
 
-JNGEN_EXTERN GraphRandom rndg;
+} // namespace graph_detail
+
+Graph::BuilderProxy Graph::random(int n, int m) {
+    return graph_detail::GraphRandom::random(n, m);
+}
+
+Graph::BuilderProxy Graph::complete(int n) {
+    return graph_detail::GraphRandom::complete(n);
+}
+
+Graph::BuilderProxy Graph::empty(int n) {
+    return graph_detail::GraphRandom::empty(n);
+}
+
+Graph::BuilderProxy Graph::cycle(int n) {
+    return graph_detail::GraphRandom::cycle(n);
+}
+
+Graph::BuilderProxy Graph::randomStretched(
+        int n, int m, int elongation, int spread) {
+    return graph_detail::GraphRandom::randomStretched(n, m, elongation, spread);
+}
 
 JNGEN_DECLARE_SIMPLE_PRINTER(graph_detail::BuilderProxy, 2) {
     JNGEN_PRINT(t.g());
 }
 
 } // namespace jngen
-
-using jngen::rndg;

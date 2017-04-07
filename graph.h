@@ -2,6 +2,7 @@
 
 #include "array.h"
 #include "generic_graph.h"
+#include "graph_builder_proxy.h"
 #include "tree.h"
 
 #include <memory>
@@ -12,7 +13,11 @@
 namespace jngen {
 
 class Graph : public ReprProxy<Graph>, public GenericGraph {
-    friend class GraphRandom;
+    using BuilderProxy = graph_detail::BuilderProxy;
+    using Traits = graph_detail::Traits;
+
+    friend class graph_detail::GraphRandom;
+
 public:
     virtual ~Graph() {}
     Graph() {}
@@ -27,6 +32,13 @@ public:
 
     Graph& shuffle();
     Graph shuffled() const;
+
+    static BuilderProxy random(int n, int m);
+    static BuilderProxy complete(int n);
+    static BuilderProxy empty(int n);
+    static BuilderProxy cycle(int n);
+    static BuilderProxy randomStretched(
+            int n, int m, int elongation, int spread);
 };
 
 inline void Graph::setN(int n) {
@@ -51,3 +63,9 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Graph, 2) {
 } // namespace jngen
 
 using jngen::Graph;
+
+#ifndef JNGEN_DECLARE_ONLY
+#define JNGEN_INCLUDE_GRAPH_INL_H
+#include "graph_inl.h"
+#undef JNGEN_INCLUDE_GRAPH_INL_H
+#endif // JNGEN_DECLARE_ONLY

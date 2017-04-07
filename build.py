@@ -16,7 +16,6 @@ LIBRARY_HEADERS = [
     "geometry.h",
     "math.h",
     "rnda.h",
-    "rndg.h",
     "rnds.h",
     "testcases.h",
     "options.h",
