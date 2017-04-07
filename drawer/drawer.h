@@ -37,39 +37,13 @@ private:
 
     typedef std::pair<Point, Point> Bbox;
 
-    static Bbox emptyBbox() {
-        const static double inf = 1e18;
-        return { Point{inf, inf}, Point{-inf, -inf} };
-    }
+    static Bbox emptyBbox();
 
-    static Bbox unite(const Bbox& lhs, const Bbox& rhs) {
-        return Bbox{
-                Point{
-                    std::min(lhs.first.x, rhs.first.x),
-                    std::min(lhs.first.y, rhs.first.y)},
-                Point{
-                    std::max(lhs.second.x, rhs.second.x),
-                    std::max(lhs.second.y, rhs.second.y)}
-        };
-    }
+    static Bbox unite(const Bbox& lhs, const Bbox& rhs);
 
-    static Bbox bbox(const Point& p) {
-        return {p, p};
-    }
-
-    static Bbox bbox(const std::pair<Point, double>& circle) {
-        Point p;
-        double radius;
-        std::tie(p, radius) = circle;
-        return {
-                Point{p.x - radius, p.y - radius},
-                Point{p.x + radius, p.y + radius}
-        };
-    }
-
-    static Bbox bbox(const std::pair<Point, Point>& segment) {
-        return unite(bbox(segment.first), bbox(segment.second));
-    }
+    static Bbox bbox(const Point& p);
+    static Bbox bbox(const std::pair<Point, double>& circle);
+    static Bbox bbox(const std::pair<Point, Point>& segment);
 
     Bbox getBbox() const;
     void drawAll();
@@ -103,6 +77,42 @@ void Drawer::polygon(const std::vector<P>& points) {
         segment(points[i], points[i+1]);
     }
     segment(points.back(), points.front());
+}
+
+#ifndef JNGEN_DECLARE_ONLY
+
+Drawer::Bbox Drawer::emptyBbox() {
+    const static double inf = 1e18;
+    return { Point{inf, inf}, Point{-inf, -inf} };
+}
+
+Drawer::Bbox Drawer::unite(const Bbox& lhs, const Bbox& rhs) {
+    return Bbox{
+            Point{
+                std::min(lhs.first.x, rhs.first.x),
+                std::min(lhs.first.y, rhs.first.y)},
+            Point{
+                std::max(lhs.second.x, rhs.second.x),
+                std::max(lhs.second.y, rhs.second.y)}
+    };
+}
+
+Drawer::Bbox Drawer::bbox(const Point& p) {
+    return {p, p};
+}
+
+Drawer::Bbox Drawer::bbox(const std::pair<Point, double>& circle) {
+    Point p;
+    double radius;
+    std::tie(p, radius) = circle;
+    return {
+            Point{p.x - radius, p.y - radius},
+            Point{p.x + radius, p.y + radius}
+    };
+}
+
+Drawer::Bbox Drawer::bbox(const std::pair<Point, Point>& segment) {
+    return unite(bbox(segment.first), bbox(segment.second));
 }
 
 Drawer::Bbox Drawer::getBbox() const {
@@ -239,6 +249,8 @@ void Drawer::dumpSvg(const std::string& filename) {
     out << svg;
     out.close();
 }
+
+#endif // JNGEN_DECLARE_ONLY
 
 }} // namespace jngen::drawing
 

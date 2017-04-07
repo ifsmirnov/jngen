@@ -225,6 +225,7 @@ inline const char* SvgEngine::colorToString(Color color) {
 
 }} // namespace jngen::drawing
 
+#ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_SVG_ENGINE_INL_H
 #ifndef JNGEN_INCLUDE_SVG_ENGINE_INL_H
 #error File "svg_engine_inl.h" must not be included directly.
@@ -357,6 +358,7 @@ double SvgEngine::scaleSize(double size) const {
 }} // namespace jngen::drawing
 
 #undef JNGEN_INCLUDE_SVG_ENGINE_INL_H
+#endif // JNGEN_DECLARE_ONLY
 
 
 #include <algorithm>
@@ -394,39 +396,13 @@ private:
 
     typedef std::pair<Point, Point> Bbox;
 
-    static Bbox emptyBbox() {
-        const static double inf = 1e18;
-        return { Point{inf, inf}, Point{-inf, -inf} };
-    }
+    static Bbox emptyBbox();
 
-    static Bbox unite(const Bbox& lhs, const Bbox& rhs) {
-        return Bbox{
-                Point{
-                    std::min(lhs.first.x, rhs.first.x),
-                    std::min(lhs.first.y, rhs.first.y)},
-                Point{
-                    std::max(lhs.second.x, rhs.second.x),
-                    std::max(lhs.second.y, rhs.second.y)}
-        };
-    }
+    static Bbox unite(const Bbox& lhs, const Bbox& rhs);
 
-    static Bbox bbox(const Point& p) {
-        return {p, p};
-    }
-
-    static Bbox bbox(const std::pair<Point, double>& circle) {
-        Point p;
-        double radius;
-        std::tie(p, radius) = circle;
-        return {
-                Point{p.x - radius, p.y - radius},
-                Point{p.x + radius, p.y + radius}
-        };
-    }
-
-    static Bbox bbox(const std::pair<Point, Point>& segment) {
-        return unite(bbox(segment.first), bbox(segment.second));
-    }
+    static Bbox bbox(const Point& p);
+    static Bbox bbox(const std::pair<Point, double>& circle);
+    static Bbox bbox(const std::pair<Point, Point>& segment);
 
     Bbox getBbox() const;
     void drawAll();
@@ -460,6 +436,42 @@ void Drawer::polygon(const std::vector<P>& points) {
         segment(points[i], points[i+1]);
     }
     segment(points.back(), points.front());
+}
+
+#ifndef JNGEN_DECLARE_ONLY
+
+Drawer::Bbox Drawer::emptyBbox() {
+    const static double inf = 1e18;
+    return { Point{inf, inf}, Point{-inf, -inf} };
+}
+
+Drawer::Bbox Drawer::unite(const Bbox& lhs, const Bbox& rhs) {
+    return Bbox{
+            Point{
+                std::min(lhs.first.x, rhs.first.x),
+                std::min(lhs.first.y, rhs.first.y)},
+            Point{
+                std::max(lhs.second.x, rhs.second.x),
+                std::max(lhs.second.y, rhs.second.y)}
+    };
+}
+
+Drawer::Bbox Drawer::bbox(const Point& p) {
+    return {p, p};
+}
+
+Drawer::Bbox Drawer::bbox(const std::pair<Point, double>& circle) {
+    Point p;
+    double radius;
+    std::tie(p, radius) = circle;
+    return {
+            Point{p.x - radius, p.y - radius},
+            Point{p.x + radius, p.y + radius}
+    };
+}
+
+Drawer::Bbox Drawer::bbox(const std::pair<Point, Point>& segment) {
+    return unite(bbox(segment.first), bbox(segment.second));
 }
 
 Drawer::Bbox Drawer::getBbox() const {
@@ -597,6 +609,8 @@ void Drawer::dumpSvg(const std::string& filename) {
     out.close();
 }
 
+#endif // JNGEN_DECLARE_ONLY
+
 }} // namespace jngen::drawing
 
 using jngen::drawing::Drawer;
@@ -609,33 +623,9 @@ namespace jngen {
 
 class Dsu {
 public:
-    int getParent(int x) {
-        extend(x);
+    int getParent(int x);
 
-        return parent[x] == x ? x : (parent[x] = getParent(parent[x]));
-    }
-
-    bool link(int x, int y) {
-        extend(std::max(x, y));
-
-        x = parent[x];
-        y = parent[y];
-        if (x == y) {
-            return false;
-        }
-
-        if (rank[x] > rank[y]) {
-            std::swap(x, y);
-        }
-        if (rank[y] == rank[x]) {
-            ++rank[y];
-        }
-        parent[x] = y;
-
-        --components;
-
-        return true;
-    }
+    bool link(int x, int y);
 
     bool isConnected() const { return components <= 1; }
 
@@ -645,15 +635,49 @@ private:
 
     int components = 0;
 
-    void extend(size_t x) {
-        size_t last = parent.size() - 1;
-        while (parent.size() <= x) {
-            ++components;
-            parent.push_back(++last);
-            rank.push_back(0);
-        }
-    }
+    void extend(size_t x);
 };
+
+#ifndef JNGEN_DECLARE_ONLY
+
+int Dsu::getParent(int x) {
+    extend(x);
+
+    return parent[x] == x ? x : (parent[x] = getParent(parent[x]));
+}
+
+bool Dsu::link(int x, int y) {
+    extend(std::max(x, y));
+
+    x = parent[x];
+    y = parent[y];
+    if (x == y) {
+        return false;
+    }
+
+    if (rank[x] > rank[y]) {
+        std::swap(x, y);
+    }
+    if (rank[y] == rank[x]) {
+        ++rank[y];
+    }
+    parent[x] = y;
+
+    --components;
+
+    return true;
+}
+
+void Dsu::extend(size_t x) {
+    size_t last = parent.size() - 1;
+    while (parent.size() <= x) {
+        ++components;
+        parent.push_back(++last);
+        rank.push_back(0);
+    }
+}
+
+#endif // JNGEN_DECLARE_ONLY
 
 } // namespace jngen
 
@@ -3330,7 +3354,29 @@ extern int nextTestNo;
 int nextTestNo = -1;
 #endif // JNGEN_DECLARE_ONLY
 
-inline void startTest(int testNo) {
+void startTest(int testNo);
+
+void startTest();
+
+void setNextTestNumber(int testNo);
+
+Array64 randomTestSizes(
+    long long totalSize,
+    int count,
+    long long minSize,
+    long long maxSize,
+    const Array64& predefined);
+
+Array randomTestSizes(
+    int totalSize,
+    int count,
+    int minSize,
+    int maxSize,
+    const Array& predefined);
+
+#ifndef JNGEN_DECLARE_ONLY
+
+void startTest(int testNo) {
     nextTestNo = testNo + 1;
     char filename[10];
     std::sprintf(filename, "%d", testNo);
@@ -3339,7 +3385,7 @@ inline void startTest(int testNo) {
     }
 }
 
-inline void startTest() {
+void startTest() {
     if (nextTestNo == -1) {
         nextTestNo = getInitialTestNo();
     }
@@ -3347,11 +3393,11 @@ inline void startTest() {
     startTest(nextTestNo);
 }
 
-inline void setNextTestNumber(int testNo) {
+void setNextTestNumber(int testNo) {
     nextTestNo = testNo;
 }
 
-inline Array64 randomTestSizes(
+Array64 randomTestSizes(
     long long totalSize,
     int count,
     long long minSize,
@@ -3388,7 +3434,7 @@ inline Array64 randomTestSizes(
     return (partition + predefined).shuffled();
 }
 
-inline Array randomTestSizes(
+Array randomTestSizes(
     int totalSize,
     int count,
     int minSize,
@@ -3403,6 +3449,8 @@ inline Array randomTestSizes(
         arrayCast<long long>(predefined)
     ));
 }
+
+#endif // JNGEN_DECLARE_ONLY
 
 } // namespace jngen
 
@@ -3879,7 +3927,6 @@ public:
     virtual void doPrintEdges(
         std::ostream& out, const OutputModifier& mod) const;
 
-    // TODO: more operators!
     virtual bool operator==(const GenericGraph& other) const;
     virtual bool operator!=(const GenericGraph& other) const;
     virtual bool operator<(const GenericGraph& other) const;

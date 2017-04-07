@@ -91,7 +91,6 @@ public:
     virtual void doPrintEdges(
         std::ostream& out, const OutputModifier& mod) const;
 
-    // TODO: more operators!
     virtual bool operator==(const GenericGraph& other) const;
     virtual bool operator!=(const GenericGraph& other) const;
     virtual bool operator<(const GenericGraph& other) const;

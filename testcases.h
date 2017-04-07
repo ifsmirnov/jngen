@@ -25,7 +25,29 @@ extern int nextTestNo;
 int nextTestNo = -1;
 #endif // JNGEN_DECLARE_ONLY
 
-inline void startTest(int testNo) {
+void startTest(int testNo);
+
+void startTest();
+
+void setNextTestNumber(int testNo);
+
+Array64 randomTestSizes(
+    long long totalSize,
+    int count,
+    long long minSize,
+    long long maxSize,
+    const Array64& predefined);
+
+Array randomTestSizes(
+    int totalSize,
+    int count,
+    int minSize,
+    int maxSize,
+    const Array& predefined);
+
+#ifndef JNGEN_DECLARE_ONLY
+
+void startTest(int testNo) {
     nextTestNo = testNo + 1;
     char filename[10];
     std::sprintf(filename, "%d", testNo);
@@ -34,7 +56,7 @@ inline void startTest(int testNo) {
     }
 }
 
-inline void startTest() {
+void startTest() {
     if (nextTestNo == -1) {
         nextTestNo = getInitialTestNo();
     }
@@ -42,11 +64,11 @@ inline void startTest() {
     startTest(nextTestNo);
 }
 
-inline void setNextTestNumber(int testNo) {
+void setNextTestNumber(int testNo) {
     nextTestNo = testNo;
 }
 
-inline Array64 randomTestSizes(
+Array64 randomTestSizes(
     long long totalSize,
     int count,
     long long minSize,
@@ -83,7 +105,7 @@ inline Array64 randomTestSizes(
     return (partition + predefined).shuffled();
 }
 
-inline Array randomTestSizes(
+Array randomTestSizes(
     int totalSize,
     int count,
     int minSize,
@@ -98,6 +120,8 @@ inline Array randomTestSizes(
         arrayCast<long long>(predefined)
     ));
 }
+
+#endif // JNGEN_DECLARE_ONLY
 
 } // namespace jngen
 

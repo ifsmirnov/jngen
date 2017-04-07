@@ -59,6 +59,8 @@ inline const char* SvgEngine::colorToString(Color color) {
 
 }} // namespace jngen::drawing
 
+#ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_SVG_ENGINE_INL_H
 #include "svg_engine_inl.h"
 #undef JNGEN_INCLUDE_SVG_ENGINE_INL_H
+#endif // JNGEN_DECLARE_ONLY
