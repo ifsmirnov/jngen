@@ -126,6 +126,476 @@ using jngen::format;
 using jngen::ContextTimer;
 using jngen::distribution;
 
+#include <string>
+
+namespace jngen {
+namespace drawing {
+
+enum class Color {
+    White,
+    Black,
+    Red,
+    Green,
+    Blue,
+    Grey,
+    LightGrey
+};
+
+class DrawingEngine {
+public:
+    DrawingEngine() {}
+    virtual ~DrawingEngine() {}
+
+    virtual void drawPoint(double x, double y) = 0;
+    virtual void drawCircle(double x, double y, double r) = 0;
+    virtual void drawSegment(double x1, double y1, double x2, double y2) = 0;
+    virtual void drawText(
+        double x, double y, const std::string& s) = 0;
+
+    virtual void setWidth(double width) = 0;
+    virtual void setColor(Color color) = 0;
+
+    virtual Color color() const = 0;
+    virtual double width() const = 0;
+};
+
+}} // namespace jngen::drawing
+
+
+#include <sstream>
+#include <string>
+
+namespace jngen {
+namespace drawing {
+
+class SvgEngine : public DrawingEngine {
+public:
+    SvgEngine(double x1 = 0, double y1 = 0, double x2 = 50, double y2 = 50);
+
+    virtual ~SvgEngine() {}
+
+    virtual void drawPoint(double x, double y) override;
+    virtual void drawCircle(double x, double y, double r) override;
+    virtual void drawSegment(
+        double x1, double y1, double x2, double y2) override;
+    virtual void drawText(
+        double x, double y, const std::string& s) override;
+
+    virtual void setWidth(double width) override;
+    virtual void setColor(Color color) override;
+
+    virtual Color color() const override { return color_; }
+    virtual double width() const override { return width_; }
+
+    std::string serialize() const;
+
+private:
+    static const char* colorToString(Color color);
+
+    double lerpX(double x) const;
+    double lerpY(double y) const;
+    double scaleSize(double size) const;
+
+    std::ostringstream output_;
+
+    double width_;
+    Color color_;
+
+    double x1_, y1_, x2_, y2_; // borders
+};
+
+inline const char* SvgEngine::colorToString(Color color) {
+    switch (color) {
+        case Color::White: return "white";
+        case Color::Black: return "black";
+        case Color::Red: return "red";
+        case Color::Green: return "green";
+        case Color::Blue: return "blue";
+        case Color::Grey: return "grey";
+        case Color::LightGrey: return "lightgrey";
+        default: return "black";
+    }
+}
+
+}} // namespace jngen::drawing
+
+#define JNGEN_INCLUDE_SVG_ENGINE_INL_H
+#ifndef JNGEN_INCLUDE_SVG_ENGINE_INL_H
+#error File "svg_engine_inl.h" must not be included directly.
+#endif
+
+#include <cmath>
+
+namespace jngen {
+namespace drawing {
+
+static char buf[10000];
+constexpr static double WIDTH_SCALE = 8;
+constexpr static double CANVAS_SIZE = 2000;
+constexpr static int FONT_SIZE = 64;
+
+namespace {
+
+// Given x \in [l, r], return linear interpolation to [L, R]
+double lerp(double x, double l, double r, double L, double R) {
+    return L + (R - L) * ((x - l) / (r - l));
+}
+
+} // namespace
+
+SvgEngine::SvgEngine(double x1, double y1, double x2, double y2) :
+    width_(1.0),
+    color_(Color::Black),
+    x1_(x1),
+    y1_(y1),
+    x2_(x2),
+    y2_(y2)
+{  }
+
+void SvgEngine::drawPoint(double x, double y) {
+    x = lerpX(x);
+    y = lerpY(y);
+    double w = width_ * WIDTH_SCALE;
+    sprintf(
+        buf,
+        "<circle cx='%f' cy='%f' r='%f' fill='%s'/>",
+        x, y, w, colorToString(color_)
+    );
+    output_ << buf << "\n";
+}
+
+void SvgEngine::drawCircle(double x, double y, double r) {
+    x = lerpX(x);
+    y = lerpY(y);
+    r = scaleSize(r);
+    sprintf(
+        buf,
+        "<circle cx='%f' cy='%f' r='%f' fill='%s'/>",
+        x, y, r, colorToString(color_)
+    );
+    output_ << buf << "\n";
+}
+
+void SvgEngine::drawSegment(
+        double x1, double y1, double x2, double y2)
+{
+    x1 = lerpX(x1);
+    y1 = lerpY(y1);
+    x2 = lerpX(x2);
+    y2 = lerpY(y2);
+    if (std::fabs(x1 - x2) < 1e-9) {
+        x1 = std::round(x1);
+        x2 = std::round(x2);
+    }
+    if (std::fabs(y1 - y2) < 1e-9) {
+        y1 = std::round(y1);
+        y2 = std::round(y2);
+    }
+    sprintf(
+        buf,
+        "<line x1='%f' y1='%f' x2='%f' y2='%f' stroke='%s' stroke-width='%f'/>",
+        x1, y1, x2, y2, colorToString(color_), width_ * WIDTH_SCALE
+    );
+    output_ << buf << "\n";
+}
+
+void SvgEngine::drawText(
+    double x, double y, const std::string& s)
+{
+    x = std::round(lerpX(x));
+    y = std::round(lerpY(y));
+    sprintf(
+        buf,
+        "<text x='%f' y='%f' font-size='%d' font-family='Helvetica'>%s</text>",
+        x, y, FONT_SIZE, s.c_str()
+    );
+    output_ << buf << "\n";
+}
+
+void SvgEngine::setWidth(double width) {
+    width_ = width;
+}
+
+void SvgEngine::setColor(Color color) {
+    color_ = color;
+}
+
+std::string SvgEngine::serialize() const {
+    int offset = sprintf(
+        buf,
+        "<svg xmlns='http://www.w3.org/2000/svg' "
+        "viewBox='%f %f %f %f'>\n",
+        0.0, 0.0, CANVAS_SIZE, CANVAS_SIZE * (y2_ - y1_) / (x2_ - x1_)
+    );
+    sprintf(
+        buf + offset,
+        "<circle cx='%f' cy='%f' r='%f' fill='white'/>\n",
+        CANVAS_SIZE/2, CANVAS_SIZE/2, CANVAS_SIZE
+    );
+
+    return buf + output_.str() + "</svg>\n";
+}
+
+double SvgEngine::lerpX(double x) const {
+    return lerp(x, x1_, x2_, 0., CANVAS_SIZE);
+}
+
+double SvgEngine::lerpY(double y) const {
+    return lerp(y, y2_, y1_, 0., CANVAS_SIZE * (y2_ - y1_) / (x2_ - x1_));
+}
+
+double SvgEngine::scaleSize(double size) const {
+    return size * CANVAS_SIZE / (x2_ - x1_);
+}
+
+}} // namespace jngen::drawing
+
+#undef JNGEN_INCLUDE_SVG_ENGINE_INL_H
+
+
+#include <algorithm>
+#include <cmath>
+#include <fstream>
+#include <memory>
+#include <utility>
+#include <vector>
+
+namespace jngen {
+namespace drawing {
+
+class Drawer {
+public:
+    template<typename P>
+    void point(const P& p);
+
+    template<typename P>
+    void circle(const P& p, double radius);
+
+    template<typename P>
+    void segment(const P& p1, const P& p2);
+
+    template<typename P>
+    void polygon(const std::vector<P>& points);
+
+    void dumpSvg(const std::string& filename);
+
+private:
+    struct Point {
+        double x, y;
+        Point() {}
+        Point(double x, double y) : x(x), y(y) {}
+    };
+
+    typedef std::pair<Point, Point> Bbox;
+
+    static Bbox emptyBbox() {
+        const static double inf = 1e18;
+        return { Point{inf, inf}, Point{-inf, -inf} };
+    }
+
+    static Bbox unite(const Bbox& lhs, const Bbox& rhs) {
+        return Bbox{
+                Point{
+                    std::min(lhs.first.x, rhs.first.x),
+                    std::min(lhs.first.y, rhs.first.y)},
+                Point{
+                    std::max(lhs.second.x, rhs.second.x),
+                    std::max(lhs.second.y, rhs.second.y)}
+        };
+    }
+
+    static Bbox bbox(const Point& p) {
+        return {p, p};
+    }
+
+    static Bbox bbox(const std::pair<Point, double>& circle) {
+        Point p;
+        double radius;
+        std::tie(p, radius) = circle;
+        return {
+                Point{p.x - radius, p.y - radius},
+                Point{p.x + radius, p.y + radius}
+        };
+    }
+
+    static Bbox bbox(const std::pair<Point, Point>& segment) {
+        return unite(bbox(segment.first), bbox(segment.second));
+    }
+
+    Bbox getBbox() const;
+    void drawAll();
+    void drawGrid(const Bbox& bbox);
+
+    std::vector<Point> points_;
+    std::vector<std::pair<Point, double>> circles_;
+    std::vector<std::pair<Point, Point>> segments_;
+
+    DrawingEngine* engine_;
+};
+
+template<typename P>
+void Drawer::point(const P& p) {
+    points_.push_back(Point(p.x, p.y));
+}
+
+template<typename P>
+void Drawer::circle(const P& p, double radius) {
+    circles_.emplace_back(Point(p.x, p.y), radius);
+}
+
+template<typename P>
+void Drawer::segment(const P& p1, const P& p2) {
+    segments_.emplace_back(Point(p1.x, p1.y), Point(p2.x, p2.y));
+}
+
+template<typename P>
+void Drawer::polygon(const std::vector<P>& points) {
+    for (size_t i = 0; i + 1 < points.size(); ++i) {
+        segment(points[i], points[i+1]);
+    }
+    segment(points.back(), points.front());
+}
+
+Drawer::Bbox Drawer::getBbox() const {
+    Bbox result = emptyBbox();
+    for (const auto& t: points_) {
+        result = unite(result, bbox(t));
+    }
+    for (const auto& t: circles_) {
+        result = unite(result, bbox(t));
+    }
+    for (const auto& t: segments_) {
+        result = unite(result, bbox(t));
+    }
+
+    double dx = result.second.x - result.first.x;
+    double dy = result.second.y - result.first.y;
+    double add = std::min(dx, dy) * 0.05;
+    result.first.x -= add;
+    result.second.x += add;
+    result.first.y -= add;
+    result.second.y += add;
+
+    return result;
+}
+
+void Drawer::drawAll() {
+    for (const auto& t: points_) {
+        engine_->drawPoint(t.x, t.y);
+    }
+    for (const auto& t: circles_) {
+        engine_->drawCircle(t.first.x, t.first.y, t.second);
+    }
+    for (const auto& t: segments_) {
+        engine_->drawSegment(t.first.x, t.first.y, t.second.x, t.second.y);
+    }
+}
+
+void Drawer::drawGrid(const Bbox& bbox) {
+    const static std::vector<int> STEP_DELTA = {20, 25, 20};
+    // Step goes like 1, 2, 5, 10, 20, 50, 100, ...
+    constexpr static int SMALL_IN_BIG = 5;
+    constexpr static int THRESHOLD = 8;
+
+    Color savedColor = engine_->color();
+    double savedWidth = engine_->width();
+
+    int step = 1;
+    double spread = std::min(
+        bbox.second.x - bbox.first.x,
+        bbox.second.y - bbox.first.y);
+    size_t deltaPos = 0;
+    while (spread / step > THRESHOLD) {
+        step = step * STEP_DELTA[deltaPos] / 10;
+        if (++deltaPos == STEP_DELTA.size()) {
+            deltaPos = 0;
+        }
+    }
+
+    engine_->setWidth(0.5);
+    engine_->setColor(Color::LightGrey);
+
+    double smallStep = 1.0 * step / SMALL_IN_BIG;
+
+    for (
+            double tick = std::ceil(bbox.first.x / smallStep) * smallStep;
+            tick < bbox.second.x;
+            tick += smallStep)
+    {
+        if (std::lround(tick) % step != 0) {
+            engine_->drawSegment(tick, bbox.first.y, tick, bbox.second.y);
+        }
+    }
+
+    for (
+            double tick = std::ceil(bbox.first.y / smallStep) * smallStep;
+            tick < bbox.second.y;
+            tick += smallStep)
+    {
+        if (std::lround(tick) % step != 0) {
+            engine_->drawSegment(bbox.first.x, tick, bbox.second.x, tick);
+        }
+    }
+
+    engine_->setWidth(0.75);
+    engine_->setColor(Color::Grey);
+    const double textOffset = smallStep / 4.0;
+
+    auto format = [](double x) {
+        static char buf[10];
+        std::sprintf(buf, "%d", int(std::lround(x)));
+        return std::string(buf);
+    };
+
+    for (
+            double tick = std::ceil(bbox.first.x / step) * step;
+            tick < bbox.second.x;
+            tick += step)
+    {
+        engine_->drawSegment(tick, bbox.first.y, tick, bbox.second.y);
+        engine_->drawText(
+            tick + textOffset, bbox.first.y + textOffset, format(tick));
+    }
+
+    for (
+            double tick = std::ceil(bbox.first.y / step) * step;
+            tick < bbox.second.y;
+            tick += step)
+    {
+        engine_->drawSegment(bbox.first.x, tick, bbox.second.x, tick);
+        engine_->drawText(
+            bbox.first.x + textOffset, tick + textOffset, format(tick));
+    }
+
+    engine_->setColor(savedColor);
+    engine_->setWidth(savedWidth);
+}
+
+void Drawer::dumpSvg(const std::string& filename) {
+    if (points_.empty() && circles_.empty() && segments_.empty()) {
+        return;
+    }
+
+    auto bbox = getBbox();
+    std::unique_ptr<SvgEngine> svgEngine(new SvgEngine(
+        bbox.first.x, bbox.first.y, bbox.second.x, bbox.second.y));
+
+    engine_ = svgEngine.get();
+    drawGrid(bbox);
+    drawAll();
+
+    std::string svg = svgEngine->serialize();
+
+    std::ofstream out(filename);
+    out << svg;
+    out.close();
+}
+
+}} // namespace jngen::drawing
+
+using jngen::drawing::Drawer;
+using jngen::drawing::Color;
+
 #include <algorithm>
 #include <vector>
 
