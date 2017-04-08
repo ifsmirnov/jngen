@@ -104,12 +104,11 @@ JNGEN_DECLARE_PRINTER(
     JNGEN_HAS_OSTREAM() && JNGEN_HAS_FUNCTION(Plus), 11)
 {
     if (std::is_integral<T>::value) {
-        out << t + mod.addition;
+        out << T(t + mod.addition);
     } else {
         out << t;
     }
 }
-
 
 JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1, 3)
 {

@@ -10,7 +10,6 @@ int Random::wnext(int n, int w) {
         return smallWnext<int>(w, n);
     } else {
         double t = realWnext(w);
-        std::cerr << "t = " << t << std::endl;
         return n * t;
     }
 }

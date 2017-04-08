@@ -8,7 +8,7 @@
 
 namespace jngen {
 
-#define JNGEN_DEFAULT_WEIGHT_TYPES int, double, std::string, std::pair<int, int>
+#define JNGEN_DEFAULT_WEIGHT_TYPES int, double, std::string, char, std::pair<int, int>
 
 #if defined(JNGEN_EXTRA_WEIGHT_TYPES)
 #define JNGEN_WEIGHT_TYPES JNGEN_DEFAULT_WEIGHT_TYPES , JNGEN_EXTRA_WEIGHT_TYPES
