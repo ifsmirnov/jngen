@@ -46,6 +46,9 @@ private:
     static Bbox bbox(const std::pair<Point, Point>& segment);
 
     Bbox getBbox() const;
+
+    static Bbox viewportByBbox(const Bbox& bbox);
+
     void drawAll();
     void drawGrid(const Bbox& bbox);
 
@@ -126,17 +129,74 @@ Drawer::Bbox Drawer::getBbox() const {
     for (const auto& t: segments_) {
         result = unite(result, bbox(t));
     }
-
-    double dx = result.second.x - result.first.x;
-    double dy = result.second.y - result.first.y;
-    double add = std::min(dx, dy) * 0.05;
-    result.first.x -= add;
-    result.second.x += add;
-    result.first.y -= add;
-    result.second.y += add;
-
     return result;
 }
+
+/*
+Given a bbox of points, returns a bbox with following properties:
+    - at least 5% margin at each side is blank
+    - side lengths differ by at most 1.6
+    - side length is at least 10
+    - if it is possible to include (0, 0), include it explicitly
+ */
+Drawer::Bbox Drawer::viewportByBbox(const Bbox& bbox) {
+    constexpr static double MIN_SIZE = 10.0;
+    constexpr static double MAX_RATIO = 1.6;
+    constexpr static double MARGIN_RATIO = 0.05;
+    constexpr static double MAX_RELATIVE_DISTANCE_TO_ZERO = 0.2;
+
+    double lx = bbox.first.x;
+    double rx = bbox.second.x;
+    double ly = bbox.first.y;
+    double ry = bbox.second.y;
+
+    auto extendToSize = [&](double& l, double &r, double size) {
+        double shift = (size - (r - l)) / 2;
+        l -= shift;
+        r += shift;
+    };
+
+    auto extendInterval = [&](double& l, double &r) {
+        if (r - l < MIN_SIZE) {
+            if (l >= -1e-9 && r < MIN_SIZE) {
+                l = 0;
+                r = MIN_SIZE;
+
+            } else if (r <= 1e-9 && l >= -MIN_SIZE) {
+                l = -MIN_SIZE;
+                r = 0;
+            } else {
+                extendToSize(l, r, MIN_SIZE);
+            }
+        }
+
+        if ((l > 0 || r < 0) && std::min(std::abs(l), std::abs(r)) <=
+                (r - l) * MAX_RELATIVE_DISTANCE_TO_ZERO)
+        {
+            if (l > 0) {
+                l = 0;
+            } else {
+                r = 0;
+            }
+        }
+
+        double margin = (r - l) * MARGIN_RATIO;
+        l -= margin;
+        r += margin;
+    };
+
+    extendInterval(lx, rx);
+    extendInterval(ly, ry);
+
+    if ((rx - lx) / (ry - ly) > MAX_RATIO) {
+        extendToSize(ly, ry, (rx - lx) / MAX_RATIO);
+    } else if ((ry - ly) / (rx - lx) > MAX_RATIO) {
+        extendToSize(lx, rx, (ry - ly) / MAX_RATIO);
+    }
+
+    return { Point(lx, ly), Point(rx, ry) };
+}
+
 
 void Drawer::drawAll() {
     for (const auto& t: points_) {
@@ -155,15 +215,17 @@ void Drawer::drawGrid(const Bbox& bbox) {
     // Step goes like 1, 2, 5, 10, 20, 50, 100, ...
     constexpr static int SMALL_IN_BIG = 5;
     constexpr static int THRESHOLD = 8;
+    constexpr static int MAX_SPREAD_TO_DRAW_ALL_TICKS = 13;
+    constexpr static double TEXT_OFFSET_RATIO = 0.01;
 
     Color savedColor = engine_->color();
     double savedWidth = engine_->width();
 
-    int step = 1;
+    int step = 5;
     double spread = std::min(
         bbox.second.x - bbox.first.x,
         bbox.second.y - bbox.first.y);
-    size_t deltaPos = 0;
+    size_t deltaPos = 2;
     while (spread / step > THRESHOLD) {
         step = step * STEP_DELTA[deltaPos] / 10;
         if (++deltaPos == STEP_DELTA.size()) {
@@ -198,13 +260,6 @@ void Drawer::drawGrid(const Bbox& bbox) {
 
     engine_->setWidth(0.75);
     engine_->setColor(Color::Grey);
-    const double textOffset = smallStep / 4.0;
-
-    auto format = [](double x) {
-        static char buf[10];
-        std::sprintf(buf, "%d", int(std::lround(x)));
-        return std::string(buf);
-    };
 
     for (
             double tick = std::ceil(bbox.first.x / step) * step;
@@ -212,8 +267,6 @@ void Drawer::drawGrid(const Bbox& bbox) {
             tick += step)
     {
         engine_->drawSegment(tick, bbox.first.y, tick, bbox.second.y);
-        engine_->drawText(
-            tick + textOffset, bbox.first.y + textOffset, format(tick));
     }
 
     for (
@@ -222,9 +275,46 @@ void Drawer::drawGrid(const Bbox& bbox) {
             tick += step)
     {
         engine_->drawSegment(bbox.first.x, tick, bbox.second.x, tick);
-        engine_->drawText(
-            bbox.first.x + textOffset, tick + textOffset, format(tick));
     }
+
+    const double textOffsetX =
+        (bbox.second.x - bbox.first.x) * TEXT_OFFSET_RATIO;
+    const double textOffsetY =
+        (bbox.second.y - bbox.first.y) * TEXT_OFFSET_RATIO;
+
+    auto format = [](double x) {
+        static char buf[10];
+        std::sprintf(buf, "%d", int(std::lround(x)));
+        return std::string(buf);
+    };
+
+    if (spread < MAX_SPREAD_TO_DRAW_ALL_TICKS) {
+        step = 1;
+    }
+
+    for (
+            double tick = std::ceil(bbox.first.y / step) * step;
+            tick < bbox.second.y;
+            tick += step)
+    {
+        engine_->drawText(
+            bbox.first.x + textOffsetX, tick + textOffsetX, format(tick));
+    }
+
+    for (
+            double tick = std::ceil(bbox.first.x / step) * step;
+            tick < bbox.second.x;
+            tick += step)
+    {
+        engine_->drawText(
+            tick + textOffsetY, bbox.first.y + textOffsetY, format(tick));
+    }
+
+
+    if (spread <= MAX_SPREAD_TO_DRAW_ALL_TICKS) {
+        step = 1;
+    }
+
 
     engine_->setColor(savedColor);
     engine_->setWidth(savedWidth);
@@ -236,11 +326,13 @@ void Drawer::dumpSvg(const std::string& filename) {
     }
 
     auto bbox = getBbox();
+    auto viewport = viewportByBbox(bbox);
     std::unique_ptr<SvgEngine> svgEngine(new SvgEngine(
-        bbox.first.x, bbox.first.y, bbox.second.x, bbox.second.y));
+        viewport.first.x, viewport.first.y,
+        viewport.second.x, viewport.second.y));
 
     engine_ = svgEngine.get();
-    drawGrid(bbox);
+    drawGrid(viewport);
     drawAll();
 
     std::string svg = svgEngine->serialize();

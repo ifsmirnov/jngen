@@ -33,7 +33,7 @@ SvgEngine::SvgEngine(double x1, double y1, double x2, double y2) :
 void SvgEngine::drawPoint(double x, double y) {
     x = lerpX(x);
     y = lerpY(y);
-    double w = width_ * WIDTH_SCALE;
+    double w = width_ * WIDTH_SCALE * 1.5;
     sprintf(
         buf,
         "<circle cx='%f' cy='%f' r='%f' fill='%s'/>",
@@ -108,7 +108,8 @@ std::string SvgEngine::serialize() const {
     sprintf(
         buf + offset,
         "<circle cx='%f' cy='%f' r='%f' fill='white'/>\n",
-        CANVAS_SIZE/2, CANVAS_SIZE/2, CANVAS_SIZE
+        CANVAS_SIZE/2, CANVAS_SIZE/2,
+        std::hypot(CANVAS_SIZE, CANVAS_SIZE * (y2_ - y1_) / (x2_ - x1_))
     );
 
     return buf + output_.str() + "</svg>\n";
