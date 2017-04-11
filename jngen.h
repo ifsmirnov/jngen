@@ -365,7 +365,10 @@ double SvgEngine::scaleSize(double size) const {
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <map>
 #include <memory>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -386,6 +389,12 @@ public:
     template<typename P>
     void polygon(const std::vector<P>& points);
 
+    void setWidth(double width);
+
+    void setColor(Color color);
+
+    void setColor(const std::string& desc);
+
     void dumpSvg(const std::string& filename);
 
 private:
@@ -394,6 +403,8 @@ private:
         Point() {}
         Point(double x, double y) : x(x), y(y) {}
     };
+
+    struct DrawRequest;
 
     typedef std::pair<Point, Point> Bbox;
 
@@ -416,21 +427,64 @@ private:
     std::vector<std::pair<Point, double>> circles_;
     std::vector<std::pair<Point, Point>> segments_;
 
+    std::vector<DrawRequest> requests_;
+
     DrawingEngine* engine_;
+    int requestId_ = 0;
+};
+
+struct Drawer::DrawRequest {
+    enum class Type {
+        Point, Circle, Segment, Color, Width
+    };
+
+    Type type;
+    union {
+        int id;
+        double width;
+        Color color;
+    };
+
+    static DrawRequest fromObject(Type type, int id) {
+        DrawRequest request;
+        request.type = type;
+        request.id = id;
+        return request;
+    }
+
+    static DrawRequest fromWidth(double width) {
+        DrawRequest request;
+        request.type = Type::Width;
+        request.width = width;
+        return request;
+    }
+
+    static DrawRequest fromColor(Color color) {
+        DrawRequest request;
+        request.type = Type::Color;
+        request.color = color;
+        return request;
+    }
 };
 
 template<typename P>
 void Drawer::point(const P& p) {
-    points_.push_back(Point(p.x, p.y));
+    requests_.push_back(DrawRequest::fromObject(
+            DrawRequest::Type::Point, points_.size()));
+    points_.emplace_back(Point(p.x, p.y));
 }
 
 template<typename P>
 void Drawer::circle(const P& p, double radius) {
+    requests_.push_back(DrawRequest::fromObject(
+            DrawRequest::Type::Circle, circles_.size()));
     circles_.emplace_back(Point(p.x, p.y), radius);
 }
 
 template<typename P>
 void Drawer::segment(const P& p1, const P& p2) {
+    requests_.push_back(DrawRequest::fromObject(
+            DrawRequest::Type::Segment, segments_.size()));
     segments_.emplace_back(Point(p1.x, p1.y), Point(p2.x, p2.y));
 }
 
@@ -443,6 +497,34 @@ void Drawer::polygon(const std::vector<P>& points) {
 }
 
 #ifndef JNGEN_DECLARE_ONLY
+
+void Drawer::setWidth(double width) {
+    requests_.push_back(DrawRequest::fromWidth(width));
+}
+
+void Drawer::setColor(Color color) {
+    requests_.push_back(DrawRequest::fromColor(color));
+}
+
+void Drawer::setColor(const std::string& desc) {
+    const static std::map<std::string, Color> colors = {
+        {"white", Color::White},
+        {"black", Color::Black},
+        {"red", Color::Red},
+        {"green", Color::Green},
+        {"blue", Color::Blue},
+        {"grey", Color::Grey},
+        {"lightgrey", Color::LightGrey},
+        {"gray", Color::Grey},
+        {"lightgray", Color::LightGrey}
+    };
+
+    if (!colors.count(desc)) {
+        throw std::logic_error("Color `" + desc + "' is not supported");
+    }
+
+    setColor(colors.at(desc));
+}
 
 Drawer::Bbox Drawer::emptyBbox() {
     const static double inf = 1e18;
@@ -557,16 +639,31 @@ Drawer::Bbox Drawer::viewportByBbox(const Bbox& bbox) {
     return { Point(lx, ly), Point(rx, ry) };
 }
 
-
 void Drawer::drawAll() {
-    for (const auto& t: points_) {
-        engine_->drawPoint(t.x, t.y);
-    }
-    for (const auto& t: circles_) {
-        engine_->drawCircle(t.first.x, t.first.y, t.second);
-    }
-    for (const auto& t: segments_) {
-        engine_->drawSegment(t.first.x, t.first.y, t.second.x, t.second.y);
+    for (const auto& request: requests_) {
+        switch (request.type) {
+        case DrawRequest::Type::Point: {
+            const auto& t = points_[request.id];
+            engine_->drawPoint(t.x, t.y);
+            break;
+        }
+        case DrawRequest::Type::Circle: {
+            const auto& t = circles_[request.id];
+            engine_->drawCircle(t.first.x, t.first.y, t.second);
+            break;
+        }
+        case DrawRequest::Type::Segment: {
+            const auto& t = segments_[request.id];
+            engine_->drawSegment(t.first.x, t.first.y, t.second.x, t.second.y);
+            break;
+        }
+        case DrawRequest::Type::Width:
+            engine_->setWidth(request.width);
+            break;
+        case DrawRequest::Type::Color:
+            engine_->setColor(request.color);
+            break;
+        }
     }
 }
 
@@ -674,7 +771,6 @@ void Drawer::drawGrid(const Bbox& bbox) {
     if (spread <= MAX_SPREAD_TO_DRAW_ALL_TICKS) {
         step = 1;
     }
-
 
     engine_->setColor(savedColor);
     engine_->setWidth(savedWidth);
