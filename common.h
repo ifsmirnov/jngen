@@ -127,6 +127,18 @@ auto distribution(int n, F&& f) -> std::map<decltype(f()), int> {
     return dist;
 }
 
+void checkLargeParameter(int n) {
+#ifdef JNGEN_I_WANT_LARGE_OBJECTS
+    (void)n;
+#else
+    constexpr static int BOUND = 5000000; // 5 * 10^6
+    ensure(
+        n <= BOUND,
+        "If you want to generate an object of size > 5'000'000, please use "
+        "#define JNGEN_I_WANT_LARGE_OBJECTS prior to including Jngen");
+#endif
+}
+
 } // namespace jngen
 
 using jngen::format;

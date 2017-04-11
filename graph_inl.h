@@ -30,10 +30,13 @@ public:
     }
 
     static BuilderProxy random(int n, int m) {
+        checkLargeParameter(n);
+        checkLargeParameter(m);
         return BuilderProxy(Traits(n, m), &doRandom);
     }
 
     static BuilderProxy complete(int n) {
+        checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
             for (int i = 0; i < t.n; ++i) {
@@ -52,6 +55,7 @@ public:
     }
 
     static BuilderProxy empty(int n) {
+        checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
             g.setN(t.n);
@@ -60,6 +64,7 @@ public:
     }
 
     static BuilderProxy cycle(int n) {
+        checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
             for (int i = 0; i < t.n; ++i) {
@@ -72,6 +77,8 @@ public:
 
     static BuilderProxy randomStretched(
             int n, int m, int elongation, int spread) {
+        checkLargeParameter(n);
+        checkLargeParameter(m);
         return BuilderProxy(Traits(n, m), [elongation, spread](Traits t) {
             return doRandomStretched(t, elongation, spread);
         });

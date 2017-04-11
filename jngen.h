@@ -126,6 +126,18 @@ auto distribution(int n, F&& f) -> std::map<decltype(f()), int> {
     return dist;
 }
 
+void checkLargeParameter(int n) {
+#ifdef JNGEN_I_WANT_LARGE_OBJECTS
+    (void)n;
+#else
+    constexpr static int BOUND = 5000000; // 5 * 10^6
+    ensure(
+        n <= BOUND,
+        "If you want to generate an object of size > 5'000'000, please use "
+        "#define JNGEN_I_WANT_LARGE_OBJECTS prior to including Jngen");
+#endif
+}
+
 } // namespace jngen
 
 using jngen::format;
@@ -2314,7 +2326,6 @@ public:
             Base(base)
     {  }
 
-    // TODO(ifsmirnov): 'use' all methods and make inheritance private
     using Base::at;
     using Base::size;
     using Base::resize;
@@ -2325,6 +2336,7 @@ public:
     using Base::erase;
 
     void extend(size_t requiredSize) {
+        checkLargeParameter(requiredSize);
         if (requiredSize > size()) {
             resize(requiredSize);
         }
@@ -2389,6 +2401,7 @@ public:
 template<typename T>
 template<typename ...Args>
 GenericArray<T> GenericArray<T>::random(size_t size, const Args& ... args) {
+    checkLargeParameter(size);
     GenericArray<T> result(size);
     for (T& x: result) {
         x = rnd.tnext<T>(args...);
@@ -2403,6 +2416,7 @@ GenericArray<T> GenericArray<T>::randomf(
         F func,
         const Args& ... args)
 {
+    checkLargeParameter(size);
     GenericArray<T> result(size);
     for (T& x: result) {
         x = func(args...);
@@ -2433,6 +2447,7 @@ GenericArray<T> GenericArray<T>::randomfUnique(
         const Args& ... args)
 {
     typename detail::DictContainer<T>::type set;
+    checkLargeParameter(size);
     GenericArray<T> result;
     result.reserve(size);
 
@@ -2506,6 +2521,7 @@ template<typename T>
 GenericArray<T> GenericArray<T>::id(size_t size, T start) {
     constexpr bool enable = std::is_integral<T>::value;
     static_assert(enable, "Cannot call Array<T>::id with non-integral T");
+    checkLargeParameter(size);
 
     if (enable) {
         GenericArray<T> result(size);
@@ -2659,6 +2675,7 @@ GenericArray<T> GenericArray<T>::choice(size_t count) const {
 
 template<typename T>
 GenericArray<T> GenericArray<T>::choiceWithRepetition(size_t count) const {
+    checkLargeParameter(count);
     GenericArray<T> res(count);
     for (T& t: res) {
         t = choice();
@@ -4263,6 +4280,7 @@ void GenericGraph::doShuffle() {
 }
 
 void GenericGraph::extend(size_t size) {
+    checkLargeParameter(size);
     size_t oldSize = n();
     if (size > oldSize) {
         adjList_.resize(size);
@@ -4516,6 +4534,7 @@ void Tree::addEdge(int u, int v, const Weight& w) {
 }
 
 Array Tree::parents(int root) const {
+    ensure(isConnected(), "Tree::parents(int): Tree is not connected");
     root = vertexByLabel(root);
 
     Array parents(n());
@@ -4606,6 +4625,7 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
 // Tree generators go here
 
 Tree Tree::bamboo(int size) {
+    checkLargeParameter(size);
     Tree t;
     for (int i = 0; i + 1 < size; ++i) {
         t.addEdge(i, i+1);
@@ -4615,6 +4635,7 @@ Tree Tree::bamboo(int size) {
 }
 
 Tree Tree::randomPrufer(int size) {
+    checkLargeParameter(size);
     if (size == 1) {
         return Tree();
     }
@@ -4651,6 +4672,7 @@ Tree Tree::randomPrufer(int size) {
 }
 
 Tree Tree::random(int size, int elongation) {
+    checkLargeParameter(size);
     Tree t;
     for (int v = 1; v < size; ++v) {
         int parent = rnd.wnext(v, elongation);
@@ -4661,6 +4683,7 @@ Tree Tree::random(int size, int elongation) {
 }
 
 Tree Tree::star(int size) {
+    checkLargeParameter(size);
     Tree t;
     for (int i = 1; i < size; ++i) {
         t.addEdge(0, i);
@@ -4670,6 +4693,7 @@ Tree Tree::star(int size) {
 }
 
 Tree Tree::caterpillar(int size, int length) {
+    checkLargeParameter(size);
     ensure(length <= size);
     Tree t = Tree::bamboo(length);
     for (int i = length; i < size; ++i) {
@@ -4776,10 +4800,13 @@ public:
     }
 
     static BuilderProxy random(int n, int m) {
+        checkLargeParameter(n);
+        checkLargeParameter(m);
         return BuilderProxy(Traits(n, m), &doRandom);
     }
 
     static BuilderProxy complete(int n) {
+        checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
             for (int i = 0; i < t.n; ++i) {
@@ -4798,6 +4825,7 @@ public:
     }
 
     static BuilderProxy empty(int n) {
+        checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
             g.setN(t.n);
@@ -4806,6 +4834,7 @@ public:
     }
 
     static BuilderProxy cycle(int n) {
+        checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
             for (int i = 0; i < t.n; ++i) {
@@ -4818,6 +4847,8 @@ public:
 
     static BuilderProxy randomStretched(
             int n, int m, int elongation, int spread) {
+        checkLargeParameter(n);
+        checkLargeParameter(m);
         return BuilderProxy(Traits(n, m), [elongation, spread](Traits t) {
             return doRandomStretched(t, elongation, spread);
         });

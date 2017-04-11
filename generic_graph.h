@@ -179,6 +179,7 @@ void GenericGraph::doShuffle() {
 }
 
 void GenericGraph::extend(size_t size) {
+    checkLargeParameter(size);
     size_t oldSize = n();
     if (size > oldSize) {
         adjList_.resize(size);

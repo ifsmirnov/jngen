@@ -54,6 +54,7 @@ void Tree::addEdge(int u, int v, const Weight& w) {
 }
 
 Array Tree::parents(int root) const {
+    ensure(isConnected(), "Tree::parents(int): Tree is not connected");
     root = vertexByLabel(root);
 
     Array parents(n());
@@ -144,6 +145,7 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
 // Tree generators go here
 
 Tree Tree::bamboo(int size) {
+    checkLargeParameter(size);
     Tree t;
     for (int i = 0; i + 1 < size; ++i) {
         t.addEdge(i, i+1);
@@ -153,6 +155,7 @@ Tree Tree::bamboo(int size) {
 }
 
 Tree Tree::randomPrufer(int size) {
+    checkLargeParameter(size);
     if (size == 1) {
         return Tree();
     }
@@ -189,6 +192,7 @@ Tree Tree::randomPrufer(int size) {
 }
 
 Tree Tree::random(int size, int elongation) {
+    checkLargeParameter(size);
     Tree t;
     for (int v = 1; v < size; ++v) {
         int parent = rnd.wnext(v, elongation);
@@ -199,6 +203,7 @@ Tree Tree::random(int size, int elongation) {
 }
 
 Tree Tree::star(int size) {
+    checkLargeParameter(size);
     Tree t;
     for (int i = 1; i < size; ++i) {
         t.addEdge(0, i);
@@ -208,6 +213,7 @@ Tree Tree::star(int size) {
 }
 
 Tree Tree::caterpillar(int size, int length) {
+    checkLargeParameter(size);
     ensure(length <= size);
     Tree t = Tree::bamboo(length);
     for (int i = length; i < size; ++i) {

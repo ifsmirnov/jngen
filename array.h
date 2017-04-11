@@ -37,7 +37,6 @@ public:
             Base(base)
     {  }
 
-    // TODO(ifsmirnov): 'use' all methods and make inheritance private
     using Base::at;
     using Base::size;
     using Base::resize;
@@ -48,6 +47,7 @@ public:
     using Base::erase;
 
     void extend(size_t requiredSize) {
+        checkLargeParameter(requiredSize);
         if (requiredSize > size()) {
             resize(requiredSize);
         }
@@ -112,6 +112,7 @@ public:
 template<typename T>
 template<typename ...Args>
 GenericArray<T> GenericArray<T>::random(size_t size, const Args& ... args) {
+    checkLargeParameter(size);
     GenericArray<T> result(size);
     for (T& x: result) {
         x = rnd.tnext<T>(args...);
@@ -126,6 +127,7 @@ GenericArray<T> GenericArray<T>::randomf(
         F func,
         const Args& ... args)
 {
+    checkLargeParameter(size);
     GenericArray<T> result(size);
     for (T& x: result) {
         x = func(args...);
@@ -156,6 +158,7 @@ GenericArray<T> GenericArray<T>::randomfUnique(
         const Args& ... args)
 {
     typename detail::DictContainer<T>::type set;
+    checkLargeParameter(size);
     GenericArray<T> result;
     result.reserve(size);
 
@@ -229,6 +232,7 @@ template<typename T>
 GenericArray<T> GenericArray<T>::id(size_t size, T start) {
     constexpr bool enable = std::is_integral<T>::value;
     static_assert(enable, "Cannot call Array<T>::id with non-integral T");
+    checkLargeParameter(size);
 
     if (enable) {
         GenericArray<T> result(size);
@@ -382,6 +386,7 @@ GenericArray<T> GenericArray<T>::choice(size_t count) const {
 
 template<typename T>
 GenericArray<T> GenericArray<T>::choiceWithRepetition(size_t count) const {
+    checkLargeParameter(count);
     GenericArray<T> res(count);
     for (T& t: res) {
         t = choice();
