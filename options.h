@@ -130,6 +130,18 @@ T getOptOr(const std::string& name, T def) {
     return def;
 }
 
+inline std::string getOptOr(size_t index, const char* def) {
+    std::string defString(def);
+    getOpt(index, defString);
+    return defString;
+}
+
+inline std::string getOptOr(const std::string& name, const char* def) {
+    std::string defString(def);
+    getOpt(name, defString);
+    return defString;
+}
+
 inline void parseArgs(int argc, char *argv[]) {
     vmap = parseArguments(std::vector<std::string>(argv + 1, argv + argc));
 }
