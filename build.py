@@ -5,7 +5,7 @@ import re, os
 
 HEADER_REGEX = re.compile('#include "(.*)"')
 
-# This list may contain not all headers directly, though each jngen header
+# This list may contain not all headers directly, but each jngen header
 # must be among the dependencies of some file from here.
 LIBRARY_HEADERS = [
     "array.h",
@@ -21,6 +21,7 @@ LIBRARY_HEADERS = [
     "options.h",
     "printers.h",
     "repr.h",
+    "query_builder.h",
     "drawer/drawer.h",
 ]
 
