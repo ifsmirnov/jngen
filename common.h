@@ -131,7 +131,7 @@ inline void checkLargeParameter(int n) {
 #ifdef JNGEN_I_WANT_LARGE_OBJECTS
     (void)n;
 #else
-    constexpr static int BOUND = 5000000; // 5 * 10^6
+    constexpr static int BOUND = 5e6;
     ensure(
         n <= BOUND,
         "If you want to generate an object of size > 5'000'000, please use "

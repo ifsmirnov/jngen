@@ -145,6 +145,7 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
 // Tree generators go here
 
 Tree Tree::bamboo(int size) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     Tree t;
     for (int i = 0; i + 1 < size; ++i) {
@@ -155,6 +156,7 @@ Tree Tree::bamboo(int size) {
 }
 
 Tree Tree::randomPrufer(int size) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     if (size == 1) {
         return Tree();
@@ -192,6 +194,7 @@ Tree Tree::randomPrufer(int size) {
 }
 
 Tree Tree::random(int size, int elongation) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     Tree t;
     for (int v = 1; v < size; ++v) {
@@ -203,6 +206,7 @@ Tree Tree::random(int size, int elongation) {
 }
 
 Tree Tree::star(int size) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     Tree t;
     for (int i = 1; i < size; ++i) {
@@ -213,6 +217,8 @@ Tree Tree::star(int size) {
 }
 
 Tree Tree::caterpillar(int size, int length) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
+    ensure(length > 0, "Length of the caterpillar must be positive");
     checkLargeParameter(size);
     ensure(length <= size);
     Tree t = Tree::bamboo(length);

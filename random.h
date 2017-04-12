@@ -134,22 +134,26 @@ public:
     }
 
     int next(int l, int r) {
+        ensure(l <= r);
         uint32_t n = static_cast<uint32_t>(r) - l + 1;
         return l + uniformRandom(
             n, *this, (uint32_t (Random::*)())&Random::next);
     }
 
     long long next(long long l, long long r) {
+        ensure(l <= r);
         uint64_t n = static_cast<uint64_t>(r) - l + 1;
         return l + uniformRandom(n, *this, &Random::next64);
     }
 
     size_t next(size_t l, size_t r) {
+        ensure(l <= r);
         uint64_t n = static_cast<uint64_t>(r) - l + 1;
         return l + uniformRandom(n, *this, &Random::next64);
     }
 
     double next(double l, double r) {
+        ensure(l <= r);
         return l + next(r-l);
     }
 

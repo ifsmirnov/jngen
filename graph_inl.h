@@ -30,12 +30,18 @@ public:
     }
 
     static BuilderProxy random(int n, int m) {
+        ensure(
+            n >= 0 && m >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         checkLargeParameter(m);
         return BuilderProxy(Traits(n, m), &doRandom);
     }
 
     static BuilderProxy complete(int n) {
+        ensure(
+            n >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
@@ -55,6 +61,9 @@ public:
     }
 
     static BuilderProxy empty(int n) {
+        ensure(
+            n >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
@@ -64,6 +73,9 @@ public:
     }
 
     static BuilderProxy cycle(int n) {
+        ensure(
+            n >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
@@ -76,7 +88,11 @@ public:
     }
 
     static BuilderProxy randomStretched(
-            int n, int m, int elongation, int spread) {
+            int n, int m, int elongation, int spread)
+    {
+        ensure(
+            n >= 0 && m >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         checkLargeParameter(m);
         return BuilderProxy(Traits(n, m), [elongation, spread](Traits t) {
@@ -99,17 +115,17 @@ private:
             ensure(m >= n - 1, "Not enough edges for a connected graph");
             auto treeEdges = Tree::randomPrufer(n).edges();
             usedEdges.insert(treeEdges.begin(), treeEdges.end());
-            ensure(usedEdges.size() == static_cast<size_t>(n - 1));
+            ENSURE(usedEdges.size() == static_cast<size_t>(n - 1));
         }
 
         auto edgeIsGood = [&usedEdges, t](std::pair<int, int> edge) {
             // TODO: move this check to edges generation loop
             if (!t.allowLoops && edge.first == edge.second) {
-                ensure(false);
+                ENSURE(false);
                 return false;
             }
             if (!t.directed && edge.first > edge.second) {
-                ensure(false);
+                ENSURE(false);
                 std::swap(edge.first, edge.second);
             }
 
@@ -129,8 +145,9 @@ private:
             }
         }
 
-        ensure(result.size() == static_cast<size_t>(m),
-            "[INTERNAL ASSERT] Not enough edges found");
+        ENSURE(
+            result.size() == static_cast<size_t>(m),
+            "Not enough edges found");
 
         Graph graph;
 
@@ -162,7 +179,7 @@ private:
                 v = parents[v];
             }
 
-            ensure(v <= u);
+            ENSURE(v <= u);
 
             if (!t.allowLoops && u == v) {
                 continue;
@@ -185,7 +202,7 @@ private:
     }
 
     static long long maxEdges(int n, const Traits& t) {
-        ensure(!t.allowMulti);
+        ENSURE(!t.allowMulti);
         long long res = static_cast<long long>(n) * (n-1);
         if (!t.directed) {
             res /= 2;

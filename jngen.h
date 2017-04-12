@@ -130,7 +130,7 @@ inline void checkLargeParameter(int n) {
 #ifdef JNGEN_I_WANT_LARGE_OBJECTS
     (void)n;
 #else
-    constexpr static int BOUND = 5000000; // 5 * 10^6
+    constexpr static int BOUND = 5e6;
     ensure(
         n <= BOUND,
         "If you want to generate an object of size > 5'000'000, please use "
@@ -1562,22 +1562,26 @@ public:
     }
 
     int next(int l, int r) {
+        ensure(l <= r);
         uint32_t n = static_cast<uint32_t>(r) - l + 1;
         return l + uniformRandom(
             n, *this, (uint32_t (Random::*)())&Random::next);
     }
 
     long long next(long long l, long long r) {
+        ensure(l <= r);
         uint64_t n = static_cast<uint64_t>(r) - l + 1;
         return l + uniformRandom(n, *this, &Random::next64);
     }
 
     size_t next(size_t l, size_t r) {
+        ensure(l <= r);
         uint64_t n = static_cast<uint64_t>(r) - l + 1;
         return l + uniformRandom(n, *this, &Random::next64);
     }
 
     double next(double l, double r) {
+        ensure(l <= r);
         return l + next(r-l);
     }
 
@@ -4761,6 +4765,7 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
 // Tree generators go here
 
 Tree Tree::bamboo(int size) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     Tree t;
     for (int i = 0; i + 1 < size; ++i) {
@@ -4771,6 +4776,7 @@ Tree Tree::bamboo(int size) {
 }
 
 Tree Tree::randomPrufer(int size) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     if (size == 1) {
         return Tree();
@@ -4808,6 +4814,7 @@ Tree Tree::randomPrufer(int size) {
 }
 
 Tree Tree::random(int size, int elongation) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     Tree t;
     for (int v = 1; v < size; ++v) {
@@ -4819,6 +4826,7 @@ Tree Tree::random(int size, int elongation) {
 }
 
 Tree Tree::star(int size) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     Tree t;
     for (int i = 1; i < size; ++i) {
@@ -4829,6 +4837,8 @@ Tree Tree::star(int size) {
 }
 
 Tree Tree::caterpillar(int size, int length) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
+    ensure(length > 0, "Length of the caterpillar must be positive");
     checkLargeParameter(size);
     ensure(length <= size);
     Tree t = Tree::bamboo(length);
@@ -4936,12 +4946,18 @@ public:
     }
 
     static BuilderProxy random(int n, int m) {
+        ensure(
+            n >= 0 && m >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         checkLargeParameter(m);
         return BuilderProxy(Traits(n, m), &doRandom);
     }
 
     static BuilderProxy complete(int n) {
+        ensure(
+            n >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
@@ -4961,6 +4977,9 @@ public:
     }
 
     static BuilderProxy empty(int n) {
+        ensure(
+            n >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
@@ -4970,6 +4989,9 @@ public:
     }
 
     static BuilderProxy cycle(int n) {
+        ensure(
+            n >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
@@ -4982,7 +5004,11 @@ public:
     }
 
     static BuilderProxy randomStretched(
-            int n, int m, int elongation, int spread) {
+            int n, int m, int elongation, int spread)
+    {
+        ensure(
+            n >= 0 && m >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         checkLargeParameter(m);
         return BuilderProxy(Traits(n, m), [elongation, spread](Traits t) {
@@ -5005,17 +5031,17 @@ private:
             ensure(m >= n - 1, "Not enough edges for a connected graph");
             auto treeEdges = Tree::randomPrufer(n).edges();
             usedEdges.insert(treeEdges.begin(), treeEdges.end());
-            ensure(usedEdges.size() == static_cast<size_t>(n - 1));
+            ENSURE(usedEdges.size() == static_cast<size_t>(n - 1));
         }
 
         auto edgeIsGood = [&usedEdges, t](std::pair<int, int> edge) {
             // TODO: move this check to edges generation loop
             if (!t.allowLoops && edge.first == edge.second) {
-                ensure(false);
+                ENSURE(false);
                 return false;
             }
             if (!t.directed && edge.first > edge.second) {
-                ensure(false);
+                ENSURE(false);
                 std::swap(edge.first, edge.second);
             }
 
@@ -5035,8 +5061,9 @@ private:
             }
         }
 
-        ensure(result.size() == static_cast<size_t>(m),
-            "[INTERNAL ASSERT] Not enough edges found");
+        ENSURE(
+            result.size() == static_cast<size_t>(m),
+            "Not enough edges found");
 
         Graph graph;
 
@@ -5068,7 +5095,7 @@ private:
                 v = parents[v];
             }
 
-            ensure(v <= u);
+            ENSURE(v <= u);
 
             if (!t.allowLoops && u == v) {
                 continue;
@@ -5091,7 +5118,7 @@ private:
     }
 
     static long long maxEdges(int n, const Traits& t) {
-        ensure(!t.allowMulti);
+        ENSURE(!t.allowMulti);
         long long res = static_cast<long long>(n) * (n-1);
         if (!t.directed) {
             res /= 2;
