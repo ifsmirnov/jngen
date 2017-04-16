@@ -941,7 +941,6 @@ private:
 
 } // namespace graph_detail
 
-
 } // namespace jngen
 
 
@@ -4426,6 +4425,7 @@ void GenericGraph::extend(size_t size) {
         adjList_.resize(size);
         vertexLabel_ += Array::id(size - oldSize, oldSize);
         vertexByLabel_ += Array::id(size - oldSize, oldSize);
+        dsu_.getParent(size - 1);
     }
 }
 
@@ -4912,6 +4912,10 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Graph, 2) {
     t.doPrintEdges(out, mod);
 }
 
+JNGEN_DECLARE_SIMPLE_PRINTER(graph_detail::BuilderProxy, 2) {
+    JNGEN_PRINT(t.g());
+}
+
 } // namespace jngen
 
 using jngen::Graph;
@@ -5152,10 +5156,6 @@ Graph::BuilderProxy Graph::cycle(int n) {
 Graph::BuilderProxy Graph::randomStretched(
         int n, int m, int elongation, int spread) {
     return graph_detail::GraphRandom::randomStretched(n, m, elongation, spread);
-}
-
-JNGEN_DECLARE_SIMPLE_PRINTER(graph_detail::BuilderProxy, 2) {
-    JNGEN_PRINT(t.g());
 }
 
 } // namespace jngen

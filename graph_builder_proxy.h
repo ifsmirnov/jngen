@@ -58,5 +58,4 @@ private:
 
 } // namespace graph_detail
 
-
 } // namespace jngen

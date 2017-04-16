@@ -60,6 +60,10 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Graph, 2) {
     t.doPrintEdges(out, mod);
 }
 
+JNGEN_DECLARE_SIMPLE_PRINTER(graph_detail::BuilderProxy, 2) {
+    JNGEN_PRINT(t.g());
+}
+
 } // namespace jngen
 
 using jngen::Graph;

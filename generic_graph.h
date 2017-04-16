@@ -185,6 +185,7 @@ void GenericGraph::extend(size_t size) {
         adjList_.resize(size);
         vertexLabel_ += Array::id(size - oldSize, oldSize);
         vertexByLabel_ += Array::id(size - oldSize, oldSize);
+        dsu_.getParent(size - 1);
     }
 }
 

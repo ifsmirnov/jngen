@@ -237,8 +237,4 @@ Graph::BuilderProxy Graph::randomStretched(
     return graph_detail::GraphRandom::randomStretched(n, m, elongation, spread);
 }
 
-JNGEN_DECLARE_SIMPLE_PRINTER(graph_detail::BuilderProxy, 2) {
-    JNGEN_PRINT(t.g());
-}
-
 } // namespace jngen
