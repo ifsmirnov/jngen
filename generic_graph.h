@@ -93,8 +93,8 @@ public:
 
     virtual bool operator==(const GenericGraph& other) const;
     virtual bool operator!=(const GenericGraph& other) const;
-    virtual bool operator<(const GenericGraph& other) const;
-    virtual bool operator>(const GenericGraph& other) const;
+    virtual bool operator< (const GenericGraph& other) const;
+    virtual bool operator> (const GenericGraph& other) const;
     virtual bool operator<=(const GenericGraph& other) const;
     virtual bool operator>=(const GenericGraph& other) const;
 

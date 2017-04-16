@@ -4334,8 +4334,8 @@ public:
 
     virtual bool operator==(const GenericGraph& other) const;
     virtual bool operator!=(const GenericGraph& other) const;
-    virtual bool operator<(const GenericGraph& other) const;
-    virtual bool operator>(const GenericGraph& other) const;
+    virtual bool operator< (const GenericGraph& other) const;
+    virtual bool operator> (const GenericGraph& other) const;
     virtual bool operator<=(const GenericGraph& other) const;
     virtual bool operator>=(const GenericGraph& other) const;
 
@@ -4655,6 +4655,20 @@ public:
     static Tree caterpillar(int size, int length);
 };
 
+JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
+    ensure(t.isConnected(), "Cannot print a tree: it is not connected");
+
+    if (mod.printParents) {
+        ensure(false, "Printing parents is not implemented");
+    } else if (mod.printEdges) {
+        t.doPrintEdges(out, mod);
+    } else {
+        ensure(false, "Print mode is not set, select one of 'printParents'"
+            " or 'printEdges'");
+    }
+}
+
+
 #ifndef JNGEN_DECLARE_ONLY
 
 void Tree::addEdge(int u, int v, const Weight& w) {
@@ -4747,19 +4761,6 @@ Tree Tree::glue(int vInThis, const Tree& other, int vInOther) {
     ensure(t.n() == n() + other.n() - 1);
 
     return t;
-}
-
-JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
-    ensure(t.isConnected(), "Cannot print a tree: it is not connected");
-
-    if (mod.printParents) {
-        ensure(false, "Printing parents is not implemented");
-    } else if (mod.printEdges) {
-        t.doPrintEdges(out, mod);
-    } else {
-        ensure(false, "Print mode is not set, select one of 'printParents'"
-            " or 'printEdges'");
-    }
 }
 
 // Tree generators go here
