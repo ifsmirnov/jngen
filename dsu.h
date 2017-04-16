@@ -33,8 +33,8 @@ int Dsu::getParent(int x) {
 bool Dsu::link(int x, int y) {
     extend(std::max(x, y));
 
-    x = parent[x];
-    y = parent[y];
+    x = getParent(x);
+    y = getParent(y);
     if (x == y) {
         return false;
     }
