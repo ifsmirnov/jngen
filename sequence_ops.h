@@ -11,7 +11,7 @@ namespace jngen {
 
 template<typename Iterator>
 void shuffle(Iterator begin, Iterator end) {
-    ensure(end > begin, "Cannot shuffle range of negative length");
+    ensure(end >= begin, "Cannot shuffle range of negative length");
     size_t size = end - begin;
     for (size_t i = 1; i < size; ++i) {
         std::swap(*(begin + i), *(begin + rnd.next(i + 1)));

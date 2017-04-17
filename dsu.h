@@ -64,4 +64,3 @@ void Dsu::extend(size_t x) {
 #endif // JNGEN_DECLARE_ONLY
 
 } // namespace jngen
-
