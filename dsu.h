@@ -7,34 +7,34 @@ namespace jngen {
 
 class Dsu {
 public:
-    int getParent(int x);
+    int getRoot(int x);
 
-    bool link(int x, int y);
+    bool unite(int x, int y);
 
     bool isConnected() const { return components <= 1; }
+
+    void extend(size_t size);
 
 private:
     std::vector<int> parent;
     std::vector<int> rank;
 
     int components = 0;
-
-    void extend(size_t x);
 };
 
 #ifndef JNGEN_DECLARE_ONLY
 
-int Dsu::getParent(int x) {
+int Dsu::getRoot(int x) {
     extend(x);
 
-    return parent[x] == x ? x : (parent[x] = getParent(parent[x]));
+    return parent[x] == x ? x : (parent[x] = getRoot(parent[x]));
 }
 
-bool Dsu::link(int x, int y) {
-    extend(std::max(x, y));
+bool Dsu::unite(int x, int y) {
+    extend(std::max(x, y) + 1);
 
-    x = getParent(x);
-    y = getParent(y);
+    x = getRoot(x);
+    y = getRoot(y);
     if (x == y) {
         return false;
     }
@@ -54,7 +54,7 @@ bool Dsu::link(int x, int y) {
 
 void Dsu::extend(size_t x) {
     size_t last = parent.size() - 1;
-    while (parent.size() <= x) {
+    while (parent.size() < x) {
         ++components;
         parent.push_back(++last);
         rank.push_back(0);

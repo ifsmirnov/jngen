@@ -824,34 +824,34 @@ namespace jngen {
 
 class Dsu {
 public:
-    int getParent(int x);
+    int getRoot(int x);
 
-    bool link(int x, int y);
+    bool unite(int x, int y);
 
     bool isConnected() const { return components <= 1; }
+
+    void extend(size_t size);
 
 private:
     std::vector<int> parent;
     std::vector<int> rank;
 
     int components = 0;
-
-    void extend(size_t x);
 };
 
 #ifndef JNGEN_DECLARE_ONLY
 
-int Dsu::getParent(int x) {
+int Dsu::getRoot(int x) {
     extend(x);
 
-    return parent[x] == x ? x : (parent[x] = getParent(parent[x]));
+    return parent[x] == x ? x : (parent[x] = getRoot(parent[x]));
 }
 
-bool Dsu::link(int x, int y) {
-    extend(std::max(x, y));
+bool Dsu::unite(int x, int y) {
+    extend(std::max(x, y) + 1);
 
-    x = getParent(x);
-    y = getParent(y);
+    x = getRoot(x);
+    y = getRoot(y);
     if (x == y) {
         return false;
     }
@@ -871,7 +871,7 @@ bool Dsu::link(int x, int y) {
 
 void Dsu::extend(size_t x) {
     size_t last = parent.size() - 1;
-    while (parent.size() <= x) {
+    while (parent.size() < x) {
         ++components;
         parent.push_back(++last);
         rank.push_back(0);
@@ -4424,7 +4424,7 @@ void GenericGraph::extend(size_t size) {
         adjList_.resize(size);
         vertexLabel_ += Array::id(size - oldSize, oldSize);
         vertexByLabel_ += Array::id(size - oldSize, oldSize);
-        dsu_.getParent(size - 1);
+        dsu_.extend(size);
     }
 }
 
@@ -4507,7 +4507,7 @@ void GenericGraph::addEdge(int u, int v, const Weight& w) {
     u = vertexByLabel(u);
     v = vertexByLabel(v);
 
-    dsu_.link(u, v);
+    dsu_.unite(u, v);
     addEdgeUnsafe(u, v);
 
     if (!w.empty()) {
@@ -4676,7 +4676,7 @@ void Tree::addEdge(int u, int v, const Weight& w) {
     u = vertexByLabel(u);
     v = vertexByLabel(v);
 
-    int ret = dsu_.link(u, v);
+    int ret = dsu_.unite(u, v);
     ensure(ret, "A cycle appeared in the tree");
 
     addEdgeUnsafe(u, v);

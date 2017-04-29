@@ -57,7 +57,7 @@ void Tree::addEdge(int u, int v, const Weight& w) {
     u = vertexByLabel(u);
     v = vertexByLabel(v);
 
-    int ret = dsu_.link(u, v);
+    int ret = dsu_.unite(u, v);
     ensure(ret, "A cycle appeared in the tree");
 
     addEdgeUnsafe(u, v);

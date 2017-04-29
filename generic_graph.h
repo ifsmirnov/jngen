@@ -185,7 +185,7 @@ void GenericGraph::extend(size_t size) {
         adjList_.resize(size);
         vertexLabel_ += Array::id(size - oldSize, oldSize);
         vertexByLabel_ += Array::id(size - oldSize, oldSize);
-        dsu_.getParent(size - 1);
+        dsu_.extend(size);
     }
 }
 
@@ -268,7 +268,7 @@ void GenericGraph::addEdge(int u, int v, const Weight& w) {
     u = vertexByLabel(u);
     v = vertexByLabel(v);
 
-    dsu_.link(u, v);
+    dsu_.unite(u, v);
     addEdgeUnsafe(u, v);
 
     if (!w.empty()) {

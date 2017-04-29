@@ -9,15 +9,15 @@ BOOST_AUTO_TEST_CASE(dsu) {
 
     BOOST_CHECK(d.isConnected());
 
-    d.getParent(4);
+    d.extend(5);
     BOOST_CHECK(!d.isConnected());
 
-    BOOST_CHECK(d.link(1, 2));
-    BOOST_CHECK(d.link(3, 4));
-    BOOST_CHECK(d.link(1, 4));
-    BOOST_CHECK(!d.link(2, 3));
-    BOOST_CHECK(d.link(0, 3));
+    BOOST_CHECK(d.unite(1, 2));
+    BOOST_CHECK(d.unite(3, 4));
+    BOOST_CHECK(d.unite(1, 4));
+    BOOST_CHECK(!d.unite(2, 3));
+    BOOST_CHECK(d.unite(0, 3));
     BOOST_CHECK(d.isConnected());
 
-    BOOST_CHECK(!d.link(0, 0));
+    BOOST_CHECK(!d.unite(0, 0));
 }
