@@ -1,5 +1,5 @@
-#define BOOST_TEST_MAIN
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 #include "../jngen.h"
 
 #include <map>
@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+BOOST_AUTO_TEST_SUITE(printers)
 
 template<typename T>
 void checkOutput(const T& t, const std::string& s) {
@@ -25,8 +27,6 @@ BOOST_AUTO_TEST_CASE(vector_depth) {
     BOOST_CHECK(VectorDepth<
         std::vector<std::vector<std::vector<Pair>>>>::value == 3);
 }
-
-#undef COMMAdjdji
 
 BOOST_AUTO_TEST_CASE(trivial) {
     setMod().reset();
@@ -58,3 +58,5 @@ BOOST_AUTO_TEST_CASE(set_map) {
         {"one", 1}, {"two", 2}, {"three", 3}},
         "one 1\nthree 3\ntwo 2");
 }
+
+BOOST_AUTO_TEST_SUITE_END()

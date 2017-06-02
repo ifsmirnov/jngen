@@ -1,8 +1,10 @@
-#define BOOST_TEST_MAIN
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 #include "../jngen.h"
 
 using jngen::Dsu;
+
+BOOST_AUTO_TEST_SUITE(generic_graph)
 
 BOOST_AUTO_TEST_CASE(dsu) {
     Dsu d;
@@ -21,3 +23,5 @@ BOOST_AUTO_TEST_CASE(dsu) {
 
     BOOST_CHECK(!d.unite(0, 0));
 }
+
+BOOST_AUTO_TEST_SUITE_END()

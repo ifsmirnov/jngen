@@ -1,10 +1,12 @@
-#define BOOST_TEST_MAIN
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 #include "../jngen.h"
 
 #include <sstream>
 #include <utility>
 #include <vector>
+
+BOOST_AUTO_TEST_SUITE(repr_suite)
 
 template<typename T>
 void checkOutput(const T& t, const std::string& s) {
@@ -90,3 +92,5 @@ BOOST_AUTO_TEST_CASE(external_repr) {
     checkOutput(repr(y), "0.123456 31415");
     checkOutput(repr(y).add1(), "0.123456 31416");
 }
+
+BOOST_AUTO_TEST_SUITE_END()

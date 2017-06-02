@@ -1,8 +1,10 @@
-#define BOOST_TEST_MAIN
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 #include "../jngen.h"
 
 #include <utility>
+
+BOOST_AUTO_TEST_SUITE(math)
 
 BOOST_AUTO_TEST_CASE(primes) {
     rnd.seed(123);
@@ -46,3 +48,4 @@ BOOST_AUTO_TEST_CASE(primes) {
     BOOST_CHECK_THROW(rndm.randomPrime(14, 16), jngen::Exception);
 }
 
+BOOST_AUTO_TEST_SUITE_END()

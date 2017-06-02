@@ -145,11 +145,14 @@ using jngen::ContextTimer;
 using jngen::distribution;
 
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace jngen {
 namespace drawing {
 
 enum class Color {
+    None,
     White,
     Black,
     Red,
@@ -157,6 +160,13 @@ enum class Color {
     Blue,
     Grey,
     LightGrey
+};
+
+struct DrawingEngineState {
+    double width;
+    Color stroke;
+    Color fill;
+    double opacity;
 };
 
 class DrawingEngine {
@@ -167,14 +177,31 @@ public:
     virtual void drawPoint(double x, double y) = 0;
     virtual void drawCircle(double x, double y, double r) = 0;
     virtual void drawSegment(double x1, double y1, double x2, double y2) = 0;
+    virtual void drawPolygon(
+        const std::vector<std::pair<double, double>>& vertices) = 0;
     virtual void drawText(
         double x, double y, const std::string& s) = 0;
 
     virtual void setWidth(double width) = 0;
-    virtual void setColor(Color color) = 0;
+    virtual void setStroke(Color color) = 0;
+    virtual void setFill(Color color) = 0;
+    virtual void setOpacity(double opacity) = 0;
 
-    virtual Color color() const = 0;
     virtual double width() const = 0;
+    virtual Color stroke() const = 0;
+    virtual Color fill() const = 0;
+    virtual double opacity() const = 0;
+
+    DrawingEngineState saveState() {
+        return { width(), stroke(), fill(), opacity() };
+    }
+
+    void restoreState(const DrawingEngineState& state) {
+        setWidth(state.width);
+        setStroke(state.stroke);
+        setFill(state.fill);
+        setOpacity(state.opacity);
+    }
 };
 
 }} // namespace jngen::drawing
@@ -196,14 +223,20 @@ public:
     virtual void drawCircle(double x, double y, double r) override;
     virtual void drawSegment(
         double x1, double y1, double x2, double y2) override;
+    virtual void drawPolygon(
+        const std::vector<std::pair<double, double>>& vertices) override;
     virtual void drawText(
         double x, double y, const std::string& s) override;
 
     virtual void setWidth(double width) override;
-    virtual void setColor(Color color) override;
+    virtual void setStroke(Color color) override;
+    virtual void setFill(Color color) override;
+    virtual void setOpacity(double opacity) override;
 
-    virtual Color color() const override { return color_; }
     virtual double width() const override { return width_; }
+    virtual Color stroke() const override { return strokeColor_; }
+    virtual Color fill() const override { return fillColor_; }
+    virtual double opacity() const override { return opacity_; }
 
     std::string serialize() const;
 
@@ -214,16 +247,21 @@ private:
     double lerpY(double y) const;
     double scaleSize(double size) const;
 
+    std::string getStyle() const;
+
     std::ostringstream output_;
 
     double width_;
-    Color color_;
+    Color strokeColor_;
+    Color fillColor_;
+    double opacity_;
 
     double x1_, y1_, x2_, y2_; // borders
 };
 
 inline const char* SvgEngine::colorToString(Color color) {
     switch (color) {
+        case Color::None: return "none";
         case Color::White: return "white";
         case Color::Black: return "black";
         case Color::Red: return "red";
@@ -231,7 +269,7 @@ inline const char* SvgEngine::colorToString(Color color) {
         case Color::Blue: return "blue";
         case Color::Grey: return "grey";
         case Color::LightGrey: return "lightgrey";
-        default: return "black";
+        default: return "none";
     }
 }
 
@@ -264,7 +302,9 @@ double lerp(double x, double l, double r, double L, double R) {
 
 SvgEngine::SvgEngine(double x1, double y1, double x2, double y2) :
     width_(1.0),
-    color_(Color::Black),
+    strokeColor_(Color::Black),
+    fillColor_(Color::Black),
+    opacity_(1.0),
     x1_(x1),
     y1_(y1),
     x2_(x2),
@@ -277,8 +317,8 @@ void SvgEngine::drawPoint(double x, double y) {
     double w = width_ * WIDTH_SCALE * 1.5;
     sprintf(
         buf,
-        "<circle cx='%f' cy='%f' r='%f' fill='%s'/>",
-        x, y, w, colorToString(color_)
+        "<circle cx='%f' cy='%f' r='%f' fill='%s' opacity='%f'/>",
+        x, y, w, colorToString(strokeColor_), opacity_
     );
     output_ << buf << "\n";
 }
@@ -289,10 +329,20 @@ void SvgEngine::drawCircle(double x, double y, double r) {
     r = scaleSize(r);
     sprintf(
         buf,
-        "<circle cx='%f' cy='%f' r='%f' fill='%s'/>",
-        x, y, r, colorToString(color_)
+        "<circle cx='%f' cy='%f' r='%f' style='%s'/>",
+        x, y, r, getStyle().c_str()
     );
     output_ << buf << "\n";
+}
+
+void SvgEngine::drawPolygon(
+    const std::vector<std::pair<double, double>>& points)
+{
+    output_ << "<polygon points='";
+    for (const auto& point: points) {
+        output_ << lerpX(point.first) << "," << lerpY(point.second) << " ";
+    }
+    output_ << "' style='" << getStyle() << "'/>\n";
 }
 
 void SvgEngine::drawSegment(
@@ -312,8 +362,8 @@ void SvgEngine::drawSegment(
     }
     sprintf(
         buf,
-        "<line x1='%f' y1='%f' x2='%f' y2='%f' stroke='%s' stroke-width='%f'/>",
-        x1, y1, x2, y2, colorToString(color_), width_ * WIDTH_SCALE
+        "<line x1='%f' y1='%f' x2='%f' y2='%f' style='%s'/>",
+        x1, y1, x2, y2, getStyle().c_str()
     );
     output_ << buf << "\n";
 }
@@ -335,8 +385,16 @@ void SvgEngine::setWidth(double width) {
     width_ = width;
 }
 
-void SvgEngine::setColor(Color color) {
-    color_ = color;
+void SvgEngine::setStroke(Color color) {
+    strokeColor_ = color;
+}
+
+void SvgEngine::setFill(Color color) {
+    fillColor_ = color;
+}
+
+void SvgEngine::setOpacity(double opacity) {
+    opacity_ = opacity;
 }
 
 std::string SvgEngine::serialize() const {
@@ -368,6 +426,19 @@ double SvgEngine::scaleSize(double size) const {
     return size * CANVAS_SIZE / (x2_ - x1_);
 }
 
+std::string SvgEngine::getStyle() const {
+    static char buf[1024];
+    sprintf(
+        buf,
+        "stroke-width:%f;stroke:%s;fill:%s;opacity:%f",
+        width_ * WIDTH_SCALE,
+        colorToString(strokeColor_),
+        colorToString(fillColor_),
+        opacity_
+    );
+    return buf;
+}
+
 }} // namespace jngen::drawing
 
 #undef JNGEN_INCLUDE_SVG_ENGINE_INL_H
@@ -389,6 +460,8 @@ namespace drawing {
 
 class Drawer {
 public:
+    Drawer();
+
     template<typename P>
     void point(const P& p);
 
@@ -404,8 +477,15 @@ public:
     void setWidth(double width);
 
     void setColor(Color color);
-
     void setColor(const std::string& desc);
+
+    void setStroke(Color color);
+    void setStroke(const std::string& desc);
+
+    void setFill(Color color);
+    void setFill(const std::string& desc);
+
+    void setOpacity(double opacity);
 
     void dumpSvg(const std::string& filename);
 
@@ -416,9 +496,11 @@ private:
         Point(double x, double y) : x(x), y(y) {}
     };
 
-    struct DrawRequest;
+    typedef std::function<void(DrawingEngine*)> DrawRequest;
 
     typedef std::pair<Point, Point> Bbox;
+
+    static Color colorByName(const std::string& name);
 
     static Bbox emptyBbox();
 
@@ -426,7 +508,6 @@ private:
 
     static Bbox bbox(const Point& p);
     static Bbox bbox(const std::pair<Point, double>& circle);
-    static Bbox bbox(const std::pair<Point, Point>& segment);
 
     Bbox getBbox() const;
 
@@ -435,91 +516,64 @@ private:
     void drawAll();
     void drawGrid(const Bbox& bbox);
 
-    std::vector<Point> points_;
-    std::vector<std::pair<Point, double>> circles_;
-    std::vector<std::pair<Point, Point>> segments_;
-
     std::vector<DrawRequest> requests_;
 
     DrawingEngine* engine_;
+    Bbox bbox_;
     int requestId_ = 0;
-};
-
-struct Drawer::DrawRequest {
-    enum class Type {
-        Point, Circle, Segment, Color, Width
-    };
-
-    Type type;
-    union {
-        int id;
-        double width;
-        Color color;
-    };
-
-    static DrawRequest fromObject(Type type, int id) {
-        DrawRequest request;
-        request.type = type;
-        request.id = id;
-        return request;
-    }
-
-    static DrawRequest fromWidth(double width) {
-        DrawRequest request;
-        request.type = Type::Width;
-        request.width = width;
-        return request;
-    }
-
-    static DrawRequest fromColor(Color color) {
-        DrawRequest request;
-        request.type = Type::Color;
-        request.color = color;
-        return request;
-    }
 };
 
 template<typename P>
 void Drawer::point(const P& p) {
-    requests_.push_back(DrawRequest::fromObject(
-            DrawRequest::Type::Point, points_.size()));
-    points_.emplace_back(Point(p.x, p.y));
+    bbox_ = unite(bbox_ , bbox(Point(p.x, p.y)));
+    requests_.push_back([p](DrawingEngine* engine) {
+        engine->drawPoint(p.x, p.y);
+    });
 }
 
 template<typename P>
 void Drawer::circle(const P& p, double radius) {
-    requests_.push_back(DrawRequest::fromObject(
-            DrawRequest::Type::Circle, circles_.size()));
-    circles_.emplace_back(Point(p.x, p.y), radius);
+    bbox_ = unite(bbox_ , bbox({Point(p.x, p.y), radius}));
+    requests_.push_back([p, radius](DrawingEngine* engine) {
+        engine->drawCircle(p.x, p.y, radius);
+    });
 }
 
 template<typename P>
 void Drawer::segment(const P& p1, const P& p2) {
-    requests_.push_back(DrawRequest::fromObject(
-            DrawRequest::Type::Segment, segments_.size()));
-    segments_.emplace_back(Point(p1.x, p1.y), Point(p2.x, p2.y));
+    bbox_ = unite(bbox_ , bbox(Point(p1.x, p1.y)));
+    bbox_ = unite(bbox_ , bbox(Point(p2.x, p2.y)));
+    requests_.push_back([p1, p2](DrawingEngine* engine) {
+        engine->drawSegment(p1.x, p1.y, p2.x, p2.y);
+    });
 }
 
 template<typename P>
 void Drawer::polygon(const std::vector<P>& points) {
-    for (size_t i = 0; i + 1 < points.size(); ++i) {
-        segment(points[i], points[i+1]);
+    for (const auto& p: points) {
+        bbox_ = unite(bbox_, bbox(Point(p.x, p.y)));
     }
-    segment(points.back(), points.front());
+
+    requests_.push_back([points](DrawingEngine* engine) {
+        std::vector<std::pair<double, double>> enginePoints;
+        for (const auto& p: points) {
+            enginePoints.emplace_back(p.x, p.y);
+        }
+        engine->drawPolygon(enginePoints);
+    });
 }
 
 #ifndef JNGEN_DECLARE_ONLY
 
-void Drawer::setWidth(double width) {
-    requests_.push_back(DrawRequest::fromWidth(width));
+Drawer::Drawer() : bbox_(emptyBbox()) {
+    setFill("none");
+    setStroke("black");
 }
 
-void Drawer::setColor(Color color) {
-    requests_.push_back(DrawRequest::fromColor(color));
-}
-
-void Drawer::setColor(const std::string& desc) {
+Color Drawer::colorByName(const std::string& name) {
     const static std::map<std::string, Color> colors = {
+        {"", Color::None},
+        {"none", Color::None},
         {"white", Color::White},
         {"black", Color::Black},
         {"red", Color::Red},
@@ -531,11 +585,52 @@ void Drawer::setColor(const std::string& desc) {
         {"lightgray", Color::LightGrey}
     };
 
-    if (!colors.count(desc)) {
-        throw std::logic_error("Color `" + desc + "' is not supported");
+    if (!colors.count(name)) {
+        throw std::logic_error("Color `" + name+ "' is not supported");
     }
 
-    setColor(colors.at(desc));
+    return colors.at(name);
+}
+
+void Drawer::setWidth(double width) {
+    requests_.push_back([width](DrawingEngine* engine) {
+        engine->setWidth(width);
+    });
+}
+
+void Drawer::setColor(Color color) {
+    setStroke(color);
+    setFill(color);
+}
+
+void Drawer::setStroke(Color color) {
+    requests_.push_back([color](DrawingEngine* engine) {
+        engine->setStroke(color);
+    });
+}
+
+void Drawer::setFill(Color color) {
+    requests_.push_back([color](DrawingEngine* engine) {
+        engine->setFill(color);
+    });
+}
+
+void Drawer::setColor(const std::string& desc) {
+    setColor(colorByName(desc));
+}
+
+void Drawer::setStroke(const std::string& desc) {
+    setStroke(colorByName(desc));
+}
+
+void Drawer::setFill(const std::string& desc) {
+    setFill(colorByName(desc));
+}
+
+void Drawer::setOpacity(double opacity) {
+    requests_.push_back([opacity](DrawingEngine* engine) {
+        engine->setOpacity(opacity);
+    });
 }
 
 Drawer::Bbox Drawer::emptyBbox() {
@@ -566,24 +661,6 @@ Drawer::Bbox Drawer::bbox(const std::pair<Point, double>& circle) {
             Point{p.x - radius, p.y - radius},
             Point{p.x + radius, p.y + radius}
     };
-}
-
-Drawer::Bbox Drawer::bbox(const std::pair<Point, Point>& segment) {
-    return unite(bbox(segment.first), bbox(segment.second));
-}
-
-Drawer::Bbox Drawer::getBbox() const {
-    Bbox result = emptyBbox();
-    for (const auto& t: points_) {
-        result = unite(result, bbox(t));
-    }
-    for (const auto& t: circles_) {
-        result = unite(result, bbox(t));
-    }
-    for (const auto& t: segments_) {
-        result = unite(result, bbox(t));
-    }
-    return result;
 }
 
 /*
@@ -653,29 +730,7 @@ Drawer::Bbox Drawer::viewportByBbox(const Bbox& bbox) {
 
 void Drawer::drawAll() {
     for (const auto& request: requests_) {
-        switch (request.type) {
-        case DrawRequest::Type::Point: {
-            const auto& t = points_[request.id];
-            engine_->drawPoint(t.x, t.y);
-            break;
-        }
-        case DrawRequest::Type::Circle: {
-            const auto& t = circles_[request.id];
-            engine_->drawCircle(t.first.x, t.first.y, t.second);
-            break;
-        }
-        case DrawRequest::Type::Segment: {
-            const auto& t = segments_[request.id];
-            engine_->drawSegment(t.first.x, t.first.y, t.second.x, t.second.y);
-            break;
-        }
-        case DrawRequest::Type::Width:
-            engine_->setWidth(request.width);
-            break;
-        case DrawRequest::Type::Color:
-            engine_->setColor(request.color);
-            break;
-        }
+        request(engine_);
     }
 }
 
@@ -687,8 +742,7 @@ void Drawer::drawGrid(const Bbox& bbox) {
     constexpr static int MAX_SPREAD_TO_DRAW_ALL_TICKS = 13;
     constexpr static double TEXT_OFFSET_RATIO = 0.01;
 
-    Color savedColor = engine_->color();
-    double savedWidth = engine_->width();
+    auto savedState = engine_->saveState();
 
     int step = 5;
     double spread = std::min(
@@ -703,7 +757,7 @@ void Drawer::drawGrid(const Bbox& bbox) {
     }
 
     engine_->setWidth(0.5);
-    engine_->setColor(Color::LightGrey);
+    engine_->setStroke(Color::LightGrey);
 
     double smallStep = 1.0 * step / SMALL_IN_BIG;
 
@@ -728,7 +782,7 @@ void Drawer::drawGrid(const Bbox& bbox) {
     }
 
     engine_->setWidth(0.75);
-    engine_->setColor(Color::Grey);
+    engine_->setStroke(Color::Grey);
 
     for (
             double tick = std::ceil(bbox.first.x / step) * step;
@@ -784,16 +838,15 @@ void Drawer::drawGrid(const Bbox& bbox) {
         step = 1;
     }
 
-    engine_->setColor(savedColor);
-    engine_->setWidth(savedWidth);
+    engine_->restoreState(savedState);
 }
 
 void Drawer::dumpSvg(const std::string& filename) {
-    if (points_.empty() && circles_.empty() && segments_.empty()) {
+    if (requests_.empty()) {
         return;
     }
 
-    auto bbox = getBbox();
+    auto bbox = bbox_;
     auto viewport = viewportByBbox(bbox);
     std::unique_ptr<SvgEngine> svgEngine(new SvgEngine(
         viewport.first.x, viewport.first.y,
@@ -2086,7 +2139,7 @@ JNGEN_DEFINE_FUNCTION_CHECKER(
 
 JNGEN_DEFINE_FUNCTION_CHECKER(
     Plus,
-    std::declval<T>() + 1
+    T(std::declval<T>() + 1)
 )
 
 JNGEN_DEFINE_FUNCTION_CHECKER(
@@ -3343,6 +3396,34 @@ public:
 
         return res.subseq(Array::id(res.size()).choice(n).sort());
     }
+
+    static TArray<Point> pointsInCommonPosition(
+            int n, long long X, long long Y) {
+        TArray<Point> res;
+        while (static_cast<int>(res.size()) != n) {
+            Point p = point(X, Y);
+            bool ok = true;
+            for (size_t i = 0; i < res.size(); ++i) {
+                if (p == res[i]) {
+                    ok = false;
+                    break;
+                }
+                for (size_t j = 0; j < i; ++j) {
+                    if ((res[i] - res[j]) % (res[i] - p) == 0) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (!ok) {
+                    break;
+                }
+            }
+            if (ok) {
+                res.push_back(p);
+            }
+        }
+        return res;
+    }
 };
 
 JNGEN_EXTERN GeometryRandom rndg;
@@ -4481,6 +4562,7 @@ void GenericGraph::permuteEdges(const Array& order) {
 }
 
 void GenericGraph::normalizeEdges() {
+#ifndef JNGEN_NO_NORMALIZE_EDGES
     ENSURE(
         vertexLabel_ == Array::id(n()),
         "Can call normalizeEdges() only on newly created graph");
@@ -4499,6 +4581,7 @@ void GenericGraph::normalizeEdges() {
         });
 
     permuteEdges(order);
+#endif // JNGEN_NO_NORMALIZE_EDGES
 }
 
 void GenericGraph::addEdge(int u, int v, const Weight& w) {
@@ -4600,7 +4683,7 @@ bool GenericGraph::operator<=(const GenericGraph& other) const {
 }
 
 bool GenericGraph::operator>=(const GenericGraph& other) const {
-    return compareTo(other) == -1;
+    return compareTo(other) != -1;
 }
 
 int GenericGraph::compareTo(const GenericGraph& other) const {

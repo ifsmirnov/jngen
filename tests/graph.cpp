@@ -1,6 +1,8 @@
-#define BOOST_TEST_MAIN
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 #include "../jngen.h"
+
+BOOST_AUTO_TEST_SUITE(graph)
 
 BOOST_AUTO_TEST_CASE(output) {
     Graph g;
@@ -63,3 +65,5 @@ BOOST_AUTO_TEST_CASE(weights_and_labelling) {
 
     BOOST_CHECK_EQUAL(count, 1);
 }
+
+BOOST_AUTO_TEST_SUITE_END()

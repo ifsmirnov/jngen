@@ -1,11 +1,13 @@
-#define BOOST_TEST_MAIN
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 #include "../jngen.h"
 
 #include <algorithm>
 #include <set>
 #include <sstream>
 #include <utility>
+
+BOOST_AUTO_TEST_SUITE(tree)
 
 BOOST_AUTO_TEST_CASE(manual_construction) {
     Tree t;
@@ -118,10 +120,10 @@ BOOST_AUTO_TEST_CASE(generators) {
     BOOST_CHECK_EQUAL(findDiameter(s, centers, dist), 2);
     BOOST_CHECK_EQUAL(centers[0], 0);
 
-    auto c = Tree::caterpillar(10, 100);
+    auto c = Tree::caterpillar(100, 10);
     BOOST_CHECK_EQUAL(findDiameter(c, centers, dist), 11);
 
-    c = Tree::caterpillar(1000, 1005);
+    c = Tree::caterpillar(1005, 1000);
     BOOST_CHECK_EQUAL(findDiameter(c, centers, dist), 999);
 
     auto t = Tree::random(150, 1000);
@@ -213,3 +215,5 @@ BOOST_AUTO_TEST_CASE(check_glue) {
 }
 
 // TODO: add tests to check random generators exactly
+
+BOOST_AUTO_TEST_SUITE_END()

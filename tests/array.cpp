@@ -1,9 +1,11 @@
-#define BOOST_TEST_MAIN
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 #include "../jngen.h"
 
 #include <algorithm>
 #include <utility>
+
+BOOST_AUTO_TEST_SUITE(array)
 
 BOOST_AUTO_TEST_CASE(basics) {
     Array a, b;
@@ -135,3 +137,5 @@ BOOST_AUTO_TEST_CASE(random_generation) {
 
     BOOST_CHECK_EQUAL(b.sorted(), c.sorted().uniqued());
 }
+
+BOOST_AUTO_TEST_SUITE_END()

@@ -1,10 +1,12 @@
-#define BOOST_TEST_MAIN
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/unit_test.hpp>
 #include "../jngen.h"
 
 #include <algorithm>
 #include <string>
 #include <vector>
+
+BOOST_AUTO_TEST_SUITE(random_suite)
 
 BOOST_AUTO_TEST_CASE(basic_methods) {
     rnd.seed(123);
@@ -161,3 +163,5 @@ BOOST_AUTO_TEST_CASE(signed_bounds) {
     rnd.wnext((long long)(-6e18), (long long)(6e18), 10);
     rnd.wnext((long long)(-6e18), (long long)(6e18), -4);
 }
+
+BOOST_AUTO_TEST_SUITE_END()
