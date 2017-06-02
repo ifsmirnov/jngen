@@ -274,6 +274,34 @@ public:
 
         return res.subseq(Array::id(res.size()).choice(n).sort());
     }
+
+    static TArray<Point> pointsInCommonPosition(
+            int n, long long X, long long Y) {
+        TArray<Point> res;
+        while (static_cast<int>(res.size()) != n) {
+            Point p = point(X, Y);
+            bool ok = true;
+            for (size_t i = 0; i < res.size(); ++i) {
+                if (p == res[i]) {
+                    ok = false;
+                    break;
+                }
+                for (size_t j = 0; j < i; ++j) {
+                    if ((res[i] - res[j]) % (res[i] - p) == 0) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (!ok) {
+                    break;
+                }
+            }
+            if (ok) {
+                res.push_back(p);
+            }
+        }
+        return res;
+    }
 };
 
 JNGEN_EXTERN GeometryRandom rndg;
