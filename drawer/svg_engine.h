@@ -18,14 +18,20 @@ public:
     virtual void drawCircle(double x, double y, double r) override;
     virtual void drawSegment(
         double x1, double y1, double x2, double y2) override;
+    virtual void drawPolygon(
+        const std::vector<std::pair<double, double>>& vertices) override;
     virtual void drawText(
         double x, double y, const std::string& s) override;
 
     virtual void setWidth(double width) override;
-    virtual void setColor(Color color) override;
+    virtual void setStroke(Color color) override;
+    virtual void setFill(Color color) override;
+    virtual void setOpacity(double opacity) override;
 
-    virtual Color color() const override { return color_; }
     virtual double width() const override { return width_; }
+    virtual Color stroke() const override { return strokeColor_; }
+    virtual Color fill() const override { return fillColor_; }
+    virtual double opacity() const override { return opacity_; }
 
     std::string serialize() const;
 
@@ -36,16 +42,21 @@ private:
     double lerpY(double y) const;
     double scaleSize(double size) const;
 
+    std::string getStyle() const;
+
     std::ostringstream output_;
 
     double width_;
-    Color color_;
+    Color strokeColor_;
+    Color fillColor_;
+    double opacity_;
 
     double x1_, y1_, x2_, y2_; // borders
 };
 
 inline const char* SvgEngine::colorToString(Color color) {
     switch (color) {
+        case Color::None: return "none";
         case Color::White: return "white";
         case Color::Black: return "black";
         case Color::Red: return "red";
@@ -53,7 +64,7 @@ inline const char* SvgEngine::colorToString(Color color) {
         case Color::Blue: return "blue";
         case Color::Grey: return "grey";
         case Color::LightGrey: return "lightgrey";
-        default: return "black";
+        default: return "none";
     }
 }
 

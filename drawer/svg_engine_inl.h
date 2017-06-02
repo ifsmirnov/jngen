@@ -23,7 +23,9 @@ double lerp(double x, double l, double r, double L, double R) {
 
 SvgEngine::SvgEngine(double x1, double y1, double x2, double y2) :
     width_(1.0),
-    color_(Color::Black),
+    strokeColor_(Color::Black),
+    fillColor_(Color::Black),
+    opacity_(1.0),
     x1_(x1),
     y1_(y1),
     x2_(x2),
@@ -36,8 +38,8 @@ void SvgEngine::drawPoint(double x, double y) {
     double w = width_ * WIDTH_SCALE * 1.5;
     sprintf(
         buf,
-        "<circle cx='%f' cy='%f' r='%f' fill='%s'/>",
-        x, y, w, colorToString(color_)
+        "<circle cx='%f' cy='%f' r='%f' fill='%s' opacity='%f'/>",
+        x, y, w, colorToString(strokeColor_), opacity_
     );
     output_ << buf << "\n";
 }
@@ -48,10 +50,20 @@ void SvgEngine::drawCircle(double x, double y, double r) {
     r = scaleSize(r);
     sprintf(
         buf,
-        "<circle cx='%f' cy='%f' r='%f' fill='%s'/>",
-        x, y, r, colorToString(color_)
+        "<circle cx='%f' cy='%f' r='%f' style='%s'/>",
+        x, y, r, getStyle().c_str()
     );
     output_ << buf << "\n";
+}
+
+void SvgEngine::drawPolygon(
+    const std::vector<std::pair<double, double>>& points)
+{
+    output_ << "<polygon points='";
+    for (const auto& point: points) {
+        output_ << lerpX(point.first) << "," << lerpY(point.second) << " ";
+    }
+    output_ << "' style='" << getStyle() << "'/>\n";
 }
 
 void SvgEngine::drawSegment(
@@ -71,8 +83,8 @@ void SvgEngine::drawSegment(
     }
     sprintf(
         buf,
-        "<line x1='%f' y1='%f' x2='%f' y2='%f' stroke='%s' stroke-width='%f'/>",
-        x1, y1, x2, y2, colorToString(color_), width_ * WIDTH_SCALE
+        "<line x1='%f' y1='%f' x2='%f' y2='%f' style='%s'/>",
+        x1, y1, x2, y2, getStyle().c_str()
     );
     output_ << buf << "\n";
 }
@@ -94,8 +106,16 @@ void SvgEngine::setWidth(double width) {
     width_ = width;
 }
 
-void SvgEngine::setColor(Color color) {
-    color_ = color;
+void SvgEngine::setStroke(Color color) {
+    strokeColor_ = color;
+}
+
+void SvgEngine::setFill(Color color) {
+    fillColor_ = color;
+}
+
+void SvgEngine::setOpacity(double opacity) {
+    opacity_ = opacity;
 }
 
 std::string SvgEngine::serialize() const {
@@ -125,6 +145,19 @@ double SvgEngine::lerpY(double y) const {
 
 double SvgEngine::scaleSize(double size) const {
     return size * CANVAS_SIZE / (x2_ - x1_);
+}
+
+std::string SvgEngine::getStyle() const {
+    static char buf[1024];
+    sprintf(
+        buf,
+        "stroke-width:%f;stroke:%s;fill:%s;opacity:%f",
+        width_ * WIDTH_SCALE,
+        colorToString(strokeColor_),
+        colorToString(fillColor_),
+        opacity_
+    );
+    return buf;
 }
 
 }} // namespace jngen::drawing
