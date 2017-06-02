@@ -242,6 +242,7 @@ void GenericGraph::permuteEdges(const Array& order) {
 }
 
 void GenericGraph::normalizeEdges() {
+#ifndef JNGEN_NO_NORMALIZE_EDGES
     ENSURE(
         vertexLabel_ == Array::id(n()),
         "Can call normalizeEdges() only on newly created graph");
@@ -260,6 +261,7 @@ void GenericGraph::normalizeEdges() {
         });
 
     permuteEdges(order);
+#endif // JNGEN_NO_NORMALIZE_EDGES
 }
 
 void GenericGraph::addEdge(int u, int v, const Weight& w) {
@@ -361,7 +363,7 @@ bool GenericGraph::operator<=(const GenericGraph& other) const {
 }
 
 bool GenericGraph::operator>=(const GenericGraph& other) const {
-    return compareTo(other) == -1;
+    return compareTo(other) != -1;
 }
 
 int GenericGraph::compareTo(const GenericGraph& other) const {
