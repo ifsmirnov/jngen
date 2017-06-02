@@ -41,7 +41,7 @@ JNGEN_DEFINE_FUNCTION_CHECKER(
 
 JNGEN_DEFINE_FUNCTION_CHECKER(
     Plus,
-    std::declval<T>() + 1
+    T(std::declval<T>() + 1)
 )
 
 JNGEN_DEFINE_FUNCTION_CHECKER(
