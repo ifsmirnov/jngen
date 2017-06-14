@@ -1019,12 +1019,12 @@ struct VariableMap {
         if (!count(pos)) {
             return "";
         }
-        return positional[pos];
+        return positional.at(pos);
     }
 
     std::string operator[](const std::string& name) const {
         if (!count(name)) {
-            return name;
+            return "";
         }
         return named.at(name);
     }
@@ -1036,6 +1036,18 @@ struct VariableMap {
 inline VariableMap parseArguments(const std::vector<std::string>& args) {
     VariableMap result;
 
+    auto setNamedVar = [&result](
+            const std::string& name,
+            const std::string& value)
+    {
+        ensure(
+            !result.count(value),
+            "Named arguments must have distinct names");
+        result.named[name] = value;
+    };
+
+    std::string pendingVarName;
+
     for (const std::string& s: args) {
         if (s == "-") {
             continue;
@@ -1045,8 +1057,18 @@ inline VariableMap parseArguments(const std::vector<std::string>& args) {
         }
 
         if (s[0] != '-') {
-            result.positional.push_back(s);
+            if (!pendingVarName.empty()) {
+                setNamedVar(pendingVarName, s);
+                pendingVarName = "";
+            } else {
+                result.positional.push_back(s);
+            }
             continue;
+        }
+
+        if (!pendingVarName.empty()) {
+            result.named[pendingVarName] = "1";
+            pendingVarName = "";
         }
 
         std::string name;
@@ -1063,13 +1085,17 @@ inline VariableMap parseArguments(const std::vector<std::string>& args) {
                 }
             }
         }
-        if (!foundEq) {
-            value = "1";
+        if (foundEq) {
+            setNamedVar(name, value);
+        } else {
+            pendingVarName = name;
         }
-        ensure(
-            !result.count(value),
-            "Named arguments must have distinct names");
-        result.named[name] = value;
+
+        setNamedVar(name, value);
+    }
+
+    if (!pendingVarName.empty()) {
+        result.named[pendingVarName] = "1";
     }
 
     result.initialized = true;

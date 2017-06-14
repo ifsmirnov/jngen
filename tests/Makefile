@@ -2,20 +2,20 @@ CXXFLAGS = -O2 -Wall -Wextra -Werror -std=c++11
 CXXFLAGS += -DJNGEN_DECLARE_ONLY
 LDFLAGS += -lboost_system -lboost_unit_test_framework
 
-CXX = g++-4.9
+CXX = g++-6
 
 .PHONY: clean run
 
 run: main
 	./main
 
-../lib.o: ../jngen.h ../lib.cpp
-	cd .. && $(CXX) $(CXXFLAGS) -UJNGEN_DECLARE_ONLY lib.cpp -c
+lib.o: ../jngen.h ../lib.cpp
+	$(CXX) $(CXXFLAGS) -UJNGEN_DECLARE_ONLY ../lib.cpp -c -o lib.o
 
 %.o: %.cpp  ../jngen.h
 	$(CXX) $(CXXFLAGS) $< -c
 
-main: $(subst .cpp,.o,$(wildcard *.cpp)) ../lib.o
+main: $(subst .cpp,.o,$(wildcard *.cpp)) lib.o
 	$(info $^)
 	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
