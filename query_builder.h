@@ -124,6 +124,11 @@ Arrayp QueryBuilder::next(int m) {
 
 #endif
 
+template<typename ... Args>
+QueryBuilder rndq(Args... args) {
+    return QueryBuilder(std::forward(args)...);
+}
+
 } // namespace jngen
 
-using jngen::QueryBuilder;
+using jngen::rndq;

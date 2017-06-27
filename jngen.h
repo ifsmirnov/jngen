@@ -68,7 +68,7 @@ std::string format(const std::string& fmt, Args... args) {
     char *buf = BUFFER;
 
     while (true) {
-        int ret = snprintf(buf, bufSize, fmt.c_str(), args...);
+        int ret = std::snprintf(buf, bufSize, fmt.c_str(), args...);
         if (ret < bufSize) {
             break;
         }
@@ -282,6 +282,7 @@ inline const char* SvgEngine::colorToString(Color color) {
 #endif
 
 #include <cmath>
+#include <cstdlib>
 
 namespace jngen {
 namespace drawing {
@@ -315,7 +316,7 @@ void SvgEngine::drawPoint(double x, double y) {
     x = lerpX(x);
     y = lerpY(y);
     double w = width_ * WIDTH_SCALE * 1.5;
-    sprintf(
+    std::sprintf(
         buf,
         "<circle cx='%f' cy='%f' r='%f' fill='%s' opacity='%f'/>",
         x, y, w, colorToString(strokeColor_), opacity_
@@ -327,7 +328,7 @@ void SvgEngine::drawCircle(double x, double y, double r) {
     x = lerpX(x);
     y = lerpY(y);
     r = scaleSize(r);
-    sprintf(
+    std::sprintf(
         buf,
         "<circle cx='%f' cy='%f' r='%f' style='%s'/>",
         x, y, r, getStyle().c_str()
@@ -360,7 +361,7 @@ void SvgEngine::drawSegment(
         y1 = std::round(y1);
         y2 = std::round(y2);
     }
-    sprintf(
+    std::sprintf(
         buf,
         "<line x1='%f' y1='%f' x2='%f' y2='%f' style='%s'/>",
         x1, y1, x2, y2, getStyle().c_str()
@@ -373,7 +374,7 @@ void SvgEngine::drawText(
 {
     x = std::round(lerpX(x));
     y = std::round(lerpY(y));
-    sprintf(
+    std::sprintf(
         buf,
         "<text x='%f' y='%f' font-size='%d' font-family='Helvetica'>%s</text>",
         x, y, FONT_SIZE, s.c_str()
@@ -398,13 +399,13 @@ void SvgEngine::setOpacity(double opacity) {
 }
 
 std::string SvgEngine::serialize() const {
-    int offset = sprintf(
+    int offset = std::sprintf(
         buf,
         "<svg xmlns='http://www.w3.org/2000/svg' "
         "viewBox='%f %f %f %f'>\n",
         0.0, 0.0, CANVAS_SIZE, CANVAS_SIZE * (y2_ - y1_) / (x2_ - x1_)
     );
-    sprintf(
+    std::sprintf(
         buf + offset,
         "<circle cx='%f' cy='%f' r='%f' fill='white'/>\n",
         CANVAS_SIZE/2, CANVAS_SIZE/2,
@@ -428,7 +429,7 @@ double SvgEngine::scaleSize(double size) const {
 
 std::string SvgEngine::getStyle() const {
     static char buf[1024];
-    sprintf(
+    std::sprintf(
         buf,
         "stroke-width:%f;stroke:%s;fill:%s;opacity:%f",
         width_ * WIDTH_SCALE,

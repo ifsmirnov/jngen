@@ -69,7 +69,7 @@ std::string format(const std::string& fmt, Args... args) {
     char *buf = BUFFER;
 
     while (true) {
-        int ret = snprintf(buf, bufSize, fmt.c_str(), args...);
+        int ret = std::snprintf(buf, bufSize, fmt.c_str(), args...);
         if (ret < bufSize) {
             break;
         }
