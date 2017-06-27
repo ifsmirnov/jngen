@@ -14,58 +14,46 @@
 
 namespace jngen {
 
-// TODO: why do we need this shit?
-class EpsHolder {
-private:
-    EpsHolder() : eps(1e-9) {}
+#ifdef JNGEN_DECLARE_ONLY
+extern long double eps;
+#else
+long double eps = 1e-9;
+#endif
 
-public:
-    long double eps;
-
-    static EpsHolder& instance() {
-        static EpsHolder holder;
-        return holder;
-    }
-};
-
-inline void setEps(long double eps) {
-    EpsHolder::instance().eps = eps;
+inline void setEps(long double value) {
+    eps = value;
 }
 
-inline long double eps() {
-    return EpsHolder::instance().eps;
-}
-
-template<typename T, typename Enable = void>
+template<typename T, typename U, typename Enable = void>
 class Comparator {
 public:
     static bool eq(T a, T b) { return a == b; }
-    static bool ne(T a, T b) { return !(a == b); }
     static bool lt(T a, T b) { return a < b; }
-    static bool le(T a, T b) { return a <= b; }
-    static bool gt(T a, T b) { return a > b; }
-    static bool ge(T a, T b) { return a >= b; }
 };
 
-template<typename T>
-class Comparator<T,
-    typename std::enable_if<std::is_floating_point<T>::value, void>::type>
+template<typename T, typename U>
+class Comparator<T, U,
+    typename std::enable_if<
+        std::is_floating_point<T>::value || std::is_floating_point<U>::value,
+        void>
+    ::type>
 {
-    static bool eq(T a, T b) { return std::abs(b - a) < eps(); }
-    static bool ne(T a, T b) { return !(a == b); }
+    static bool eq(T a, T b) { return std::abs(b - a) < eps; }
     static bool lt(T a, T b) { return a < b - eps; }
-    static bool le(T a, T b) { return a <= b + eps; }
-    static bool gt(T a, T b) { return a > b + eps; }
-    static bool ge(T a, T b) { return a >= b - eps; }
 };
 
-// TODO: do something with eq(int, long long)
-template<typename T> bool eq(T a, T b) { return Comparator<T>::eq(a, b); }
-template<typename T> bool ne(T a, T b) { return Comparator<T>::ne(a, b); }
-template<typename T> bool lt(T a, T b) { return Comparator<T>::lt(a, b); }
-template<typename T> bool le(T a, T b) { return Comparator<T>::le(a, b); }
-template<typename T> bool gt(T a, T b) { return Comparator<T>::gt(a, b); }
-template<typename T> bool ge(T a, T b) { return Comparator<T>::ge(a, b); }
+template<typename T, typename U>
+bool eq(T t, U u) {
+    return Comparator<T, U>().eq(t, u);
+}
+template<typename T, typename U>
+bool lt(T t, U u) {
+    return Comparator<T, U>().lt(t, u);
+}
+template<typename T, typename U> bool ne(T t, U u) { return !eq(t, u); }
+template<typename T, typename U> bool le(T t, U u) { return !lt(u, t); }
+template<typename T, typename U> bool gt(T t, U u) { return  lt(u, t); }
+template<typename T, typename U> bool ge(T t, U u) { return !lt(t, u); }
 
 template<typename T>
 struct TPoint : public ReprProxy<TPoint<T>> {
@@ -255,6 +243,7 @@ public:
     }
 
     static Polygon convexPolygon(int n, long long X, long long Y) {
+        ensure(n >= 0);
         Polygon res = detail::convexPolygonByEllipse<long long>(
             n * 10, // BUBEN!
             Point(X/2, Y/2),
@@ -270,7 +259,7 @@ public:
 
         ensure(
             static_cast<int>(res.size()) >= n,
-            "Cannot generate a convex polygon with so much vertices");
+            "Cannot generate a convex polygon with so many vertices");
 
         return res.subseq(Array::id(res.size()).choice(n).sort());
     }
@@ -316,5 +305,4 @@ using jngen::Polygonf;
 
 using jngen::rndg;
 
-using jngen::eps;
 using jngen::setEps;
