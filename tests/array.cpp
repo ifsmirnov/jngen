@@ -77,6 +77,8 @@ BOOST_AUTO_TEST_CASE(operators) {
 }
 
 BOOST_AUTO_TEST_CASE(random_selection) {
+    rnd.seed(123);
+
     auto a = Array::id(10);
 
     for (int i = 0; i < 10; ++i) {
@@ -102,6 +104,8 @@ BOOST_AUTO_TEST_CASE(random_selection) {
 }
 
 BOOST_AUTO_TEST_CASE(random_generation) {
+    rnd.seed(456);
+
     auto a = Array::random(100, 10);
     BOOST_CHECK_EQUAL(a.sorted().uniqued(), Array::id(10));
 

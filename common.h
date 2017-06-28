@@ -144,6 +144,27 @@ inline void checkLargeParameter(int n) {
 template<bool B, typename T>
 using enable_if_t = typename std::enable_if<B, T>::type;
 
+namespace util {
+
+inline long long gcd(long long a, long long b) {
+    if (a < 0) {
+        a = -a;
+    }
+    if (b < 0) {
+        b = -b;
+    }
+
+    while (a && b) {
+        if (a > b) {
+            a %= b;
+        } else {
+            b %= a;
+        }
+    }
+    return a + b;
+}
+
+} // namespace util
 
 } // namespace jngen
 

@@ -143,6 +143,27 @@ inline void checkLargeParameter(int n) {
 template<bool B, typename T>
 using enable_if_t = typename std::enable_if<B, T>::type;
 
+namespace util {
+
+inline long long gcd(long long a, long long b) {
+    if (a < 0) {
+        a = -a;
+    }
+    if (b < 0) {
+        b = -b;
+    }
+
+    while (a && b) {
+        if (a > b) {
+            a %= b;
+        } else {
+            b %= a;
+        }
+    }
+    return a + b;
+}
+
+} // namespace util
 
 } // namespace jngen
 
@@ -1543,7 +1564,7 @@ static void assertIntegerSizes() {
         std::numeric_limits<unsigned char>::max() == 255,
         "max(unsigned char) != 255");
     static_assert(sizeof(int) == 4, "sizeof(int) != 4");
-    static_assert(sizeof(long long) == 8, "sizeof(int) != 8");
+    static_assert(sizeof(long long) == 8, "sizeof(long long) != 8");
     static_assert(
         sizeof(size_t) == 4 || sizeof(size_t) == 8,
         "sizeof(size_t) is neither 4 nor 8");
@@ -3163,9 +3184,13 @@ JNGEN_EXTERN ArrayRandom rnda;
 using jngen::rnda;
 
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <set>
+#include <tuple>
 #include <type_traits>
+#include <unordered_set>
 
 namespace jngen {
 
@@ -3198,10 +3223,12 @@ template<typename T, typename U>
 bool eq(T t, U u) {
     return Comparator<T, U>().eq(t, u);
 }
+
 template<typename T, typename U>
 bool lt(T t, U u) {
     return Comparator<T, U>().lt(t, u);
 }
+
 template<typename T, typename U> bool ne(T t, U u) { return !eq(t, u); }
 template<typename T, typename U> bool le(T t, U u) { return !lt(u, t); }
 template<typename T, typename U> bool gt(T t, U u) { return  lt(u, t); }
@@ -3273,6 +3300,41 @@ struct TPoint : public ReprProxy<TPoint<T>> {
 
 using Point = TPoint<long long>;
 using Pointf = TPoint<long double>;
+
+} // namespace jngen
+
+namespace std {
+
+template<>
+struct hash<jngen::Point> {
+    // Credits to boost::hash
+    static void hash_combine_impl(uint64_t& h, uint64_t k) {
+        const uint64_t m = 0xc6a4a7935bd1e995;
+        const int r = 47;
+
+        k *= m;
+        k ^= k >> r;
+        k *= m;
+
+        h ^= k;
+        h *= m;
+
+        // Completely arbitrary number, to prevent 0's
+        // from hashing to 0.
+        h += 0xe6546b64;
+    }
+
+    size_t operator()(const jngen::Point& p) const {
+        uint64_t h = 0;
+        hash_combine_impl(h, std::hash<long long>{}(p.x));
+        hash_combine_impl(h, std::hash<long long>{}(p.y));
+        return h;
+    }
+};
+
+} // namespace std
+
+namespace jngen {
 
 template<typename T>
 JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 3) {
@@ -3401,11 +3463,16 @@ public:
         return point(C, C);
     }
 
-    // Point in [x1, x2] x [y1, y2]
-    static Point point(long long x1, long long y1, long long x2, long long y2) {
-        long long x = rnd.tnext<long long>(x1, x2);
-        long long y = rnd.tnext<long long>(y1, y2);
+    // point in [0, X] x [0, Y]
+    static Pointf pointf(long double X, long double Y) {
+        long double x = rnd.tnext<long double>(0, X);
+        long double y = rnd.tnext<long double>(0, Y);
         return {x, y};
+    }
+
+    // point in [0, C] x [0, C]
+    static Pointf pointf(long double C) {
+        return point(C, C);
     }
 
     static Polygon convexPolygon(int n, long long X, long long Y) {
@@ -3430,32 +3497,76 @@ public:
         return res.subseq(Array::id(res.size()).choice(n).sort());
     }
 
+    static Polygon convexPolygon(int n, long long C) {
+        return convexPolygon(n, C, C);
+    }
+
     static TArray<Point> pointsInGeneralPosition(
-            int n, long long X, long long Y) {
-        TArray<Point> res;
-        while (static_cast<int>(res.size()) != n) {
-            Point p = point(X, Y);
-            bool ok = true;
-            for (size_t i = 0; i < res.size(); ++i) {
-                if (p == res[i]) {
-                    ok = false;
-                    break;
-                }
-                for (size_t j = 0; j < i; ++j) {
-                    if ((res[i] - res[j]) % (res[i] - p) == 0) {
-                        ok = false;
-                        break;
-                    }
-                }
-                if (!ok) {
-                    break;
+            int n, long long X, long long Y)
+    {
+        struct Line {
+            long long A, B, C; // Ax + By + C = 0
+            Line() {}
+            Line(const Point& p1, const Point& p2) {
+                A = p1.y - p2.y;
+                B = p2.x - p1.x;
+                C = -(p1.x * A + p1.y * B);
+
+                ENSURE(A != 0 || B != 0);
+
+                long long g = util::gcd(A, util::gcd(B, C));
+                A /= g;
+                B /= g;
+                C /= g;
+                if (A < 0 || (A == 0 && B < 0)) {
+                    A = -A;
+                    B = -B;
+                    C = -C;
                 }
             }
-            if (ok) {
+
+            bool operator<(const Line& other) const {
+                return std::tie(A, B, C) < std::tie(other.A, other.B, other.C);
+            }
+        };
+
+        const long long LIMIT = 2e9;
+        ensure(
+            X <= LIMIT && Y <= LIMIT,
+            "rndg.pointsInGeneralPosition must not be called with coordinates "
+            "larger than 2e9");
+
+        std::set<Line> lines;
+        std::unordered_set<Point> points;
+
+        TArray<Point> res;
+
+        while (static_cast<int>(res.size()) != n) {
+            Point p = point(X, Y);
+
+            if (points.count(p)) {
+                continue;
+            }
+
+            if (std::none_of(
+                    res.begin(),
+                    res.end(),
+                    [&lines, &p] (const Point& q) {
+                        return lines.count(Line(p, q));
+                    }))
+            {
+                points.insert(p);
+                for (const auto& q: res) {
+                    lines.emplace(p, q);
+                }
                 res.push_back(p);
             }
         }
         return res;
+    }
+
+    static TArray<Point> pointsInGeneralPosition(int n, long long C) {
+        return pointsInGeneralPosition(n, C, C);
     }
 };
 

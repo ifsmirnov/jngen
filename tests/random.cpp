@@ -67,8 +67,10 @@ BOOST_AUTO_TEST_CASE(mask_for_bound) {
     BOOST_CHECK_EQUAL(maskForBound(1025), 2047);
 }
 
+// TODO: add tests for incorrect patterns
 BOOST_AUTO_TEST_CASE(patterns) {
-    // TODO: add tests for incorrect patterns
+    rnd.seed(123);
+
     BOOST_CHECK(true);
 
     std::vector<std::string> patterns = {
@@ -115,6 +117,8 @@ BOOST_AUTO_TEST_CASE(several_engines) {
 }
 
 BOOST_AUTO_TEST_CASE(test_choice) {
+    rnd.seed(444);
+
     BOOST_CHECK(true);
 
     std::vector<int> a;
@@ -157,6 +161,8 @@ BOOST_AUTO_TEST_CASE(wnext) {
 }
 
 BOOST_AUTO_TEST_CASE(signed_bounds) {
+    rnd.seed(19283);
+
     BOOST_CHECK(true);
 
     rnd.next(int(-2e9), int(2e9));

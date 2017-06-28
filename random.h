@@ -31,7 +31,7 @@ static void assertIntegerSizes() {
         std::numeric_limits<unsigned char>::max() == 255,
         "max(unsigned char) != 255");
     static_assert(sizeof(int) == 4, "sizeof(int) != 4");
-    static_assert(sizeof(long long) == 8, "sizeof(int) != 8");
+    static_assert(sizeof(long long) == 8, "sizeof(long long) != 8");
     static_assert(
         sizeof(size_t) == 4 || sizeof(size_t) == 8,
         "sizeof(size_t) is neither 4 nor 8");
