@@ -73,7 +73,7 @@ struct VectorDepth<C<T>> {
 template<typename T>\
 auto printValue(\
     std::ostream& out, const T& t, const OutputModifier& mod, PTag<priority>)\
-    -> typename std::enable_if<constraint, void>::type
+    -> enable_if_t<constraint, void>
 
 #define JNGEN_DECLARE_SIMPLE_PRINTER(type, priority)\
 inline void printValue(std::ostream& out, const type& t,\
@@ -88,7 +88,7 @@ printValue(out, value, OutputModifier{}, PTagMax{})
 JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
     // can't just write 'false' here because assertion always fails
-//     static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
+    static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
     (void)out;
     (void)mod;
     (void)t;
@@ -211,10 +211,10 @@ namespace namespace_for_fake_operator_ltlt {
 
 template<typename T>
 auto operator<<(std::ostream& out, const T& t)
-    -> typename std::enable_if<
+    -> enable_if_t<
             !JNGEN_HAS_OSTREAM() && !std::is_base_of<BaseReprProxy, T>::value,
             std::ostream&
-        >::type
+        >
 {
     // not jngen::printValue, because relying on ADL here for printers declared
     // later (see, e.g., http://stackoverflow.com/questions/42833134)

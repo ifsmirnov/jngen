@@ -6,6 +6,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 #ifdef JNGEN_DECLARE_ONLY
 #define JNGEN_EXTERN extern
@@ -138,6 +139,11 @@ inline void checkLargeParameter(int n) {
         "#define JNGEN_I_WANT_LARGE_OBJECTS prior to including Jngen");
 #endif // JNGEN_I_WANT_LARGE_OBJECTS
 }
+
+// Some type traits helpers. Based on ideas from TCPPPL v4.
+template<bool B, typename T>
+using enable_if_t = typename std::enable_if<B, T>::type;
+
 
 } // namespace jngen
 

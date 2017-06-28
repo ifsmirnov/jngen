@@ -5,6 +5,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 #ifdef JNGEN_DECLARE_ONLY
 #define JNGEN_EXTERN extern
@@ -137,6 +138,11 @@ inline void checkLargeParameter(int n) {
         "#define JNGEN_I_WANT_LARGE_OBJECTS prior to including Jngen");
 #endif // JNGEN_I_WANT_LARGE_OBJECTS
 }
+
+// Some type traits helpers. Based on ideas from TCPPPL v4.
+template<bool B, typename T>
+using enable_if_t = typename std::enable_if<B, T>::type;
+
 
 } // namespace jngen
 
@@ -2198,7 +2204,7 @@ struct VectorDepth<C<T>> {
 template<typename T>\
 auto printValue(\
     std::ostream& out, const T& t, const OutputModifier& mod, PTag<priority>)\
-    -> typename std::enable_if<constraint, void>::type
+    -> enable_if_t<constraint, void>
 
 #define JNGEN_DECLARE_SIMPLE_PRINTER(type, priority)\
 inline void printValue(std::ostream& out, const type& t,\
@@ -2213,7 +2219,7 @@ printValue(out, value, OutputModifier{}, PTagMax{})
 JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
     // can't just write 'false' here because assertion always fails
-//     static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
+    static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
     (void)out;
     (void)mod;
     (void)t;
@@ -2336,10 +2342,10 @@ namespace namespace_for_fake_operator_ltlt {
 
 template<typename T>
 auto operator<<(std::ostream& out, const T& t)
-    -> typename std::enable_if<
+    -> enable_if_t<
             !JNGEN_HAS_OSTREAM() && !std::is_base_of<BaseReprProxy, T>::value,
             std::ostream&
-        >::type
+        >
 {
     // not jngen::printValue, because relying on ADL here for printers declared
     // later (see, e.g., http://stackoverflow.com/questions/42833134)
@@ -3174,21 +3180,18 @@ inline void setEps(long double value) {
 }
 
 template<typename T, typename U, typename Enable = void>
-class Comparator {
-public:
-    static bool eq(T a, T b) { return a == b; }
-    static bool lt(T a, T b) { return a < b; }
+struct Comparator {
+    static bool eq(T a, U b) { return a == b; }
+    static bool lt(T a, U b) { return a < b; }
 };
 
 template<typename T, typename U>
-class Comparator<T, U,
-    typename std::enable_if<
+struct Comparator<T, U, enable_if_t<
         std::is_floating_point<T>::value || std::is_floating_point<U>::value,
-        void>
-    ::type>
+        void>>
 {
-    static bool eq(T a, T b) { return std::abs(b - a) < eps; }
-    static bool lt(T a, T b) { return a < b - eps; }
+    static bool eq(T a, U b) { return std::abs(b - a) < eps; }
+    static bool lt(T a, U b) { return a < b - eps; }
 };
 
 template<typename T, typename U>
@@ -3277,9 +3280,25 @@ JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 3) {
     out << t.x << " " << t.y;
 }
 
-// TODO: make polygon a class to support, e.g., shifting by a point
 template<typename T>
-using TPolygon = GenericArray<TPoint<T>>;
+class TPolygon : public GenericArray<TPoint<T>> {
+public:
+    using Base = GenericArray<TPoint<T>>;
+    using Base::Base;
+
+    TPolygon<T>& shift(const TPoint<T>& vector) {
+        for (auto &pt: *this) {
+            pt += vector;
+        }
+        return *this;
+    }
+
+    TPolygon<T> shifted(const TPoint<T>& vector) {
+        auto res = *this;
+        res.shift(vector);
+        return res;
+    }
+};
 
 using Polygon = TPolygon<long long>;
 using Polygonf = TPolygon<long double>;
@@ -3304,17 +3323,15 @@ JNGEN_DECLARE_SIMPLE_PRINTER(TPolygon<T>, 5) {
 
 namespace detail {
 
-// Please forgive me the liberty of using TPolygon instead of Array<Point<T>> :)
-// (laxity?)
 template<typename T>
-TPolygon<T> convexHull(TPolygon<T> points) {
+TPolygon<T> convexHull(TArray<TPoint<T>> points) {
     points.sort().unique();
 
     if (points.size() <= 2u) {
         return points;
     }
 
-    TPolygon<T> upper(points.begin(), points.begin() + 2);
+    TArray<TPoint<T>> upper(points.begin(), points.begin() + 2);
     upper.reserve(points.size());
     int top = 1;
     for (size_t i = 2; i < points.size(); ++i) {
@@ -3328,7 +3345,7 @@ TPolygon<T> convexHull(TPolygon<T> points) {
         ++top;
     }
 
-    TPolygon<T> lower(points.begin(), points.begin() + 2);
+    TArray<TPoint<T>> lower(points.begin(), points.begin() + 2);
     lower.reserve(points.size());
     top = 1;
     for (size_t i = 2; i < points.size(); ++i) {
@@ -3350,7 +3367,7 @@ template<typename T>
 TPolygon<T> convexPolygonByEllipse(
         int n, Pointf center, Pointf xAxis, Pointf yAxis)
 {
-    return convexHull(TPolygon<T>::randomf(
+    return convexHull(rnda.randomf(
         n,
         [center, xAxis, yAxis] () -> TPoint<T> {
             static const long double PI = acosl(-1.0);
@@ -3413,7 +3430,7 @@ public:
         return res.subseq(Array::id(res.size()).choice(n).sort());
     }
 
-    static TArray<Point> pointsInCommonPosition(
+    static TArray<Point> pointsInGeneralPosition(
             int n, long long X, long long Y) {
         TArray<Point> res;
         while (static_cast<int>(res.size()) != n) {
