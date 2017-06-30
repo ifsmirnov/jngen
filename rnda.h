@@ -10,6 +10,12 @@
 
 namespace jngen {
 
+enum class UnorderedSetCompiler {
+    Gcc4,
+    Gcc5or6,
+    Clang
+};
+
 class ArrayRandom {
 public:
     ArrayRandom() {
@@ -47,36 +53,47 @@ public:
         return GenericArray<T>::randomfAll(func, args...);
     }
 
-    static Array64 antiUnorderedSetGcc4(int n, double maxLoadFactor = 1.0);
-
-    static Array64 antiUnorderedSetWithReserveGcc4(
-            int n, double maxLoadFactor = 1.0);
+    static Array64 antiUnorderedSet(
+        int n,
+        double maxLoadFactor = 1.0,
+        bool reserve = false,
+        UnorderedSetCompiler compiler = UnorderedSetCompiler::Gcc4);
 
 private:
     static Array64 numbersDividingPrime(int n, long long p);
 
-    static long long nextPrimeGcc4(unsigned long long x);
+    static long long nextPrime(
+        unsigned long long x,
+        UnorderedSetCompiler compiler);
 };
 
 JNGEN_EXTERN ArrayRandom rnda;
 
 #ifndef JNGEN_DECLARE_ONLY
 
-Array64 ArrayRandom::antiUnorderedSetGcc4(int n, double maxLoadFactor) {
-    int buckets = 2;
-    for (int size = 1; size <= n; ++size) {
-        if (size + 1 > buckets * maxLoadFactor) {
-            buckets = nextPrimeGcc4(buckets * 2);
+Array64 ArrayRandom::antiUnorderedSet(
+    int n,
+    double maxLoadFactor,
+    bool reserve,
+    UnorderedSetCompiler compiler)
+{
+    int buckets;
+
+    ensure(
+        compiler == UnorderedSetCompiler::Gcc4,
+        "unordered set antitest supported only for gcc-4.x yet");
+
+    if (reserve) {
+        buckets = nextPrime(std::ceil(n / maxLoadFactor), compiler);
+    } else {
+        buckets = 2;
+        for (int size = 1; size <= n; ++size) {
+            if (size + 1 > buckets * maxLoadFactor) {
+                buckets = nextPrime(buckets * 2, compiler);
+            }
         }
     }
 
-    return numbersDividingPrime(n, buckets);
-}
-
-Array64 ArrayRandom::antiUnorderedSetWithReserveGcc4(
-        int n, double maxLoadFactor)
-{
-    int buckets = nextPrimeGcc4(std::ceil(n / maxLoadFactor));
     return numbersDividingPrime(n, buckets);
 }
 
@@ -88,7 +105,12 @@ Array64 ArrayRandom::numbersDividingPrime(int n, long long p) {
     return a;
 }
 
-long long ArrayRandom::nextPrimeGcc4(unsigned long long x) {
+long long ArrayRandom::nextPrime(
+    unsigned long long x,
+    UnorderedSetCompiler compiler)
+{
+    ENSURE(compiler == UnorderedSetCompiler::Gcc4);
+
     const static size_t SIZE =
         sizeof(impl::primeList) / sizeof(impl::primeList[0]);
     return *std::lower_bound(impl::primeList, impl::primeList + SIZE, x);
@@ -99,3 +121,4 @@ long long ArrayRandom::nextPrimeGcc4(unsigned long long x) {
 } // namespace jngen
 
 using jngen::rnda;
+using jngen::UnorderedSetCompiler;
