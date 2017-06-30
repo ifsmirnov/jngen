@@ -2906,17 +2906,11 @@ GenericArray<T>::operator std::string() const {
 template<typename T>
 using TArray = GenericArray<T>;
 
-} // namespace jngen
-
-using jngen::TArray;
-
-using Array = jngen::GenericArray<int>;
-using Array2d = jngen::GenericArray<jngen::GenericArray<int>>;
-using Array64 = jngen::GenericArray<long long>;
-using Arrayf = jngen::GenericArray<double>;
-using Arrayp = jngen::GenericArray<std::pair<int, int>>;
-
-namespace jngen {
+using Array = GenericArray<int>;
+using Array2d = GenericArray<jngen::GenericArray<int>>;
+using Array64 = GenericArray<long long>;
+using Arrayf = GenericArray<double>;
+using Arrayp = GenericArray<std::pair<int, int>>;
 
 template<typename T>
 jngen::GenericArray<T> makeArray(const std::vector<T>& values) {
@@ -2950,6 +2944,14 @@ TArray<T> arrayCast(const TArray<U>& array) {
 using jngen::makeArray;
 using jngen::zip;
 using jngen::arrayCast;
+
+using jngen::TArray;
+
+using jngen::Array;
+using jngen::Array2d;
+using jngen::Array64;
+using jngen::Arrayf;
+using jngen::Arrayp;
 
 
 #include <algorithm>
