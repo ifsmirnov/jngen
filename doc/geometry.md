@@ -2,6 +2,8 @@
 
 Jngen provides two point classes: *Point* with *long long* coordinates and *Pointf* with *long double* coordinates. Standard operations like addition, subtraction, dot and cross products are supported. Similarly, classes *Polygon* and *Polygonf* are provided. A special class *GeometryRandom* is used for generating objects, all interaction goes via its global instance *rndg*.
 
+*Point* is basically a structure with two fields: *x* and *y*. *Polygon* is basically an *Array* of *Points*.
+
 Like most Jngen objects, *Point* and *Polygon* can be printed to streams and modified with [output modifiers](printers.md).
 
 ### Generators (*rndg* static methods)
