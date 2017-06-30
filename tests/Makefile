@@ -2,7 +2,7 @@ CXXFLAGS = -O2 -Wall -Wextra -Werror -std=c++11
 CXXFLAGS += -DJNGEN_DECLARE_ONLY
 LDFLAGS += -lboost_system -lboost_unit_test_framework
 
-CXX = g++-6
+CXX = g++-4.9
 
 .PHONY: clean run
 

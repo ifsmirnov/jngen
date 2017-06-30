@@ -170,6 +170,21 @@ public:
         );
     }
 
+    static long long nextPrime(long long n) {
+        while (!isPrime(n)) {
+            ++n;
+        }
+        return n;
+    }
+
+    static long long previousPrime(long long n) {
+        ensure(n >= 2, format("There are no primes less or equal to %lld", n));
+        while (!isPrime(n)) {
+            --n;
+        }
+        return n;
+    }
+
     static Array partition(int n, int numParts) {
         auto res = partition(
             static_cast<long long>(n), static_cast<long long>(numParts));
