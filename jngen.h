@@ -1358,7 +1358,7 @@ public:
     Pattern() : isOrPattern(false), min(1), max(1) {}
     Pattern(const std::string& s);
 
-    std::string next(std::function<int(int)> rnd) const;
+    std::string next(std::function<int(int)>&& rnd) const;
 
 private:
     Pattern(Pattern p, std::pair<int, int> quantity) :
@@ -1381,6 +1381,8 @@ private:
     bool isOrPattern;
     int min;
     int max;
+
+    static std::map<std::string, Pattern> cachedPatterns_;
 };
 
 class Parser {
@@ -1555,14 +1557,23 @@ private:
 };
 
 #ifndef JNGEN_DECLARE_ONLY
+
+std::map<std::string, Pattern> Pattern::cachedPatterns_;
+
 Pattern::Pattern(const std::string& s) {
+    auto iter = cachedPatterns_.find(s);
+    if (iter != cachedPatterns_.end()) {
+        *this = iter->second;
+        return;
+    }
     *this = Parser().parse(s);
+    cachedPatterns_[s] = *this;
 }
 
-std::string Pattern::next(std::function<int(int)> rnd) const {
+std::string Pattern::next(std::function<int(int)>&& rnd) const {
     if (isOrPattern) {
         ENSURE(!children.empty());
-        return children[rnd(children.size())].next(rnd);
+        return children[rnd(children.size())].next(std::move(rnd));
     }
 
     ENSURE( (!!chars.empty()) ^ (!!children.empty()) );
@@ -1578,7 +1589,7 @@ std::string Pattern::next(std::function<int(int)> rnd) const {
     for (int i = 0; i < count; ++i) {
         if (!children.empty()) {
             for (const Pattern& p: children) {
-                result += p.next(rnd);
+                result += p.next(std::move(rnd));
             }
         } else {
             result += chars[rnd(chars.size())];
