@@ -25,6 +25,7 @@ Jngen library provides several handy instruments for generating various kinds of
     * [[graph.h] Graphs generation](/doc/graph.md)
     * [[tree.h] Trees generation](/doc/tree.md)
 * [[math.h] Math: primes and partitions](/doc/math.md)
+* [[geometry.h] Geometric primitives](/doc/geometry.md)
 
 ### Examples
 Generate a random tree on *n* vertices with a 3-letter string assigned to each edge:

@@ -39,15 +39,15 @@ Default initialized *Random* is seeded with some hardware-generated random value
 #### std::string next(const std::string& pattern, ...)
 * Same as rnd.next(pattern), but pattern interpreted as printf-like format string.
 #### template&lt;typename T, typename ...Args> <br> tnext(Args... args)
-* Calls *next(args...)*, forcing the return type to be *T* and casting arguments appropriately. E.g. *tnext&lt;int>(2.5, 10.1)* is equivalent to*rnd.next(2, 10)*, where both arguments are ints.
+* Calls *next(args...)*, forcing the return type to be *T* and casting arguments appropriately. E.g. *tnext&lt;int>(2.5, 10.1)* is equivalent to *rnd.next(2, 10)*, where both arguments are ints.
 * Name origin: *typed* next.
 #### std::pair&lt;int, int> nextp(int n, [RandomPairTraits])
 #### std::pair&lt;int, int> nextp(int l, int r, [RandomPairTraits])
 * Returns: random pair of integers, where both of them are in range [0, *n*) or [*l*, *r*] respectively. 
 * RandomPairTraits denotes if the pair should be ordered (first element is less than or equal to second one) and if its two elements should be distinct. Several global constants are defined:
-    * opair: ordered pair (first <= second)
-    * dpair: distinct pair (first != second)
-    * odpair, dopair: ordered distinct pair
+    * *opair*: ordered pair (first <= second)
+    * *dpair*: distinct pair (first != second)
+    * *odpair*, *dopair*: ordered distinct pair
 * Example of usage:  *rnd.nextp(1, 10, odpair)* yields a pair of random integers from 1 to 10 where first is strictly less than second. *rnd.nextp(1, 10)* returns any pair of integers from 1 to 10 (note that the *RandomPairTraits* argument is optional).
 #### template&lt;typename Iterator> <br> Iterator::value_type choice(Iterator begin, Iterator end)
 #### template&lt;typename Container> <br> Container::value_type choice(const Container& container)

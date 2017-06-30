@@ -1,7 +1,7 @@
 ## Parsing command-line options
 Jngen provides a parser of command-line options. It supports both positional and named arguments. Here is the comprehensive example of usage.
 ```cpp
-// ./main 10 -pi=3.14 20 -hw=hello-world randomseedstring
+// ./main 10 -pi=3.14 20 -hw hello-world randomseedstring
 int main(int argc, char *argv[]) {
     parseArgs(argc, argv);
     int n, m;
@@ -22,8 +22,8 @@ int main(int argc, char *argv[]) {
 ### Options format
 * Any option not starting with "-" sign is a positional option;
 * positional options are numbered from 0 sequentially (e.g. if there is a positional option, then named, then again positional, two positional options will have indices 0 and 1);
-* option in form "-name=value" is a named option;
-* option in form "-name" is a named option with value equal to 1;
+* named options can have form "-name=value" and "-name value", though the second is allowed if *value* does not start with a hyphen;
+* if an option name immediately follows another option name (e.g. "-first -second ..." than the value of *first* is set to 1;
 * single "-" sign is ignored;
 * anything after "&dash;&dash;" (two minus signs) is ignored;
 
@@ -48,4 +48,3 @@ int main(int argc, char *argv[]) {
 * Reads named arguments. Variable *x* is interpreted as having name *x*. Arguments which could not be read are not modified.
 * Returns: number of succesfully read arguments.
 * Note: this function is implemented with a define and may be not noticed by your autocompletion tool.
-

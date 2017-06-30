@@ -20,7 +20,7 @@ In this document *Array* will be mostly used instead of *TArray&lt;T>*. Usually 
 * Note: *randomUnique* and *randomAll* assume uniform distribution on data. I.e. if your method returns 1 with probability 0.999 and 2 with probability 0.001, *randomUnique(2, ...)* will most likely terminate saying that there are not enough distinct elements.
 * Complexity:
     * *random*: *size* calls of *rnd.tnext*;
-    * *randomUnique*: approiximately *O(size log size)* calls of *rnd.tnext*;
+    * *randomUnique*: approximately *O(size log size)* calls of *rnd.tnext*;
     * *randomAll*: approximately *O(size log size)* calls of *rnd.tnext*, where *size* is the number of generated elements.
 * Examples:
 ```cpp
@@ -66,7 +66,7 @@ Most of modifiers have two versions: the one which modifies the object itself an
 * Sort the array in non-decreasing order.
 
 ####  template&lt;typename Comp> <br> Array& sort(Comp&& comp)
-#### template&lt;typename Comp> <br> Array sorted(Comp&& comp)
+#### template&lt;typename Comp> <br> Array sorted(Comp&& comp) const
 * Sort the array in non-decreasing order using *comp* as a comparator.
 
 #### Array& unique()

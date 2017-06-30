@@ -16,6 +16,10 @@ Jngen provides several free functions and a generator class *MathRandom* to help
 * Returns: random prime in range *[2, n)* or *[l, r]* respectively.
 * Throws if no prime is found on the interval.
 
+#### long long nextPrime(long long n)
+#### long long previousPrime(long long n)
+* Returns: the first prime larger (or smaller) than *n*, including *n*.
+
 #### Array partition(int n, int numParts)
 #### Array partitionNonEmpty(int n, int numParts)
 #### Array64 partition(long long n, int numParts)
