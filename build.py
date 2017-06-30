@@ -53,6 +53,7 @@ deps = {}
 
 
 def extract_deps(posix_filename):
+    posix_filename = os.path.normpath(posix_filename)
     if posix_filename in deps:
         return deps[posix_filename]
     deps[posix_filename] = set((posix_filename,))
@@ -78,7 +79,8 @@ def write_file(filename, stream):
 headers = set()
 for h in LIBRARY_HEADERS:
     headers.update(extract_deps(h))
-headers = sorted(headers)
+headers = ['header.h'] + sorted(headers)
+deps['header.h'] = set(('header.h',))
 
 headers_in_order = []
 while headers:
