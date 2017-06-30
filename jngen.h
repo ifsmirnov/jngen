@@ -3431,7 +3431,7 @@ struct TPoint : public ReprProxy<TPoint<T>> {
     TPoint(const TPoint<U>& other) : x(other.x), y(other.y) {}
 
     TPoint<T> operator+(const TPoint<T>& other) const {
-        return TPoint(x + other.x, y + other.y);
+        return TPoint<T>(x + other.x, y + other.y);
     }
 
     TPoint<T>& operator+=(const TPoint<T>& other) {
@@ -3441,13 +3441,17 @@ struct TPoint : public ReprProxy<TPoint<T>> {
     }
 
     TPoint<T> operator-(const TPoint<T>& other) const {
-        return TPoint(x - other.x, y - other.y);
+        return TPoint<T>(x - other.x, y - other.y);
     }
 
     TPoint<T>& operator-=(const TPoint<T>& other) {
         x -= other.x;
         y -= other.y;
         return *this;
+    }
+
+    TPoint<T> operator-() const {
+        return TPoint<T>(-x, -y);
     }
 
     TPoint<T> operator*(T factor) const {
@@ -3541,9 +3545,22 @@ public:
         return *this;
     }
 
-    TPolygon<T> shifted(const TPoint<T>& vector) {
+    TPolygon<T> shifted(const TPoint<T>& vector) const {
         auto res = *this;
         res.shift(vector);
+        return res;
+    }
+
+    TPolygon<T>& reflect() {
+        for (auto& pt: *this) {
+            pt = -pt;
+        }
+        return *this;
+    }
+
+    TPolygon<T> reflected(const TPoint<T>& vector) const {
+        auto res = *this;
+        res.reflect(vector);
         return res;
     }
 };
@@ -4158,7 +4175,7 @@ using jngen::rnds;
 namespace jngen {
 
 inline int getInitialTestNo() {
-    char *envvar = getenv("TESTNO");
+    char *envvar = std::getenv("TESTNO");
     int testno;
     if (!envvar || 1 != std::sscanf(envvar, "%d", &testno)) {
         return 1;

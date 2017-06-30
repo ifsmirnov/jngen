@@ -11,7 +11,7 @@
 namespace jngen {
 
 inline int getInitialTestNo() {
-    char *envvar = getenv("TESTNO");
+    char *envvar = std::getenv("TESTNO");
     int testno;
     if (!envvar || 1 != std::sscanf(envvar, "%d", &testno)) {
         return 1;
