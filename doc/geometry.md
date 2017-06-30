@@ -47,3 +47,7 @@ For *Pointf* comparisons of floating point values are done with *eps* presision.
 #### Polygon& shift(const Point& vector)
 #### Polygon shifted(const Point& vector) const
 * Shift the polygon by given *vector*, i.e. add *vector* to each vertex of a polygon.
+
+#### Polygon& reflect()
+#### Polygon reflected() const
+* Reflect the polygon across the *x = -y* line, i.e. replace point *(x, y)* with *(-x, -y)*.
