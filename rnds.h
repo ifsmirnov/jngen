@@ -3,7 +3,9 @@
 #include "array.h"
 #include "common.h"
 #include "random.h"
+#include "sequence_ops.h"
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 #include <set>
@@ -22,6 +24,13 @@ public:
         static bool created = false;
         ENSURE(!created, "jngen::StringRandom should be created only once");
         created = true;
+    }
+
+    static std::string random(int len, const std::string& alphabet);
+
+    template<typename ... Args>
+    static std::string random(const std::string& pattern, Args... args) {
+        return rnd.next(pattern, std::forward(args)...);
     }
 
     static std::string thueMorse(int len, char first = 'a', char second = 'b');
@@ -58,21 +67,22 @@ inline int trailingZeroes(long long x) {
 }
 
 inline std::string parseAllowedChars(std::string pattern) {
-    std::set<char> result;
+    std::string result;
     pattern += "\0\0";
     for (size_t i = 0; i < pattern.length(); ++i) {
         if (pattern[i] == '-') {
-            result.insert('-');
-        } else if(pattern[i+1] == '-' && pattern[i+2] != '\0') {
+            result += '-';
+        } else if (pattern[i+1] == '-' && pattern[i+2] != '\0') {
             for (char c = pattern[i]; c <= pattern[i+2]; ++c) {
-                result.insert(c);
+                result += c;
             }
             i += 2;
         } else {
-            result.insert(pattern[i]);
+            result += pattern[i];
         }
     }
-    return std::string(result.begin(), result.end());
+    std::sort(result.begin(), result.end());
+    return result;
 }
 
 inline std::vector<std::string> extendAntiHash(
@@ -201,8 +211,20 @@ inline StringPair minimalAntiHashTest(
 
 #ifndef JNGEN_DECLARE_ONLY
 
+std::string StringRandom::random(int len, const std::string& alphabet) {
+    checkLargeParameter(len);
+    std::string chars = detail::parseAllowedChars(alphabet);
+    std::string res;
+    res.reserve(len);
+    for (int i = 0; i < len; ++i) {
+        res += choice(chars);
+    }
+    return res;
+}
+
 std::string StringRandom::thueMorse(int len, char first, char second) {
     ensure(len >= 0);
+    checkLargeParameter(len);
     std::string res(len, ' ');
     for (int i = 0; i < len; ++i) {
         res[i] = detail::popcount(i)%2 == 0 ? first : second;
@@ -212,6 +234,7 @@ std::string StringRandom::thueMorse(int len, char first, char second) {
 
 std::string StringRandom::abacaba(int len, char first) {
     ensure(len >= 0);
+    checkLargeParameter(len);
     std::string res(len, ' ');
     for (int i = 0; i < len; ++i) {
         res[i] = first + detail::trailingZeroes(~i);
@@ -224,6 +247,7 @@ StringPair StringRandom::antiHash(
         const std::string& alphabet,
         int length)
 {
+    checkLargeParameter(length);
     std::string allowedChars = detail::parseAllowedChars(alphabet);
     StringPair result = detail::minimalAntiHashTest(bases, allowedChars);
 

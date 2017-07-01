@@ -6,14 +6,14 @@
 
 ### Overview
 
-Jngen library provides several handy instruments for generating various kinds of competitive programming problems. It contains (but is not limited to):
+Jngen library provides several handy instruments for generating various kinds of competitive programming problems.
 * random number generator with uniform and off-center distribution (known as wnext);
 * command-line options parser, supporting named and positional arguments;
 * wrapper for *std::vector* which makes sorting, printing and generating random sequences easier;
-* printers for all standard types (no more trailing spaces!), 1-indexing is not a pain anymore;
+* printers for all standard types (no more trailing spaces and pain with 1-indexing!);
 * various random and not-so graphs and trees generators, manipulation with graphs and trees;
 * generating random geometrical primitives (including large convex polygons) and built-in drawing geometry in SVG; 
-* random primes, partitions, highly composite numbers, anti-hash tests;
+* random primes, partitions, anti-hash and anti-hashset tests;
 * and else.
 
 ### Reference
@@ -25,7 +25,9 @@ Jngen library provides several handy instruments for generating various kinds of
     * [[graph.h] Graphs generation](/doc/graph.md)
     * [[tree.h] Trees generation](/doc/tree.md)
 * [[math.h] Math: primes and partitions](/doc/math.md)
+* [[rnds.h] Strings](/doc/math.md)
 * [[geometry.h] Geometric primitives](/doc/geometry.md)
+* [[drawer/drawer.h] Drawing figures in SVG](/doc/drawer.md)
 
 ### Examples
 Generate a random tree on *n* vertices with a 3-letter string assigned to each edge:

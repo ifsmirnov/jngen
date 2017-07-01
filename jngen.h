@@ -202,20 +202,12 @@ using jngen::distribution;
 #include <string>
 #include <utility>
 #include <vector>
+#include <string>
 
 namespace jngen {
 namespace drawing {
 
-enum class Color {
-    None,
-    White,
-    Black,
-    Red,
-    Green,
-    Blue,
-    Grey,
-    LightGrey
-};
+using Color = std::string;
 
 struct DrawingEngineState {
     double width;
@@ -296,8 +288,6 @@ public:
     std::string serialize() const;
 
 private:
-    static const char* colorToString(Color color);
-
     double lerpX(double x) const;
     double lerpY(double y) const;
     double scaleSize(double size) const;
@@ -313,20 +303,6 @@ private:
 
     double x1_, y1_, x2_, y2_; // borders
 };
-
-inline const char* SvgEngine::colorToString(Color color) {
-    switch (color) {
-        case Color::None: return "none";
-        case Color::White: return "white";
-        case Color::Black: return "black";
-        case Color::Red: return "red";
-        case Color::Green: return "green";
-        case Color::Blue: return "blue";
-        case Color::Grey: return "grey";
-        case Color::LightGrey: return "lightgrey";
-        default: return "none";
-    }
-}
 
 }} // namespace jngen::drawing
 
@@ -349,6 +325,14 @@ constexpr static int FONT_SIZE = 64;
 
 namespace {
 
+const char* colorToString(const Color& color) {
+    const static char* NONE = "none";
+    if (color.empty()) {
+        return NONE;
+    }
+    return color.c_str();
+}
+
 // Given x \in [l, r], return linear interpolation to [L, R]
 double lerp(double x, double l, double r, double L, double R) {
     return L + (R - L) * ((x - l) / (r - l));
@@ -358,8 +342,6 @@ double lerp(double x, double l, double r, double L, double R) {
 
 SvgEngine::SvgEngine(double x1, double y1, double x2, double y2) :
     width_(1.0),
-    strokeColor_(Color::Black),
-    fillColor_(Color::Black),
     opacity_(1.0),
     x1_(x1),
     y1_(y1),
@@ -541,16 +523,17 @@ public:
 
     void setWidth(double width);
 
-    void setColor(Color color);
-    void setColor(const std::string& desc);
+    void setColor(const std::string& color);
 
-    void setStroke(Color color);
-    void setStroke(const std::string& desc);
+    void setStroke(const std::string& color);
 
-    void setFill(Color color);
-    void setFill(const std::string& desc);
+    void setFill(const std::string& color);
 
     void setOpacity(double opacity);
+
+    void enableGrid(bool value) {
+        gridEnabled_ = value;
+    }
 
     void dumpSvg(const std::string& filename);
 
@@ -575,8 +558,6 @@ private:
 
     typedef std::pair<Point, Point> Bbox;
 
-    static Color colorByName(const std::string& name);
-
     static Bbox emptyBbox();
 
     static Bbox unite(const Bbox& lhs, const Bbox& rhs);
@@ -596,6 +577,7 @@ private:
     DrawingEngine* engine_;
     Bbox bbox_;
     int requestId_ = 0;
+    bool gridEnabled_ = true;
 };
 
 template<typename P>
@@ -666,30 +648,8 @@ void Drawer::polygon(std::initializer_list<P> points) {
 #ifndef JNGEN_DECLARE_ONLY
 
 Drawer::Drawer() : bbox_(emptyBbox()) {
-    setFill("none");
+    setFill("");
     setStroke("black");
-}
-
-Color Drawer::colorByName(const std::string& name) {
-    const static std::map<std::string, Color> colors = {
-        {"", Color::None},
-        {"none", Color::None},
-        {"white", Color::White},
-        {"black", Color::Black},
-        {"red", Color::Red},
-        {"green", Color::Green},
-        {"blue", Color::Blue},
-        {"grey", Color::Grey},
-        {"lightgrey", Color::LightGrey},
-        {"gray", Color::Grey},
-        {"lightgray", Color::LightGrey}
-    };
-
-    if (!colors.count(name)) {
-        throw std::logic_error("Color `" + name+ "' is not supported");
-    }
-
-    return colors.at(name);
 }
 
 void Drawer::setWidth(double width) {
@@ -698,33 +658,21 @@ void Drawer::setWidth(double width) {
     });
 }
 
-void Drawer::setColor(Color color) {
+void Drawer::setColor(const std::string& color) {
     setStroke(color);
     setFill(color);
 }
 
-void Drawer::setStroke(Color color) {
+void Drawer::setStroke(const std::string& color) {
     requests_.push_back([color](DrawingEngine* engine) {
         engine->setStroke(color);
     });
 }
 
-void Drawer::setFill(Color color) {
+void Drawer::setFill(const std::string& color) {
     requests_.push_back([color](DrawingEngine* engine) {
         engine->setFill(color);
     });
-}
-
-void Drawer::setColor(const std::string& desc) {
-    setColor(colorByName(desc));
-}
-
-void Drawer::setStroke(const std::string& desc) {
-    setStroke(colorByName(desc));
-}
-
-void Drawer::setFill(const std::string& desc) {
-    setFill(colorByName(desc));
 }
 
 void Drawer::setOpacity(double opacity) {
@@ -857,7 +805,7 @@ void Drawer::drawGrid(const Bbox& bbox) {
     }
 
     engine_->setWidth(0.5);
-    engine_->setStroke(Color::LightGrey);
+    engine_->setStroke("lightgrey");
 
     double smallStep = 1.0 * step / SMALL_IN_BIG;
 
@@ -882,7 +830,7 @@ void Drawer::drawGrid(const Bbox& bbox) {
     }
 
     engine_->setWidth(0.75);
-    engine_->setStroke(Color::Grey);
+    engine_->setStroke("grey");
 
     for (
             double tick = std::ceil(bbox.first.x / step) * step;
@@ -953,7 +901,9 @@ void Drawer::dumpSvg(const std::string& filename) {
         viewport.second.x, viewport.second.y));
 
     engine_ = svgEngine.get();
-    drawGrid(viewport);
+    if (gridEnabled_) {
+        drawGrid(viewport);
+    }
     drawAll();
 
     std::string svg = svgEngine->serialize();
@@ -3950,6 +3900,7 @@ QueryBuilder rndq(Args... args) {
 using jngen::rndq;
 
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 #include <set>
@@ -3968,6 +3919,13 @@ public:
         static bool created = false;
         ENSURE(!created, "jngen::StringRandom should be created only once");
         created = true;
+    }
+
+    static std::string random(int len, const std::string& alphabet);
+
+    template<typename ... Args>
+    static std::string random(const std::string& pattern, Args... args) {
+        return rnd.next(pattern, std::forward(args)...);
     }
 
     static std::string thueMorse(int len, char first = 'a', char second = 'b');
@@ -4004,21 +3962,22 @@ inline int trailingZeroes(long long x) {
 }
 
 inline std::string parseAllowedChars(std::string pattern) {
-    std::set<char> result;
+    std::string result;
     pattern += "\0\0";
     for (size_t i = 0; i < pattern.length(); ++i) {
         if (pattern[i] == '-') {
-            result.insert('-');
-        } else if(pattern[i+1] == '-' && pattern[i+2] != '\0') {
+            result += '-';
+        } else if (pattern[i+1] == '-' && pattern[i+2] != '\0') {
             for (char c = pattern[i]; c <= pattern[i+2]; ++c) {
-                result.insert(c);
+                result += c;
             }
             i += 2;
         } else {
-            result.insert(pattern[i]);
+            result += pattern[i];
         }
     }
-    return std::string(result.begin(), result.end());
+    std::sort(result.begin(), result.end());
+    return result;
 }
 
 inline std::vector<std::string> extendAntiHash(
@@ -4147,8 +4106,20 @@ inline StringPair minimalAntiHashTest(
 
 #ifndef JNGEN_DECLARE_ONLY
 
+std::string StringRandom::random(int len, const std::string& alphabet) {
+    checkLargeParameter(len);
+    std::string chars = detail::parseAllowedChars(alphabet);
+    std::string res;
+    res.reserve(len);
+    for (int i = 0; i < len; ++i) {
+        res += choice(chars);
+    }
+    return res;
+}
+
 std::string StringRandom::thueMorse(int len, char first, char second) {
     ensure(len >= 0);
+    checkLargeParameter(len);
     std::string res(len, ' ');
     for (int i = 0; i < len; ++i) {
         res[i] = detail::popcount(i)%2 == 0 ? first : second;
@@ -4158,6 +4129,7 @@ std::string StringRandom::thueMorse(int len, char first, char second) {
 
 std::string StringRandom::abacaba(int len, char first) {
     ensure(len >= 0);
+    checkLargeParameter(len);
     std::string res(len, ' ');
     for (int i = 0; i < len; ++i) {
         res[i] = first + detail::trailingZeroes(~i);
@@ -4170,6 +4142,7 @@ StringPair StringRandom::antiHash(
         const std::string& alphabet,
         int length)
 {
+    checkLargeParameter(length);
     std::string allowedChars = detail::parseAllowedChars(alphabet);
     StringPair result = detail::minimalAntiHashTest(bases, allowedChars);
 
