@@ -77,11 +77,15 @@ Array64 ArrayRandom::antiUnorderedSet(
     bool reserve,
     UnorderedSetCompiler compiler)
 {
-    int buckets;
-
     ensure(
         compiler == UnorderedSetCompiler::Gcc4,
         "unordered set antitest supported only for gcc-4.x yet");
+
+    ensure(
+        n <= 1000000,
+        "unordered set antitest supported only for n <= 1e7");
+
+    int buckets;
 
     if (reserve) {
         buckets = nextPrime(std::ceil(n / maxLoadFactor), compiler);
