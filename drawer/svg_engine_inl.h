@@ -15,6 +15,14 @@ constexpr static int FONT_SIZE = 64;
 
 namespace {
 
+const char* colorToString(const Color& color) {
+    const static char* NONE = "none";
+    if (color.empty()) {
+        return NONE;
+    }
+    return color.c_str();
+}
+
 // Given x \in [l, r], return linear interpolation to [L, R]
 double lerp(double x, double l, double r, double L, double R) {
     return L + (R - L) * ((x - l) / (r - l));
@@ -24,8 +32,6 @@ double lerp(double x, double l, double r, double L, double R) {
 
 SvgEngine::SvgEngine(double x1, double y1, double x2, double y2) :
     width_(1.0),
-    strokeColor_(Color::Black),
-    fillColor_(Color::Black),
     opacity_(1.0),
     x1_(x1),
     y1_(y1),

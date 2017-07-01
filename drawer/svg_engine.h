@@ -36,8 +36,6 @@ public:
     std::string serialize() const;
 
 private:
-    static const char* colorToString(Color color);
-
     double lerpX(double x) const;
     double lerpY(double y) const;
     double scaleSize(double size) const;
@@ -53,20 +51,6 @@ private:
 
     double x1_, y1_, x2_, y2_; // borders
 };
-
-inline const char* SvgEngine::colorToString(Color color) {
-    switch (color) {
-        case Color::None: return "none";
-        case Color::White: return "white";
-        case Color::Black: return "black";
-        case Color::Red: return "red";
-        case Color::Green: return "green";
-        case Color::Blue: return "blue";
-        case Color::Grey: return "grey";
-        case Color::LightGrey: return "lightgrey";
-        default: return "none";
-    }
-}
 
 }} // namespace jngen::drawing
 

@@ -3,20 +3,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <string>
 
 namespace jngen {
 namespace drawing {
 
-enum class Color {
-    None,
-    White,
-    Black,
-    Red,
-    Green,
-    Blue,
-    Grey,
-    LightGrey
-};
+using Color = std::string;
 
 struct DrawingEngineState {
     double width;

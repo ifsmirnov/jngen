@@ -49,11 +49,17 @@ d.setStroke("red");
 d.setFill("blue");
 // Both stroke and fill can be set to none passing an empty string:
 d.setFill("");
+// You can use any color which is supported by HTML/SVG. If the color
+// has adequate name it is likely on the list.
 
 // It is possible to set line width (default is 1):
 d.setWidth(2.5);
 // And opacity (ranging from 0 to 1, 0 is invisible, 1 is solid):
 d.setOpacity(0.5);
+
+// By default Jngen draws a cool grid with coordinates. I find it
+// very handy, however, if you don't like it it is easy do disable:
+d.enableGrid(false);
 
 // Finally, you should save your piece of art to the SVG file:
 d.dumpSvg("name.svg");

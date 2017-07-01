@@ -42,16 +42,17 @@ public:
 
     void setWidth(double width);
 
-    void setColor(Color color);
-    void setColor(const std::string& desc);
+    void setColor(const std::string& color);
 
-    void setStroke(Color color);
-    void setStroke(const std::string& desc);
+    void setStroke(const std::string& color);
 
-    void setFill(Color color);
-    void setFill(const std::string& desc);
+    void setFill(const std::string& color);
 
     void setOpacity(double opacity);
+
+    void enableGrid(bool value) {
+        gridEnabled_ = value;
+    }
 
     void dumpSvg(const std::string& filename);
 
@@ -76,8 +77,6 @@ private:
 
     typedef std::pair<Point, Point> Bbox;
 
-    static Color colorByName(const std::string& name);
-
     static Bbox emptyBbox();
 
     static Bbox unite(const Bbox& lhs, const Bbox& rhs);
@@ -97,6 +96,7 @@ private:
     DrawingEngine* engine_;
     Bbox bbox_;
     int requestId_ = 0;
+    bool gridEnabled_ = true;
 };
 
 template<typename P>
@@ -167,30 +167,8 @@ void Drawer::polygon(std::initializer_list<P> points) {
 #ifndef JNGEN_DECLARE_ONLY
 
 Drawer::Drawer() : bbox_(emptyBbox()) {
-    setFill("none");
+    setFill("");
     setStroke("black");
-}
-
-Color Drawer::colorByName(const std::string& name) {
-    const static std::map<std::string, Color> colors = {
-        {"", Color::None},
-        {"none", Color::None},
-        {"white", Color::White},
-        {"black", Color::Black},
-        {"red", Color::Red},
-        {"green", Color::Green},
-        {"blue", Color::Blue},
-        {"grey", Color::Grey},
-        {"lightgrey", Color::LightGrey},
-        {"gray", Color::Grey},
-        {"lightgray", Color::LightGrey}
-    };
-
-    if (!colors.count(name)) {
-        throw std::logic_error("Color `" + name+ "' is not supported");
-    }
-
-    return colors.at(name);
 }
 
 void Drawer::setWidth(double width) {
@@ -199,33 +177,21 @@ void Drawer::setWidth(double width) {
     });
 }
 
-void Drawer::setColor(Color color) {
+void Drawer::setColor(const std::string& color) {
     setStroke(color);
     setFill(color);
 }
 
-void Drawer::setStroke(Color color) {
+void Drawer::setStroke(const std::string& color) {
     requests_.push_back([color](DrawingEngine* engine) {
         engine->setStroke(color);
     });
 }
 
-void Drawer::setFill(Color color) {
+void Drawer::setFill(const std::string& color) {
     requests_.push_back([color](DrawingEngine* engine) {
         engine->setFill(color);
     });
-}
-
-void Drawer::setColor(const std::string& desc) {
-    setColor(colorByName(desc));
-}
-
-void Drawer::setStroke(const std::string& desc) {
-    setStroke(colorByName(desc));
-}
-
-void Drawer::setFill(const std::string& desc) {
-    setFill(colorByName(desc));
 }
 
 void Drawer::setOpacity(double opacity) {
@@ -358,7 +324,7 @@ void Drawer::drawGrid(const Bbox& bbox) {
     }
 
     engine_->setWidth(0.5);
-    engine_->setStroke(Color::LightGrey);
+    engine_->setStroke("lightgrey");
 
     double smallStep = 1.0 * step / SMALL_IN_BIG;
 
@@ -383,7 +349,7 @@ void Drawer::drawGrid(const Bbox& bbox) {
     }
 
     engine_->setWidth(0.75);
-    engine_->setStroke(Color::Grey);
+    engine_->setStroke("grey");
 
     for (
             double tick = std::ceil(bbox.first.x / step) * step;
@@ -454,7 +420,9 @@ void Drawer::dumpSvg(const std::string& filename) {
         viewport.second.x, viewport.second.y));
 
     engine_ = svgEngine.get();
-    drawGrid(viewport);
+    if (gridEnabled_) {
+        drawGrid(viewport);
+    }
     drawAll();
 
     std::string svg = svgEngine->serialize();
