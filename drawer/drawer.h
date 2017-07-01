@@ -21,12 +21,18 @@ public:
 
     template<typename P>
     void point(const P& p);
+    template<typename T>
+    void point(T x, T y);
 
     template<typename P>
     void circle(const P& p, double radius);
+    template<typename T>
+    void circle(T x, T y, double radius);
 
     template<typename P>
     void segment(const P& p1, const P& p2);
+    template<typename T>
+    void segment(T x1, T y1, T x2, T y2);
 
     template<typename P>
     void polygon(const std::vector<P>& points);
@@ -52,6 +58,16 @@ private:
         Point() {}
         Point(double x, double y) : x(x), y(y) {}
     };
+
+    template<typename T>
+    Point extractCoords(const T& pt) {
+        return Point(pt.x, pt.y);
+    }
+
+    template<typename T>
+    Point extractCoords(const std::pair<T, T>& pt) {
+        return Point(pt.first, pt.second);
+    }
 
     typedef std::function<void(DrawingEngine*)> DrawRequest;
 
@@ -81,23 +97,37 @@ private:
 };
 
 template<typename P>
-void Drawer::point(const P& p) {
+void Drawer::point(const P& p_) {
+    Point p = extractCoords(p_);
     bbox_ = unite(bbox_ , bbox(Point(p.x, p.y)));
     requests_.push_back([p](DrawingEngine* engine) {
         engine->drawPoint(p.x, p.y);
     });
 }
 
+template<typename T>
+void Drawer::point(T x, T y) {
+    point(Point(x, y));
+}
+
 template<typename P>
-void Drawer::circle(const P& p, double radius) {
+void Drawer::circle(const P& p_, double radius) {
+    Point p = extractCoords(p_);
     bbox_ = unite(bbox_ , bbox({Point(p.x, p.y), radius}));
     requests_.push_back([p, radius](DrawingEngine* engine) {
         engine->drawCircle(p.x, p.y, radius);
     });
 }
 
+template<typename T>
+void Drawer::circle(T x, T y, double radius) {
+    circle(Point(x, y), radius);
+}
+
 template<typename P>
-void Drawer::segment(const P& p1, const P& p2) {
+void Drawer::segment(const P& p1_, const P& p2_) {
+    Point p1 = extractCoords(p1_);
+    Point p2 = extractCoords(p2_);
     bbox_ = unite(bbox_ , bbox(Point(p1.x, p1.y)));
     bbox_ = unite(bbox_ , bbox(Point(p2.x, p2.y)));
     requests_.push_back([p1, p2](DrawingEngine* engine) {
@@ -105,16 +135,22 @@ void Drawer::segment(const P& p1, const P& p2) {
     });
 }
 
+template<typename T>
+void Drawer::segment(T x1, T y1, T x2, T y2) {
+    segment(Point(x1, y1), Point(x2, y2));
+}
+
 template<typename P>
 void Drawer::polygon(const std::vector<P>& points) {
     for (const auto& p: points) {
-        bbox_ = unite(bbox_, bbox(Point(p.x, p.y)));
+        bbox_ = unite(bbox_, bbox(extractCoords(p)));
     }
 
-    requests_.push_back([points](DrawingEngine* engine) {
+    requests_.push_back([points, this](DrawingEngine* engine) {
         std::vector<std::pair<double, double>> enginePoints;
         for (const auto& p: points) {
-            enginePoints.emplace_back(p.x, p.y);
+            Point pt = extractCoords(p);
+            enginePoints.emplace_back(pt.x, pt.y);
         }
         engine->drawPolygon(enginePoints);
     });
