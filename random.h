@@ -188,7 +188,9 @@ public:
     }
 
     template<typename Iterator>
-    typename Iterator::value_type choice(Iterator begin, Iterator end) {
+    auto choice(Iterator begin, Iterator end)
+            -> typename std::iterator_traits<Iterator>::value_type
+    {
         auto length = std::distance(begin, end);
         ensure(length > 0, "Cannot select from a range of negative length");
         size_t index = tnext<size_t>(length);

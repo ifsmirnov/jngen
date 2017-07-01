@@ -4,6 +4,7 @@
 #include "random.h"
 
 #include <algorithm>
+#include <iterator>
 
 namespace jngen {
 
@@ -19,13 +20,20 @@ void shuffle(Iterator begin, Iterator end) {
 }
 
 template<typename Iterator>
-typename Iterator::value_type choice(Iterator begin, Iterator end) {
+auto choice(Iterator begin, Iterator end)
+        -> typename std::iterator_traits<Iterator>::value_type
+{
     return rnd.choice(begin, end);
 }
 
 template<typename Container>
 typename Container::value_type choice(const Container& container) {
     return rnd.choice(container);
+}
+
+template<typename T>
+T choice(std::initializer_list<T> ilist) {
+    return choice(ilist.begin(), ilist.end());
 }
 
 } // namespace jngen

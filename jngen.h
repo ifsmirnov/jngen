@@ -504,6 +504,7 @@ std::string SvgEngine::getStyle() const {
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <initializer_list>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -520,15 +521,23 @@ public:
 
     template<typename P>
     void point(const P& p);
+    template<typename T>
+    void point(T x, T y);
 
     template<typename P>
     void circle(const P& p, double radius);
+    template<typename T>
+    void circle(T x, T y, double radius);
 
     template<typename P>
     void segment(const P& p1, const P& p2);
+    template<typename T>
+    void segment(T x1, T y1, T x2, T y2);
 
     template<typename P>
     void polygon(const std::vector<P>& points);
+    template<typename P>
+    void polygon(std::initializer_list<P> points);
 
     void setWidth(double width);
 
@@ -561,15 +570,6 @@ private:
     Point extractCoords(const std::pair<T, T>& pt) {
         return Point(pt.first, pt.second);
     }
-
-    template<typename T>
-    Point extractCoords(const std::initializer_list<T>& pt) {
-        static_assert(
-            pt.size() == 2,
-            "Only initializer list of size 2 can be a point");
-        return Point(pt[0], pt[1]);
-    }
-
 
     typedef std::function<void(DrawingEngine*)> DrawRequest;
 
@@ -607,6 +607,11 @@ void Drawer::point(const P& p_) {
     });
 }
 
+template<typename T>
+void Drawer::point(T x, T y) {
+    point(Point(x, y));
+}
+
 template<typename P>
 void Drawer::circle(const P& p_, double radius) {
     Point p = extractCoords(p_);
@@ -614,6 +619,11 @@ void Drawer::circle(const P& p_, double radius) {
     requests_.push_back([p, radius](DrawingEngine* engine) {
         engine->drawCircle(p.x, p.y, radius);
     });
+}
+
+template<typename T>
+void Drawer::circle(T x, T y, double radius) {
+    circle(Point(x, y), radius);
 }
 
 template<typename P>
@@ -627,19 +637,30 @@ void Drawer::segment(const P& p1_, const P& p2_) {
     });
 }
 
+template<typename T>
+void Drawer::segment(T x1, T y1, T x2, T y2) {
+    segment(Point(x1, y1), Point(x2, y2));
+}
+
 template<typename P>
 void Drawer::polygon(const std::vector<P>& points) {
     for (const auto& p: points) {
         bbox_ = unite(bbox_, bbox(extractCoords(p)));
     }
 
-    requests_.push_back([points](DrawingEngine* engine) {
+    requests_.push_back([points, this](DrawingEngine* engine) {
         std::vector<std::pair<double, double>> enginePoints;
         for (const auto& p: points) {
-            enginePoints.emplace_back(p.x, p.y);
+            Point pt = extractCoords(p);
+            enginePoints.emplace_back(pt.x, pt.y);
         }
         engine->drawPolygon(enginePoints);
     });
+}
+
+template<typename P>
+void Drawer::polygon(std::initializer_list<P> points) {
+    polygon(std::vector<P>(points.begin(), points.end()));
 }
 
 #ifndef JNGEN_DECLARE_ONLY
@@ -1816,7 +1837,9 @@ public:
     }
 
     template<typename Iterator>
-    typename Iterator::value_type choice(Iterator begin, Iterator end) {
+    auto choice(Iterator begin, Iterator end)
+            -> typename std::iterator_traits<Iterator>::value_type
+    {
         auto length = std::distance(begin, end);
         ensure(length > 0, "Cannot select from a range of negative length");
         size_t index = tnext<size_t>(length);
@@ -2480,6 +2503,7 @@ using namespace jngen::namespace_for_fake_operator_ltlt;
 
 
 #include <algorithm>
+#include <iterator>
 
 namespace jngen {
 
@@ -2495,13 +2519,20 @@ void shuffle(Iterator begin, Iterator end) {
 }
 
 template<typename Iterator>
-typename Iterator::value_type choice(Iterator begin, Iterator end) {
+auto choice(Iterator begin, Iterator end)
+        -> typename std::iterator_traits<Iterator>::value_type
+{
     return rnd.choice(begin, end);
 }
 
 template<typename Container>
 typename Container::value_type choice(const Container& container) {
     return rnd.choice(container);
+}
+
+template<typename T>
+T choice(std::initializer_list<T> ilist) {
+    return choice(ilist.begin(), ilist.end());
 }
 
 } // namespace jngen

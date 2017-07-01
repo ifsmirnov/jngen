@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <initializer_list>
 #include <map>
 #include <memory>
 #include <stdexcept>
@@ -36,6 +37,8 @@ public:
 
     template<typename P>
     void polygon(const std::vector<P>& points);
+    template<typename P>
+    void polygon(std::initializer_list<P> points);
 
     void setWidth(double width);
 
@@ -154,6 +157,11 @@ void Drawer::polygon(const std::vector<P>& points) {
         }
         engine->drawPolygon(enginePoints);
     });
+}
+
+template<typename P>
+void Drawer::polygon(std::initializer_list<P> points) {
+    polygon(std::vector<P>(points.begin(), points.end()));
 }
 
 #ifndef JNGEN_DECLARE_ONLY
