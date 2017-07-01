@@ -32,13 +32,12 @@ BOOST_AUTO_TEST_CASE(antihashset) {
     s3.reserve(5000);
     BOOST_CHECK(check(s3, rnda.antiUnorderedSet(5000, 1, true)));
 
-    /*
-    // TODO: investigate later
+    // Note that .max_load_factor must come BEFORE .reserve, otherwise
+    // .reserve is ignored.
     Set s4;
-    s4.reserve(3141);
     s4.max_load_factor(0.31);
+    s4.reserve(3141);
     BOOST_CHECK(check(s4, rnda.antiUnorderedSet(3141, 0.31, true)));
-    */
 #else
     // no antitests for other compilers yet
     BOOST_CHECK(true);
