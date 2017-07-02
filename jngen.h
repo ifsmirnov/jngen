@@ -4174,6 +4174,78 @@ StringPair StringRandom::antiHash(
 using jngen::rnds;
 
 
+#include <functional>
+#include <iostream>
+#include <iterator>
+#include <string>
+#include <vector>
+
+namespace jngen {
+namespace suites {
+
+template<typename T, typename ... Args>
+class BaseTestSuite {
+public:
+    explicit BaseTestSuite(const std::string& name) : name(name) {  }
+
+    virtual ~BaseTestSuite() {}
+
+    size_t size() {
+        if (producers_.empty()) {
+            populate();
+        }
+        return producers_.size();
+    }
+
+    T genSingle(size_t id, Args... args) {
+        if (producers_.empty()) {
+            populate();
+        }
+        ensure(
+            id < producers_.size(),
+            format("Cannot generate test #%d in suite '%s', there are only "
+                "'%d'", (int)id, name.c_str(), (int)producers_.size()));
+        return producers_[id](args...);
+    }
+
+    TArray<T> gen(size_t count, Args... args) {
+        if (producers_.empty()) {
+            populate();
+        }
+
+        ensure(
+            count <= producers_.size(),
+            format("Cannot generate %d tests in suite '%s', there are only "
+                "'%d'", (int)count, name.c_str(), (int)producers_.size()));
+
+        TArray<T> result;
+        result.reserve(count);
+        for (size_t id = 0; id < count; ++id) {
+            try {
+                result.push_back(genSingle(id, args...));
+            } catch (...) {
+                std::cerr << "Cannot generate test #" << id << " of suite "
+                    << name << "\n";
+            }
+        }
+
+        return result;
+    }
+
+protected:
+    using Producer = std::function<T(Args...)>;
+
+    virtual void populate() = 0;
+
+    std::vector<Producer> producers_;
+
+private:
+    std::string name;
+};
+
+}} // namespace jngen::suites
+
+
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -5600,3 +5672,63 @@ Graph::BuilderProxy Graph::randomStretched(
 } // namespace jngen
 #undef JNGEN_INCLUDE_GRAPH_INL_H
 #endif // JNGEN_DECLARE_ONLY
+
+
+namespace jngen {
+namespace suites {
+
+class GeneralTreeSuite : public BaseTestSuite<Tree, int> {
+public:
+    GeneralTreeSuite() : BaseTestSuite("GeneralTreeSuite") {  }
+
+private:
+    void populate() override {
+#define ADD_PRODUCER() *std::back_inserter(producers_) = [](int n)
+
+        // 0
+        ADD_PRODUCER() {
+            return Tree::bamboo(n);
+        };
+
+        ADD_PRODUCER() {
+            return Tree::randomPrufer(n);
+        };
+
+        ADD_PRODUCER() {
+            return Tree::random(n);
+        };
+
+        ADD_PRODUCER() {
+            return Tree::random(n, 2);
+        };
+
+        ADD_PRODUCER() {
+            return Tree::random(n, 20);
+        };
+
+        // 5
+        ADD_PRODUCER() {
+            return Tree::random(n, 200);
+        };
+
+        ADD_PRODUCER() {
+            return Tree::random(n, -2);
+        };
+
+        ADD_PRODUCER() {
+            return Tree::star(n);
+        };
+
+        ADD_PRODUCER() {
+            if (n < 3) {
+                throw 1;
+            }
+            return Tree::caterpillar(n, n/2);
+        };
+
+#undef ADD_PRODUCER
+    }
+};
+
+} // namespace test_suites
+} // namespace jngen
