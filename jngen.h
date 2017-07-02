@@ -4174,6 +4174,7 @@ StringPair StringRandom::antiHash(
 using jngen::rnds;
 
 
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <iterator>
@@ -4183,49 +4184,64 @@ using jngen::rnds;
 namespace jngen {
 namespace suites {
 
+#define JNGEN_ADD_PRODUCER(...)\
+    {\
+        std::string name = #__VA_ARGS__;\
+        if (name.empty()) {\
+            name = format("noname%d", (int)names_.size());\
+        }\
+        if (std::find(names_.begin(), names_.end(), name) != names_.end()) {\
+            ENSURE(false, format("Duplicated test name: '%s'", name.c_str()));\
+        }\
+        names_.emplace_back(name);\
+    }\
+    *std::back_inserter(producers_) = [] (JNGEN_PRODUCER_ARGS)
+
 template<typename T, typename ... Args>
 class BaseTestSuite {
 public:
-    explicit BaseTestSuite(const std::string& name) : name(name) {  }
+    explicit BaseTestSuite(const std::string& name) : name_(name) {  }
 
-    virtual ~BaseTestSuite() {}
-
-    size_t size() {
-        if (producers_.empty()) {
-            populate();
-        }
+    size_t size() const {
         return producers_.size();
     }
 
-    T genSingle(size_t id, Args... args) {
-        if (producers_.empty()) {
-            populate();
-        }
+    TArray<std::string> names() const {
+        return names_;
+    }
+
+    T gen(size_t id, Args... args) const {
         ensure(
             id < producers_.size(),
             format("Cannot generate test #%d in suite '%s', there are only "
-                "'%d'", (int)id, name.c_str(), (int)producers_.size()));
+                "%d", (int)id, name_.c_str(), (int)producers_.size()));
         return producers_[id](args...);
     }
 
-    TArray<T> gen(size_t count, Args... args) {
-        if (producers_.empty()) {
-            populate();
-        }
+    T gen(const std::string& name, Args... args) const {
+        size_t pos = std::find(names_.begin(), names_.end(), name)
+            - names_.begin();
+        ensure(
+            pos < names_.size(),
+            format("There is no test '%s' in suite '%s'",
+                name.c_str(), name_.c_str()));
+        return gen(pos, args...);
+    }
 
+    TArray<T> genMany(size_t count, Args... args) const {
         ensure(
             count <= producers_.size(),
             format("Cannot generate %d tests in suite '%s', there are only "
-                "'%d'", (int)count, name.c_str(), (int)producers_.size()));
+                "%d", (int)count, name_.c_str(), (int)producers_.size()));
 
         TArray<T> result;
         result.reserve(count);
         for (size_t id = 0; id < count; ++id) {
             try {
-                result.push_back(genSingle(id, args...));
+                result.push_back(gen(id, args...));
             } catch (...) {
                 std::cerr << "Cannot generate test #" << id << " of suite "
-                    << name << "\n";
+                    << name_ << "\n";
             }
         }
 
@@ -4235,12 +4251,11 @@ public:
 protected:
     using Producer = std::function<T(Args...)>;
 
-    virtual void populate() = 0;
-
     std::vector<Producer> producers_;
+    std::vector<std::string> names_;
 
 private:
-    std::string name;
+    std::string name_;
 };
 
 }} // namespace jngen::suites
@@ -5679,54 +5694,51 @@ namespace suites {
 
 class GeneralTreeSuite : public BaseTestSuite<Tree, int> {
 public:
-    GeneralTreeSuite() : BaseTestSuite("GeneralTreeSuite") {  }
-
-private:
-    void populate() override {
-#define ADD_PRODUCER() *std::back_inserter(producers_) = [](int n)
+    GeneralTreeSuite() : BaseTestSuite("GeneralTreeSuite") {
+#define JNGEN_PRODUCER_ARGS int n
 
         // 0
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER(bamboo) {
             return Tree::bamboo(n);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER() {
             return Tree::randomPrufer(n);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER( ) {
             return Tree::random(n);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER() {
             return Tree::random(n, 2);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER( zloy    los) {
             return Tree::random(n, 20);
         };
 
         // 5
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER(zloy los   ,) {
             return Tree::random(n, 200);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER(zloy loewrs) {
             return Tree::random(n, -2);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER() {
             return Tree::star(n);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER() {
             if (n < 3) {
                 throw 1;
             }
             return Tree::caterpillar(n, n/2);
         };
 
-#undef ADD_PRODUCER
+#undef JNGEN_PRODUCER_ARGS
     }
 };
 

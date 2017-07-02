@@ -1,6 +1,6 @@
 #pragma once
 
-#include "test_suite.h"
+#include "base_suite.h"
 #include "../tree.h"
 
 namespace jngen {
@@ -8,54 +8,51 @@ namespace suites {
 
 class GeneralTreeSuite : public BaseTestSuite<Tree, int> {
 public:
-    GeneralTreeSuite() : BaseTestSuite("GeneralTreeSuite") {  }
-
-private:
-    void populate() override {
-#define ADD_PRODUCER() *std::back_inserter(producers_) = [](int n)
+    GeneralTreeSuite() : BaseTestSuite("GeneralTreeSuite") {
+#define JNGEN_PRODUCER_ARGS int n
 
         // 0
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER(bamboo) {
             return Tree::bamboo(n);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER() {
             return Tree::randomPrufer(n);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER( ) {
             return Tree::random(n);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER() {
             return Tree::random(n, 2);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER( zloy    los) {
             return Tree::random(n, 20);
         };
 
         // 5
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER(zloy los   ,) {
             return Tree::random(n, 200);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER(zloy loewrs) {
             return Tree::random(n, -2);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER() {
             return Tree::star(n);
         };
 
-        ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER() {
             if (n < 3) {
                 throw 1;
             }
             return Tree::caterpillar(n, n/2);
         };
 
-#undef ADD_PRODUCER
+#undef JNGEN_PRODUCER_ARGS
     }
 };
 
