@@ -3,8 +3,8 @@
 * [Overview](#overview)
 * [Reference](#reference)
 * [Compatibility note](#compatibility-note)
-* [Why not testlib.h?](#why-not-testlibh)
 * [Examples](#examples)
+* [Why not testlib.h?](#why-not-testlibh)
 
 ### Overview
 
@@ -36,17 +36,9 @@ Check out the larger [overview](/doc/overview.md) to see more capabilities and e
 ### Compatibility note
 * **This is not a standard "provided as-is" legal warning!** Opposite to testlib.h, which is already well-tested and pretty stable, Jngen is only yet being developed. First, not everything was properly tested and there may be bugs. Second and more important: there is no backward compatibility at the moment. It means that if you download Jngen tomorrow and run the same code then it may produce different result. Do not blindly update Jngen header if you need that tests for your problem remain exactly the same.
 
-### Why not testlib.h?
-testlib.h is a wonderful library which has already saved hundreds of hours for contest writers. However, there are reasons why I did not build Jngen on top of existing testlib.h code.
-
-* Testlib is multi-purpose. It also supports validators, checkers and interactors, while Jngen does not need it.
-* There are not many things to borrow from testlib. *rnd*, pattern generation, maybe some internal helper functions.
-* Testlib random is not very good. std::mt19937, which is used in Jngen under the hood, has much better distribution than hand-written linear congruential generator from testlib (though it is a bit slower).
-* Also, it would be harder to introduce new features in *rnd* than to code it from scratch.
-* I don't really like the code style of testlib, particularly naming convention and not using namespaces.
-* Being dependant on testlib, Jngen would compile even longer than it does now.
-
 ### Examples
+Find some real-world examples [here](/examples).
+
 Generate a random tree on *n* vertices with a 3-letter string assigned to each edge:
 ```cpp
 Tree t = Tree::random(5);
@@ -94,3 +86,14 @@ Generate a connected graph with multi-edges:
 ```cpp
 cout << Graph::random(n, m).connected().allowMulti() << endl;
 ```
+
+### Why not testlib.h?
+testlib.h is a wonderful library which has already saved hundreds of hours for contest writers. However, there are reasons why I did not build Jngen on top of existing testlib.h code.
+
+* Testlib is multi-purpose. It also supports validators, checkers and interactors, while Jngen does not need it.
+* There are not many things to borrow from testlib. *rnd*, pattern generation, maybe some internal helper functions.
+* Testlib random is not very good. std::mt19937, which is used in Jngen under the hood, has much better distribution than hand-written linear congruential generator from testlib (though it is a bit slower).
+* Also, it would be harder to introduce new features in *rnd* than to code it from scratch.
+* I don't really like the code style of testlib, particularly naming convention and not using namespaces.
+* Being dependant on testlib, Jngen would compile even longer than it does now.
+
