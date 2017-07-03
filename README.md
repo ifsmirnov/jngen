@@ -1,5 +1,7 @@
 ## Jngen: preparing tests made simpler
 
+[DOWNLOAD](https://raw.githubusercontent.com/ifsmirnov/jngen/master/jngen.h)
+
 * [Overview](#overview)
 * [Reference](#reference)
 * [Compatibility note](#compatibility-note)
