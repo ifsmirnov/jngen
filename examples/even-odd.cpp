@@ -1,5 +1,5 @@
 #ifdef LOCAL
-#define JNGEN_DECLARE_ONLY
+// #define JNGEN_DECLARE_ONLY
 #endif
 #include "jngen.h"
 #include <bits/stdc++.h>
@@ -50,18 +50,18 @@ Graph makeTreeOfGraphs(const std::vector<Graph>& graphs, bool line = false) {
     }
 
     jngen::Dsu dsu;
-    dsu.getParent(s - 1);
+    dsu.getRoot(s - 1);
 
     auto t = line ? Tree::bamboo(n) : Tree::randomPrufer(n);
     for (auto e: t.edges()) {
         int v1 = rnd.next(shifts[e.fi], shifts[e.fi] + graphs[e.fi].n() - 1);
         int v2 = rnd.next(shifts[e.se], shifts[e.se] + graphs[e.se].n() - 1);
-        dsu.link(v1, v2);
+        dsu.unite(v1, v2);
     }
 
     map<int, int> id;
     forn(i, s) {
-        int v = dsu.getParent(i);
+        int v = dsu.getRoot(i);
         if (!id.count(v)) {
             int t = id.size();
             id[v] = t;
@@ -73,8 +73,8 @@ Graph makeTreeOfGraphs(const std::vector<Graph>& graphs, bool line = false) {
     forn(i, n) for (auto e: graphs[i].edges()) {
         int v1 = e.first + shifts[i];
         int v2 = e.second + shifts[i];
-        v1 = id[dsu.getParent(v1)];
-        v2 = id[dsu.getParent(v2)];
+        v1 = id[dsu.getRoot(v1)];
+        v2 = id[dsu.getRoot(v2)];
         if (v1 != v2 && !edges.count({v1, v2}) && !edges.count({v2, v2})) {
             edges.emplace(v1, v2);
             res.addEdge(v1, v2);

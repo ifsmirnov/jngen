@@ -27,6 +27,8 @@
   Follow the same link for docs and reference.
 */
 
+#define JNGEN_VERSION 0.1
+
 #include <chrono>
 #include <cstdlib>
 #include <iostream>

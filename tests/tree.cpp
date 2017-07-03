@@ -9,6 +9,13 @@
 
 BOOST_AUTO_TEST_SUITE(tree)
 
+void checkEquals(const jngen::Tree& t1, const jngen::Tree& t2) {
+    BOOST_CHECK_EQUAL(t1.n(), t2.n());
+    for (int i = 0; i < t1.n(); ++i) {
+        BOOST_CHECK_EQUAL(t1.edges(i).sorted(), t2.edges(i).sorted());
+    }
+}
+
 BOOST_AUTO_TEST_CASE(manual_construction) {
     Tree t;
 
@@ -173,7 +180,7 @@ BOOST_AUTO_TEST_CASE(check_link) {
 
     BOOST_CHECK_EQUAL(t1.n() + t2.n(), linked.n());
     BOOST_CHECK_EQUAL(t1.m() + t2.m() + 1, linked.m());
-    BOOST_CHECK_EQUAL(linked, t);
+    checkEquals(linked, t);
 }
 
 BOOST_AUTO_TEST_CASE(check_glue) {
@@ -211,7 +218,7 @@ BOOST_AUTO_TEST_CASE(check_glue) {
 
     BOOST_CHECK_EQUAL(t1.n() + t2.n() - 1, glued.n());
     BOOST_CHECK_EQUAL(t1.m() + t2.m(), glued.m());
-    BOOST_CHECK_EQUAL(glued, t);
+    checkEquals(glued, t);
 }
 
 // TODO: add tests to check random generators exactly
