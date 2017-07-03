@@ -2,6 +2,7 @@
 
 * [Overview](#overview)
 * [Reference](#reference)
+* [Why not testlib.h?](#why-not-testlibh)
 * [Examples](#examples)
 
 ### Overview
@@ -16,6 +17,8 @@ Jngen library provides several handy instruments for generating various kinds of
 * random primes, partitions, anti-hash and anti-hashset tests;
 * and else.
 
+Check out the larger [overview](/doc/overview.md) to see more capabilities and examples.
+
 ### Reference
 * [[random.h] Random numbers generation](/doc/random.md)
 * [[options.h] Parsing command-line options](/doc/getopt.md)
@@ -25,9 +28,19 @@ Jngen library provides several handy instruments for generating various kinds of
     * [[graph.h] Graphs generation](/doc/graph.md)
     * [[tree.h] Trees generation](/doc/tree.md)
 * [[math.h] Math: primes and partitions](/doc/math.md)
-* [[rnds.h] Strings](/doc/math.md)
+* [[rnds.h] Strings](/doc/strings.md)
 * [[geometry.h] Geometric primitives](/doc/geometry.md)
 * [[drawer/drawer.h] Drawing figures in SVG](/doc/drawer.md)
+
+### Why not testlib.h?
+testlib.h is a wonderful library which has already saved hundreds of hours for contest writers. However, there are reasons why I did not build Jngen on top of existing testlib.h code.
+
+* Testlib is multi-purpose. It also supports validators, checkers and interactors, while Jngen does not need it.
+* There are not many things to borrow from testlib. *rnd*, pattern generation, maybe some internal helper functions.
+* Testlib random is not very good. std::mt19937, which is used in Jngen under the hood, is much faster and has better distribution than hand-written linear congruental generator from testlib.
+* Also, it would be harder to introduce new features in *rnd* than to code it from scratch.
+* I don't really like the code style of testlib, particularly naming convention and not using namespaces.
+* Being dependant on testlib, Jngen would compile even longer than it does now.
 
 ### Examples
 Generate a random tree on *n* vertices with a 3-letter string assigned to each edge:

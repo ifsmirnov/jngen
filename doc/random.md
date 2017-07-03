@@ -13,9 +13,9 @@ Default initialized *Random* is seeded with some hardware-generated random value
 #### double nextf()
 * Returns: random real in range [0, 1).
 #### int next(int n) // also for long long, size\_t, double
-* Returns: random integer in range [0, n)
+* Returns: random integer in range [0, n).
 #### int next(int l, int r) // also for long long, size\_t, double
-* Returns: random integer in range [l, r]
+* Returns: random integer in range [l, r].
 #### int wnext(int n, int w) // also for long long, size\_t, double
 * If w > 0, returns max(next(n), ..., next(n)) (w times). If w < 0, returns min(next(n), ..., next(n)) (-w times). If w = 0, same as next(n).
 #### int wnext(int l, int r, int w) // also for long long, size\_t, double

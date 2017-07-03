@@ -45,3 +45,11 @@ Note that all generators return trees with sorted edges to make tests more human
 #### Tree glue(int vInThis, const Tree& other, int vInOther)
 * Returns: a tree made of _*this_ and *other*, where vertices *vInThis* and *vInOther* are glued into one.
 * Labeling: labels of the source tree are unchanged, vertices of the other tree are renumbered in order starting with the number of vertices in source, except for *vInOther*.
+
+#### Tree binary(int size)
+* Returns: a complete binary tree with *size* vertices.
+* Numeration: parent of vertex *i* is *(i-1)/2*, *0* is root.
+
+#### Tree kary(int size, int k)
+* Returns: a complete *k*-ary tree with *size* vertices.
+* Numeration: parent of vertex *i* is *(i-1)/k*, *0* is root.
