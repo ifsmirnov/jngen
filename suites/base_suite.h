@@ -2,12 +2,14 @@
 
 #include "../array.h"
 #include "../common.h"
+#include "../hash.h"
 
 #include <algorithm>
 #include <functional>
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace jngen {

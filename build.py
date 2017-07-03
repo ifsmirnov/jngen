@@ -23,7 +23,7 @@ LIBRARY_HEADERS = [
     "repr.h",
     "query_builder.h",
     "drawer/drawer.h",
-    "suites/tree.h",
+    "suites/suites.h",
 ]
 
 

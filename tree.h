@@ -33,6 +33,8 @@ public:
     static Tree random(int size, int elongation = 0);
     static Tree star(int size);
     static Tree caterpillar(int size, int length);
+    static Tree binary(int size);
+    static Tree kary(int size, int k);
 };
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
@@ -231,6 +233,22 @@ Tree Tree::caterpillar(int size, int length) {
     Tree t = Tree::bamboo(length);
     for (int i = length; i < size; ++i) {
         t.addEdge(rnd.next(length), i);
+    }
+    t.normalizeEdges();
+    return t;
+}
+
+Tree Tree::binary(int size) {
+    return kary(size, 2);
+}
+
+Tree Tree::kary(int size, int k) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
+    checkLargeParameter(size);
+
+    Tree t;
+    for (int i = 1; i < size; ++i) {
+        t.addEdge((i - 1) / k, i);
     }
     t.normalizeEdges();
     return t;

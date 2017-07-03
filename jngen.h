@@ -168,7 +168,7 @@ inline void checkLargeParameter(int n) {
 }
 
 // Some type traits helpers. Based on ideas from TCPPPL v4.
-template<bool B, typename T>
+template<bool B, typename T = void>
 using enable_if_t = typename std::enable_if<B, T>::type;
 
 namespace util {
@@ -1077,6 +1077,109 @@ private:
 } // namespace graph_detail
 
 } // namespace jngen
+
+
+#include <iterator>
+#include <unordered_set>
+#include <vector>
+#include <type_traits>
+#include <utility>
+
+namespace jngen {
+
+template<typename T, typename Enable = void>
+struct Hash;
+
+namespace impl {
+
+inline void hashCombine(uint64_t& h, uint64_t k) {
+    const uint64_t m = 0xc6a4a7935bd1e995;
+    const int r = 47;
+
+    k *= m;
+    k ^= k >> r;
+    k *= m;
+
+    h ^= k;
+    h *= m;
+
+    h += 0xe6546b64;
+}
+
+template<typename Iterator>
+void hashCombine(uint64_t& h, Iterator begin, Iterator end) {
+    Hash<typename std::iterator_traits<Iterator>::value_type> hash;
+    while (begin != end) {
+        hashCombine(h, hash(*begin++));
+    }
+}
+
+} // namespace impl
+
+template<typename T>
+struct Hash<
+        T,
+        enable_if_t<std::is_integral<T>::value>>
+{
+    uint64_t operator()(const T& t) const {
+        uint64_t h = 0;
+        impl::hashCombine(h, t);
+        return h;
+    }
+};
+
+#define JNGEN_DEFINE_STD_HASH(Type)\
+namespace std {\
+template<>\
+struct hash<Type> {\
+    size_t operator()(const Type& value) const {\
+        return jngen::Hash<Type>{}(value);\
+    }\
+};\
+}
+
+#define JNGEN_DEFINE_STD_HASH_TEMPLATE(T, Type)\
+namespace std {\
+template<typename T>\
+struct hash<Type> {\
+    size_t operator()(const Type& value) const {\
+        return jngen::Hash<Type>{}(value);\
+    }\
+};\
+}
+
+template<typename T>
+struct Hash<std::vector<T>> {
+    uint64_t operator()(const std::vector<T>& elements) const {
+        uint64_t h = 0;
+        impl::hashCombine(h, elements.size());
+        impl::hashCombine(h, elements.begin(), elements.end());
+        return h;
+    }
+};
+
+template<typename T, typename U>
+struct Hash<std::pair<T, U>> {
+    uint64_t operator()(const std::pair<T, U>& value) const {
+        uint64_t h = 0;
+        impl::hashCombine(h, Hash<T>{}(value.first));
+        impl::hashCombine(h, Hash<U>{}(value.second));
+        return h;
+    }
+};
+
+} // namespace jngen
+
+JNGEN_DEFINE_STD_HASH_TEMPLATE(T, std::vector<T>);
+
+namespace std {
+template<typename T, typename U>
+struct hash<std::pair<T, U>> {
+    size_t operator()(const std::pair<T, U>& value) const {
+        return jngen::Hash<std::pair<T, U>>{}(value);
+    }
+};
+} // namespace std
 
 
 #include <map>
@@ -2957,7 +3060,16 @@ TArray<T> arrayCast(const TArray<U>& array) {
     return TArray<T>(array.begin(), array.end());
 }
 
+template<typename T>
+struct Hash<TArray<T>> {
+    uint64_t operator()(const TArray<T>& elements) const {
+        return Hash<std::vector<T>>{}(elements);
+    }
+};
+
 } // namespace jngen
+
+JNGEN_DEFINE_STD_HASH_TEMPLATE(T, jngen::TArray<T>);
 
 using jngen::makeArray;
 using jngen::zip;
@@ -3474,40 +3586,15 @@ struct TPoint : public ReprProxy<TPoint<T>> {
 using Point = TPoint<long long>;
 using Pointf = TPoint<long double>;
 
-} // namespace jngen
-
-namespace std {
-
 template<>
-struct hash<jngen::Point> {
-    // Credits to boost::hash
-    static void hash_combine_impl(uint64_t& h, uint64_t k) {
-        const uint64_t m = 0xc6a4a7935bd1e995;
-        const int r = 47;
-
-        k *= m;
-        k ^= k >> r;
-        k *= m;
-
-        h ^= k;
-        h *= m;
-
-        // Completely arbitrary number, to prevent 0's
-        // from hashing to 0.
-        h += 0xe6546b64;
-    }
-
-    size_t operator()(const jngen::Point& p) const {
+struct Hash<Point> {
+    uint64_t operator()(const Point& point) const {
         uint64_t h = 0;
-        hash_combine_impl(h, std::hash<long long>{}(p.x));
-        hash_combine_impl(h, std::hash<long long>{}(p.y));
+        impl::hashCombine(h, Hash<long long>{}(point.x));
+        impl::hashCombine(h, Hash<long long>{}(point.y));
         return h;
     }
 };
-
-} // namespace std
-
-namespace jngen {
 
 template<typename T>
 JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 3) {
@@ -3551,8 +3638,15 @@ public:
 using Polygon = TPolygon<long long>;
 using Polygonf = TPolygon<long double>;
 
+template<>
+struct Hash<Polygon> {
+    uint64_t operator()(const Polygon& p) const {
+        return Hash<TArray<Point>>{}(p);
+    }
+};
+
 template<typename T>
-JNGEN_DECLARE_SIMPLE_PRINTER(TPolygon<T>, 5) {
+JNGEN_DECLARE_SIMPLE_PRINTER(TArray<TPoint<T>>, 5) {
     // I should avoid copy-paste from array printer here but need to output
     // points with '\n' separator. Maybe 'mod' should be made non-const?
     if (mod.printN) {
@@ -3688,68 +3782,7 @@ public:
     }
 
     static TArray<Point> pointsInGeneralPosition(
-            int n, long long X, long long Y)
-    {
-        struct Line {
-            long long A, B, C; // Ax + By + C = 0
-            Line() {}
-            Line(const Point& p1, const Point& p2) {
-                A = p1.y - p2.y;
-                B = p2.x - p1.x;
-                C = -(p1.x * A + p1.y * B);
-
-                ENSURE(A != 0 || B != 0);
-
-                long long g = util::gcd(A, util::gcd(B, C));
-                A /= g;
-                B /= g;
-                C /= g;
-                if (A < 0 || (A == 0 && B < 0)) {
-                    A = -A;
-                    B = -B;
-                    C = -C;
-                }
-            }
-
-            bool operator<(const Line& other) const {
-                return std::tie(A, B, C) < std::tie(other.A, other.B, other.C);
-            }
-        };
-
-        const long long LIMIT = 2e9;
-        ensure(
-            X <= LIMIT && Y <= LIMIT,
-            "rndg.pointsInGeneralPosition must not be called with coordinates "
-            "larger than 2e9");
-
-        std::set<Line> lines;
-        std::unordered_set<Point> points;
-
-        TArray<Point> res;
-
-        while (static_cast<int>(res.size()) != n) {
-            Point p = point(X, Y);
-
-            if (points.count(p)) {
-                continue;
-            }
-
-            if (std::none_of(
-                    res.begin(),
-                    res.end(),
-                    [&lines, &p] (const Point& q) {
-                        return lines.count(Line(p, q));
-                    }))
-            {
-                points.insert(p);
-                for (const auto& q: res) {
-                    lines.emplace(p, q);
-                }
-                res.push_back(p);
-            }
-        }
-        return res;
-    }
+            int n, long long X, long long Y);
 
     static TArray<Point> pointsInGeneralPosition(int n, long long C) {
         return pointsInGeneralPosition(n, C, C);
@@ -3760,6 +3793,9 @@ JNGEN_EXTERN GeometryRandom rndg;
 
 } // namespace jngen
 
+JNGEN_DEFINE_STD_HASH(jngen::Point);
+JNGEN_DEFINE_STD_HASH(jngen::Polygon);
+
 using jngen::Point;
 using jngen::Pointf;
 
@@ -3769,6 +3805,72 @@ using jngen::Polygonf;
 using jngen::rndg;
 
 using jngen::setEps;
+
+#ifndef JNGEN_DECLARE_ONLY
+TArray<Point> jngen::GeometryRandom::pointsInGeneralPosition(
+        int n, long long X, long long Y)
+{
+    struct Line {
+        long long A, B, C; // Ax + By + C = 0
+        Line() {}
+        Line(const Point& p1, const Point& p2) {
+            A = p1.y - p2.y;
+            B = p2.x - p1.x;
+            C = -(p1.x * A + p1.y * B);
+
+            ENSURE(A != 0 || B != 0);
+
+            long long g = util::gcd(A, util::gcd(B, C));
+            A /= g;
+            B /= g;
+            C /= g;
+            if (A < 0 || (A == 0 && B < 0)) {
+                A = -A;
+                B = -B;
+                C = -C;
+            }
+        }
+
+        bool operator<(const Line& other) const {
+            return std::tie(A, B, C) < std::tie(other.A, other.B, other.C);
+        }
+    };
+
+    const long long LIMIT = 2e9;
+    ensure(
+        X <= LIMIT && Y <= LIMIT,
+        "rndg.pointsInGeneralPosition must not be called with coordinates "
+        "larger than 2e9");
+
+    std::set<Line> lines;
+    std::unordered_set<Point> points;
+
+    TArray<Point> res;
+
+    while (static_cast<int>(res.size()) != n) {
+        Point p = point(X, Y);
+
+        if (points.count(p)) {
+            continue;
+        }
+
+        if (std::none_of(
+                res.begin(),
+                res.end(),
+                [&lines, &p] (const Point& q) {
+                    return lines.count(Line(p, q));
+                }))
+        {
+            points.insert(p);
+            for (const auto& q: res) {
+                lines.emplace(p, q);
+            }
+            res.push_back(p);
+        }
+    }
+    return res;
+}
+#endif // JNGEN_DECLARE_ONLY
 
 
 #include <algorithm>
@@ -4179,6 +4281,7 @@ using jngen::rnds;
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace jngen {
@@ -4898,6 +5001,17 @@ protected:
     WeightArray edgeWeights_;
 };
 
+template<>
+struct Hash<GenericGraph> {
+    uint64_t operator()(const GenericGraph& graph) const {
+        uint64_t h = 0;
+        for (int i = 0; i < graph.n(); ++i) {
+            impl::hashCombine(h, Hash<Array>{}(graph.edges(i)));
+        }
+        return h;
+    }
+};
+
 #ifndef JNGEN_DECLARE_ONLY
 
 Array GenericGraph::edges(int v) const {
@@ -5135,8 +5249,8 @@ int GenericGraph::compareTo(const GenericGraph& other) const {
         return n() < other.n() ? -1 : 1;
     }
     for (int i = 0; i < n(); ++i) {
-        Array e1 = Array(edges(i)).sorted();
-        Array e2 = Array(other.edges(i)).sorted();
+        auto e1 = edges(i);
+        auto e2 = other.edges(i);
         if (e1 != e2) {
             return e1 < e2 ? -1 : 1;
         }
@@ -5148,6 +5262,7 @@ int GenericGraph::compareTo(const GenericGraph& other) const {
 
 } // namespace jngen
 
+JNGEN_DEFINE_STD_HASH(jngen::GenericGraph);
 
 
 #include <algorithm>
@@ -5179,6 +5294,8 @@ public:
     static Tree random(int size, int elongation = 0);
     static Tree star(int size);
     static Tree caterpillar(int size, int length);
+    static Tree binary(int size);
+    static Tree kary(int size, int k);
 };
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
@@ -5194,6 +5311,12 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
     }
 }
 
+template<>
+struct Hash<Tree> {
+    uint64_t operator()(const Tree& t) const {
+        return Hash<GenericGraph>{}(t);
+    }
+};
 
 #ifndef JNGEN_DECLARE_ONLY
 
@@ -5376,9 +5499,27 @@ Tree Tree::caterpillar(int size, int length) {
     return t;
 }
 
+Tree Tree::binary(int size) {
+    return kary(size, 2);
+}
+
+Tree Tree::kary(int size, int k) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
+    checkLargeParameter(size);
+
+    Tree t;
+    for (int i = 1; i < size; ++i) {
+        t.addEdge((i - 1) / k, i);
+    }
+    t.normalizeEdges();
+    return t;
+}
+
 #endif // JNGEN_DECLARE_ONLY
 
 } // namespace jngen
+
+JNGEN_DEFINE_STD_HASH(jngen::Tree);
 
 using jngen::Tree;
 
@@ -5442,9 +5583,18 @@ JNGEN_DECLARE_SIMPLE_PRINTER(graph_detail::BuilderProxy, 2) {
     JNGEN_PRINT(t.g());
 }
 
+template<>
+struct Hash<Graph> {
+    uint64_t operator()(const Graph& g) const {
+        return Hash<GenericGraph>{}(g);
+    };
+};
+
 } // namespace jngen
 
 using jngen::Graph;
+
+JNGEN_DEFINE_STD_HASH(jngen::Graph);
 
 #ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_GRAPH_INL_H
@@ -5689,6 +5839,8 @@ Graph::BuilderProxy Graph::randomStretched(
 #endif // JNGEN_DECLARE_ONLY
 
 
+#include <cstdlib>
+
 namespace jngen {
 namespace suites {
 
@@ -5697,45 +5849,137 @@ public:
     GeneralTreeSuite() : BaseTestSuite("GeneralTreeSuite") {
 #define JNGEN_PRODUCER_ARGS int n
 
-        // 0
+        JNGEN_ADD_PRODUCER(random1) {
+            return Tree::randomPrufer(n);
+        };
+
+        JNGEN_ADD_PRODUCER(random2) {
+            return Tree::randomPrufer(n);
+        };
+
+        JNGEN_ADD_PRODUCER(random3) {
+            return Tree::randomPrufer(n);
+        };
+
         JNGEN_ADD_PRODUCER(bamboo) {
             return Tree::bamboo(n);
         };
 
-        JNGEN_ADD_PRODUCER() {
-            return Tree::randomPrufer(n);
+        JNGEN_ADD_PRODUCER(shuffled_bamboo) {
+            return Tree::bamboo(n).shuffled();
         };
 
-        JNGEN_ADD_PRODUCER( ) {
-            return Tree::random(n);
+        JNGEN_ADD_PRODUCER(3branches) {
+            int k = (n - 1) / 3 + 1;
+
+            Tree t = Tree::bamboo(k);
+            t = t.glue(0, Tree::bamboo(k), 0);
+            t = t.glue(0, Tree::bamboo(k), 0);
+
+            ENSURE(t.n() <= n);
+
+            return t;
         };
 
-        JNGEN_ADD_PRODUCER() {
-            return Tree::random(n, 2);
+        JNGEN_ADD_PRODUCER(sqrt_branches) {
+            int k = sqrt(n) + 1;
+            Tree t = Tree::bamboo(k);
+            while (t.n() + k - 1 <= n) {
+                t = t.glue(0, Tree::bamboo(k), 0);
+            }
+            ENSURE(t.n() < n);
+            return t;
         };
 
-        JNGEN_ADD_PRODUCER( zloy    los) {
-            return Tree::random(n, 20);
+        JNGEN_ADD_PRODUCER(branches_123) {
+            Tree t = Tree::bamboo(2);
+            for (int i = 2; t.n() + i <= n; ++i) {
+                t = t.link(0, Tree::bamboo(i), 0);
+            }
+            ENSURE(t.n() < n);
+            return t;
         };
 
-        // 5
-        JNGEN_ADD_PRODUCER(zloy los   ,) {
-            return Tree::random(n, 200);
+        JNGEN_ADD_PRODUCER(binary) {
+            return Tree::binary(n);
         };
 
-        JNGEN_ADD_PRODUCER(zloy loewrs) {
-            return Tree::random(n, -2);
+        JNGEN_ADD_PRODUCER(3ary) {
+            return Tree::kary(n, 3);
         };
 
-        JNGEN_ADD_PRODUCER() {
+        JNGEN_ADD_PRODUCER(4ary) {
+            return Tree::kary(n, 4);
+        };
+
+        JNGEN_ADD_PRODUCER(50ary) {
+            return Tree::kary(n, 50);
+        };
+
+        JNGEN_ADD_PRODUCER(500ary) {
+            return Tree::kary(n, 500);
+        };
+
+        JNGEN_ADD_PRODUCER(star) {
             return Tree::star(n);
         };
 
-        JNGEN_ADD_PRODUCER() {
-            if (n < 3) {
-                throw 1;
-            }
-            return Tree::caterpillar(n, n/2);
+        JNGEN_ADD_PRODUCER(shuffled_star) {
+            return Tree::star(n).shuffled();
+        };
+
+        JNGEN_ADD_PRODUCER(caterpillar_len90) {
+            return Tree::caterpillar(n, n * 0.9);
+        };
+
+        JNGEN_ADD_PRODUCER(caterpillar_len50) {
+            return Tree::caterpillar(n, n * 0.5);
+        };
+
+        JNGEN_ADD_PRODUCER(caterpillar_len10) {
+            return Tree::caterpillar(n, n * 0.1);
+        };
+
+        JNGEN_ADD_PRODUCER(broom_n/2) {
+            auto t1 = Tree::bamboo(n/2);
+            auto t2 = Tree::star(n - n/2);
+            return t1.link(n/2 - 1, t2, 0);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-100) {
+            return Tree::random(n, -100);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-50) {
+            return Tree::random(n, -50);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-10) {
+            return Tree::random(n, -10);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-5) {
+            return Tree::random(n, -5);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w0) {
+            return Tree::random(n, 0);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w5) {
+            return Tree::random(n, 5);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w10) {
+            return Tree::random(n, 10);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w50) {
+            return Tree::random(n, 50);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w100) {
+            return Tree::random(n, 100);
         };
 
 #undef JNGEN_PRODUCER_ARGS
@@ -5744,3 +5988,16 @@ public:
 
 } // namespace test_suites
 } // namespace jngen
+
+
+namespace jngen {
+
+struct TestSuites {
+    suites::GeneralTreeSuite tree;
+};
+
+JNGEN_EXTERN TestSuites testSuites;
+
+} // namespace jngen
+
+using jngen::testSuites;
