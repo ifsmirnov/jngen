@@ -18,7 +18,7 @@ The second uses helper objects.
 
 ```cpp
 auto polygon = rndg.convexPolygon(n, maxCoordinate);
-auto stringPair = rnds.antiHash(10000, {{1000000007, 101}, {1000000009, 211}}, "a-z");
+auto stringPair = rnds.antiHash({{1000000007, 101}, {1000000009, 211}}, "a-z", 10000);
 int p = rndm.randomPrime(100, int(1e9));
 ```
 
