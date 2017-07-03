@@ -48,6 +48,12 @@ JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
     }
 }
 
+template<>
+struct Hash<Tree> {
+    uint64_t operator()(const Tree& t) const {
+        return Hash<GenericGraph>{}(t);
+    }
+};
 
 #ifndef JNGEN_DECLARE_ONLY
 
@@ -233,5 +239,7 @@ Tree Tree::caterpillar(int size, int length) {
 #endif // JNGEN_DECLARE_ONLY
 
 } // namespace jngen
+
+JNGEN_DEFINE_STD_HASH(jngen::Tree);
 
 using jngen::Tree;

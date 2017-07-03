@@ -141,7 +141,7 @@ inline void checkLargeParameter(int n) {
 }
 
 // Some type traits helpers. Based on ideas from TCPPPL v4.
-template<bool B, typename T>
+template<bool B, typename T = void>
 using enable_if_t = typename std::enable_if<B, T>::type;
 
 namespace util {

@@ -134,6 +134,17 @@ protected:
     WeightArray edgeWeights_;
 };
 
+template<>
+struct Hash<GenericGraph> {
+    uint64_t operator()(const GenericGraph& graph) const {
+        uint64_t h = 0;
+        for (int i = 0; i < graph.n(); ++i) {
+            impl::hashCombine(h, Hash<Array>{}(graph.edges(i)));
+        }
+        return h;
+    }
+};
+
 #ifndef JNGEN_DECLARE_ONLY
 
 Array GenericGraph::edges(int v) const {
@@ -371,8 +382,8 @@ int GenericGraph::compareTo(const GenericGraph& other) const {
         return n() < other.n() ? -1 : 1;
     }
     for (int i = 0; i < n(); ++i) {
-        Array e1 = Array(edges(i)).sorted();
-        Array e2 = Array(other.edges(i)).sorted();
+        auto e1 = edges(i);
+        auto e2 = other.edges(i);
         if (e1 != e2) {
             return e1 < e2 ? -1 : 1;
         }
@@ -384,3 +395,4 @@ int GenericGraph::compareTo(const GenericGraph& other) const {
 
 } // namespace jngen
 
+JNGEN_DEFINE_STD_HASH(jngen::GenericGraph);

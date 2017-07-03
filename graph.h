@@ -64,9 +64,18 @@ JNGEN_DECLARE_SIMPLE_PRINTER(graph_detail::BuilderProxy, 2) {
     JNGEN_PRINT(t.g());
 }
 
+template<>
+struct Hash<Graph> {
+    uint64_t operator()(const Graph& g) const {
+        return Hash<GenericGraph>{}(g);
+    };
+};
+
 } // namespace jngen
 
 using jngen::Graph;
+
+JNGEN_DEFINE_STD_HASH(jngen::Graph);
 
 #ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_GRAPH_INL_H

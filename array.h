@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "hash.h"
 #include "printers.h"
 #include "random.h"
 #include "sequence_ops.h"
@@ -471,7 +472,16 @@ TArray<T> arrayCast(const TArray<U>& array) {
     return TArray<T>(array.begin(), array.end());
 }
 
+template<typename T>
+struct Hash<TArray<T>> {
+    uint64_t operator()(const TArray<T>& elements) const {
+        return Hash<std::vector<T>>{}(elements);
+    }
+};
+
 } // namespace jngen
+
+JNGEN_DEFINE_STD_HASH_TEMPLATE(T, jngen::TArray<T>);
 
 using jngen::makeArray;
 using jngen::zip;

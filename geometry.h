@@ -2,8 +2,8 @@
 
 #include "array.h"
 #include "common.h"
+#include "hash.h"
 #include "printers.h"
-#include "random.h"
 #include "random.h"
 #include "repr.h"
 #include "rnda.h"
@@ -129,40 +129,15 @@ struct TPoint : public ReprProxy<TPoint<T>> {
 using Point = TPoint<long long>;
 using Pointf = TPoint<long double>;
 
-} // namespace jngen
-
-namespace std {
-
 template<>
-struct hash<jngen::Point> {
-    // Credits to boost::hash
-    static void hash_combine_impl(uint64_t& h, uint64_t k) {
-        const uint64_t m = 0xc6a4a7935bd1e995;
-        const int r = 47;
-
-        k *= m;
-        k ^= k >> r;
-        k *= m;
-
-        h ^= k;
-        h *= m;
-
-        // Completely arbitrary number, to prevent 0's
-        // from hashing to 0.
-        h += 0xe6546b64;
-    }
-
-    size_t operator()(const jngen::Point& p) const {
+struct Hash<Point> {
+    uint64_t operator()(const Point& point) const {
         uint64_t h = 0;
-        hash_combine_impl(h, std::hash<long long>{}(p.x));
-        hash_combine_impl(h, std::hash<long long>{}(p.y));
+        impl::hashCombine(h, Hash<long long>{}(point.x));
+        impl::hashCombine(h, Hash<long long>{}(point.y));
         return h;
     }
 };
-
-} // namespace std
-
-namespace jngen {
 
 template<typename T>
 JNGEN_DECLARE_SIMPLE_PRINTER(TPoint<T>, 3) {
@@ -206,8 +181,15 @@ public:
 using Polygon = TPolygon<long long>;
 using Polygonf = TPolygon<long double>;
 
+template<>
+struct Hash<Polygon> {
+    uint64_t operator()(const Polygon& p) const {
+        return Hash<TArray<Point>>{}(p);
+    }
+};
+
 template<typename T>
-JNGEN_DECLARE_SIMPLE_PRINTER(TPolygon<T>, 5) {
+JNGEN_DECLARE_SIMPLE_PRINTER(TArray<TPoint<T>>, 5) {
     // I should avoid copy-paste from array printer here but need to output
     // points with '\n' separator. Maybe 'mod' should be made non-const?
     if (mod.printN) {
@@ -343,68 +325,7 @@ public:
     }
 
     static TArray<Point> pointsInGeneralPosition(
-            int n, long long X, long long Y)
-    {
-        struct Line {
-            long long A, B, C; // Ax + By + C = 0
-            Line() {}
-            Line(const Point& p1, const Point& p2) {
-                A = p1.y - p2.y;
-                B = p2.x - p1.x;
-                C = -(p1.x * A + p1.y * B);
-
-                ENSURE(A != 0 || B != 0);
-
-                long long g = util::gcd(A, util::gcd(B, C));
-                A /= g;
-                B /= g;
-                C /= g;
-                if (A < 0 || (A == 0 && B < 0)) {
-                    A = -A;
-                    B = -B;
-                    C = -C;
-                }
-            }
-
-            bool operator<(const Line& other) const {
-                return std::tie(A, B, C) < std::tie(other.A, other.B, other.C);
-            }
-        };
-
-        const long long LIMIT = 2e9;
-        ensure(
-            X <= LIMIT && Y <= LIMIT,
-            "rndg.pointsInGeneralPosition must not be called with coordinates "
-            "larger than 2e9");
-
-        std::set<Line> lines;
-        std::unordered_set<Point> points;
-
-        TArray<Point> res;
-
-        while (static_cast<int>(res.size()) != n) {
-            Point p = point(X, Y);
-
-            if (points.count(p)) {
-                continue;
-            }
-
-            if (std::none_of(
-                    res.begin(),
-                    res.end(),
-                    [&lines, &p] (const Point& q) {
-                        return lines.count(Line(p, q));
-                    }))
-            {
-                points.insert(p);
-                for (const auto& q: res) {
-                    lines.emplace(p, q);
-                }
-                res.push_back(p);
-            }
-        }
-        return res;
-    }
+            int n, long long X, long long Y);
 
     static TArray<Point> pointsInGeneralPosition(int n, long long C) {
         return pointsInGeneralPosition(n, C, C);
@@ -415,6 +336,9 @@ JNGEN_EXTERN GeometryRandom rndg;
 
 } // namespace jngen
 
+JNGEN_DEFINE_STD_HASH(jngen::Point);
+JNGEN_DEFINE_STD_HASH(jngen::Polygon);
+
 using jngen::Point;
 using jngen::Pointf;
 
@@ -424,3 +348,69 @@ using jngen::Polygonf;
 using jngen::rndg;
 
 using jngen::setEps;
+
+#ifndef JNGEN_DECLARE_ONLY
+TArray<Point> jngen::GeometryRandom::pointsInGeneralPosition(
+        int n, long long X, long long Y)
+{
+    struct Line {
+        long long A, B, C; // Ax + By + C = 0
+        Line() {}
+        Line(const Point& p1, const Point& p2) {
+            A = p1.y - p2.y;
+            B = p2.x - p1.x;
+            C = -(p1.x * A + p1.y * B);
+
+            ENSURE(A != 0 || B != 0);
+
+            long long g = util::gcd(A, util::gcd(B, C));
+            A /= g;
+            B /= g;
+            C /= g;
+            if (A < 0 || (A == 0 && B < 0)) {
+                A = -A;
+                B = -B;
+                C = -C;
+            }
+        }
+
+        bool operator<(const Line& other) const {
+            return std::tie(A, B, C) < std::tie(other.A, other.B, other.C);
+        }
+    };
+
+    const long long LIMIT = 2e9;
+    ensure(
+        X <= LIMIT && Y <= LIMIT,
+        "rndg.pointsInGeneralPosition must not be called with coordinates "
+        "larger than 2e9");
+
+    std::set<Line> lines;
+    std::unordered_set<Point> points;
+
+    TArray<Point> res;
+
+    while (static_cast<int>(res.size()) != n) {
+        Point p = point(X, Y);
+
+        if (points.count(p)) {
+            continue;
+        }
+
+        if (std::none_of(
+                res.begin(),
+                res.end(),
+                [&lines, &p] (const Point& q) {
+                    return lines.count(Line(p, q));
+                }))
+        {
+            points.insert(p);
+            for (const auto& q: res) {
+                lines.emplace(p, q);
+            }
+            res.push_back(p);
+        }
+    }
+    return res;
+}
+#endif // JNGEN_DECLARE_ONLY
