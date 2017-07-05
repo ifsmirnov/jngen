@@ -69,7 +69,7 @@ Such wow, very short. Here we see many Jngen features at once.
 
 * [Arrays](array.md). With *Array::something* you can generate various arrays (like permutations and random ones).
     After you can shuffle, sort and do anything else calling a method on the same object.
-* Chaining. Syntax *object.doThis().doThat().andThat()* is very common in Jngen. Use will see it when modifying objects
+* Chaining. Syntax *object.doThis().doThat().andThat()* is very common in Jngen. You will see it when modifying objects
     (like sorting the array), dealing with output format (*printN* and *add1* here) or setting constraints for graphs generation.
 * [Printing](printers.md). All containers can be put to *cout* and usually are printed in a least-surprising way. For vector
     and Array it is just space-separated elements. Or newline-separated for 2D; it is smart! With chaining you can print your
