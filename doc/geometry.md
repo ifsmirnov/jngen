@@ -6,6 +6,8 @@ Jngen provides two point classes: *Point* with *long long* coordinates and *Poin
 
 Like most Jngen objects, *Point* and *Polygon* can be printed to streams and modified with [output modifiers](printers.md).
 
+If you are looking for an SVG drawing tool, please refer to [this](drawer.md) page.
+
 ### Generators (*rndg* static methods)
 #### Point point(long long C)
 #### Pointf pointf(long double C)

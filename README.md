@@ -7,10 +7,14 @@
 * [Compatibility note](#compatibility-note)
 * [Examples](#examples)
 * [Why not testlib.h?](#why-not-testlibh)
+* [What does Jngen mean?](#what-does-jngen-mean)
 
 ### Overview
 
-Jngen library provides several handy instruments for generating various kinds of competitive programming problems.
+Jngen is a C++ library for generating testss for various competitive programming problems.
+It is written in pure C++ (compliant with C++11 standard) and distributed as a single header.
+
+Among its features there are:
 * random number generator with uniform and off-center distribution (known as wnext);
 * command-line options parser, supporting named and positional arguments;
 * wrapper for *std::vector* which makes sorting, printing and generating random sequences easier;
@@ -20,7 +24,8 @@ Jngen library provides several handy instruments for generating various kinds of
 * random primes, partitions, anti-hash and anti-hashset tests;
 * and else.
 
-Check out the larger [overview](/doc/overview.md) to see more capabilities and examples.
+Check out the larger [overview](/doc/overview.md) to see more capabilities and examples
+or see [Getting started](/doc/getting_started.md) section learn the simplest usecases immediately.
 
 ### Reference
 * [[random.h] Random numbers generation](/doc/random.md)
@@ -99,3 +104,7 @@ testlib.h is a wonderful library which has already saved hundreds of hours for c
 * I don't really like the code style of testlib, particularly naming convention and not using namespaces.
 * Being dependant on testlib, Jngen would compile even longer than it does now.
 
+### What does Jngen mean?
+I don't know.
+
+It sounds similar to Jinotega, my ACM-ICPC team, maybe that's the way how it (unconsciously) came to my mind. Also it is similar to Jungen – "Young" in German. Or "Just 'Nother GENerator library". Well, who the hell cares.
