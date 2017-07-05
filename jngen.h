@@ -1329,7 +1329,7 @@ bool readVariable(const std::string& value, T& var) {
     return false;
 }
 
-PendingVariable getOpt(size_t index) {
+inline PendingVariable getOpt(size_t index) {
     ensure(
         vmap.initialized,
         "parseArgs(args, argv) must be called before getOpt(...)");
@@ -1339,7 +1339,7 @@ PendingVariable getOpt(size_t index) {
     return PendingVariable(vmap[index]);
 }
 
-PendingVariable getOpt(const std::string& name) {
+inline PendingVariable getOpt(const std::string& name) {
     ensure(
         vmap.initialized,
         "parseArgs(args, argv) must be called before getOpt(...)");

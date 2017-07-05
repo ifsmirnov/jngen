@@ -25,7 +25,7 @@ Among its features there are:
 * and else.
 
 Check out the larger [overview](/doc/overview.md) to see more capabilities and examples
-or see [Getting started](/doc/getting_started.md) section learn the simplest usecases immediately.
+or see [Getting started](/doc/getting_started.md) section to learn the simplest usecases immediately.
 
 ### Reference
 * [[random.h] Random numbers generation](/doc/random.md)
