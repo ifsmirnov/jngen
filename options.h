@@ -38,6 +38,31 @@ struct VariableMap {
     bool initialized = false;
 };
 
+class PendingVariable {
+public:
+    explicit PendingVariable(const std::string& value) :
+        value_(value)
+    {  }
+
+    template<typename T>
+    operator T() const {
+        std::istringstream ss(value_);
+        T t;
+        if (ss >> t) {
+            return t;
+        } else {
+            ensure(
+                false,
+                format(
+                    "Cannot parse option. Raw value: '%s'",
+                    value_.c_str()));
+        }
+    }
+
+private:
+    std::string value_;
+};
+
 // TODO: think about seed as a last argument
 inline VariableMap parseArguments(const std::vector<std::string>& args) {
     VariableMap result;
@@ -120,6 +145,26 @@ bool readVariable(const std::string& value, T& var) {
         return true;
     }
     return false;
+}
+
+PendingVariable getOpt(size_t index) {
+    ensure(
+        vmap.initialized,
+        "parseArgs(args, argv) must be called before getOpt(...)");
+    ensure(
+        vmap.count(index),
+        format("There is no variable with index %d", index));
+    return PendingVariable(vmap[index]);
+}
+
+PendingVariable getOpt(const std::string& name) {
+    ensure(
+        vmap.initialized,
+        "parseArgs(args, argv) must be called before getOpt(...)");
+    ensure(
+        vmap.count(name),
+        format("There is no variable with name '%s'", name.c_str()));
+    return PendingVariable(vmap[name]);
 }
 
 template<typename T>

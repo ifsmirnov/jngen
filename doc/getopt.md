@@ -1,5 +1,6 @@
 ## Parsing command-line options
 Jngen provides a parser of command-line options. It supports both positional and named arguments. Here is the comprehensive example of usage.
+
 ```cpp
 // ./main 10 -pi=3.14 20 -hw hello-world randomseedstring
 int main(int argc, char *argv[]) {
@@ -7,6 +8,9 @@ int main(int argc, char *argv[]) {
     int n, m;
     double pi;
     string hw;
+
+    n = getOpt(0); // n = 10
+    pi = getOpt("pi"); // pi = 3.14
 
     getPositional(n, m); // n = 10, m = 20
     getNamed(hw, pi); // hw = "hello-world", pi = 3.14
@@ -28,13 +32,24 @@ int main(int argc, char *argv[]) {
 * anything after "&dash;&dash;" (two minus signs) is ignored;
 
 ### Documentation
-#### void parseArgs(int argc, char *argv)
 
+#### void parseArgs(int argc, char *argv)
 * Parse arguments and prepare variable map. Required to be called before any *getOpt...* calls.
+
+### *unspecified_type* getOpt(size_t index)
+### *unspecified_type* getOpt(const std::string& name)
+* Reads an option denoted by *index* (positional, 0-indexed) or *name*. Throws if the option does not exist.
+* Return type can be casted to any other type. See the expected usage:
+```cpp
+int n = getOpt(0), m = getOpt(1);
+double h = getOpt("height");
+```
+* Note: if the cast fails (e.g. you try to interpret "adsfasd" as int) the function throws.
+
 #### template&lt;typename T> <br> bool getOpt(size_t index, T& t)
 #### template&lt;typename T> <br> bool getOpt(const std::string& name, T& t)
-* Reads an option denoted by *index* (positional, 0-indexed) or *name*. In case if *index* is out of bound, *name* option does not exist or the given option fails to be read as *T*, *t* is not modified.
-* Returns: true if option exist and *T* was succesfully read.
+* Reads an option denoted by *index* or *name*. In case if *index* is out of bound, *name* option does not exist or the given option fails to be read as *T*, *t* is not modified.
+* Returns: true if option exist and *T* was succesfully read, false otherwise.
 
 #### template&lt;typename T> <br> T getOptOr(size_t index, T def)
 #### template&lt;typename T> <br> T getOptOr(const std::string& name, T def)
