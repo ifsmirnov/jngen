@@ -1,6 +1,6 @@
-#ifndef JNGEN_INCLUDE_GRAPH_INL_H
-#error File "graph_inl.h" must not be included directly.
-#endif
+// #ifndef JNGEN_INCLUDE_GRAPH_INL_H
+// #error File "graph_inl.h" must not be included directly.
+// #endif
 
 #include "array.h"
 #include "common.h"
@@ -113,7 +113,7 @@ private:
 
         if (t.connected) {
             ensure(m >= n - 1, "Not enough edges for a connected graph");
-            auto treeEdges = Tree::randomPrufer(n).edges();
+            auto treeEdges = Tree::random(n).edges();
             usedEdges.insert(treeEdges.begin(), treeEdges.end());
             ENSURE(usedEdges.size() == static_cast<size_t>(n - 1));
         }
@@ -162,7 +162,7 @@ private:
     }
 
     static Graph doRandomStretched(Traits t, int elongation, int spread) {
-        Tree tree = Tree::random(t.n, elongation);
+        Tree tree = Tree::randomPrim(t.n, elongation);
         Array parents = tree.parents(0);
 
         Graph graph(tree);

@@ -20,6 +20,8 @@ public:
 
     void addEdge(int u, int v, const Weight& w = Weight{}) override;
 
+    bool canAddEdge(int u, int v);
+
     Array parents(int root) const;
 
     Tree& shuffle();
@@ -29,8 +31,9 @@ public:
     Tree glue(int vInThis, const Tree& other, int vInOther);
 
     static Tree bamboo(int size);
-    static Tree randomPrufer(int size);
-    static Tree random(int size, int elongation = 0);
+    static Tree random(int size);
+    static Tree randomPrim(int size, int elongation = 0);
+    static Tree randomKruskal(int size);
     static Tree star(int size);
     static Tree caterpillar(int size, int length);
     static Tree binary(int size);
@@ -73,6 +76,12 @@ void Tree::addEdge(int u, int v, const Weight& w) {
     if (!w.empty()) {
         setEdgeWeight(m() - 1, w);
     }
+}
+
+bool Tree::canAddEdge(int u, int v) {
+    u = vertexByLabel(u);
+    v = vertexByLabel(v);
+    return dsu_.getRoot(u) != dsu_.getRoot(v);
 }
 
 Array Tree::parents(int root) const {
@@ -164,7 +173,7 @@ Tree Tree::bamboo(int size) {
     return t;
 }
 
-Tree Tree::randomPrufer(int size) {
+Tree Tree::random(int size) {
     ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     if (size == 1) {
@@ -202,7 +211,7 @@ Tree Tree::randomPrufer(int size) {
     return t;
 }
 
-Tree Tree::random(int size, int elongation) {
+Tree Tree::randomPrim(int size, int elongation) {
     ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     Tree t;
@@ -211,6 +220,20 @@ Tree Tree::random(int size, int elongation) {
         t.addEdge(parent, v);
     }
     t.normalizeEdges();
+    return t;
+}
+
+Tree Tree::randomKruskal(int size) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
+    checkLargeParameter(size);
+    Tree t;
+    t.extend(size);
+    while (!t.isConnected()) {
+        auto e = rnd.nextp(size, dpair);
+        if (t.canAddEdge(e.first, e.second)) {
+            t.addEdge(e.first, e.second);
+        }
+    }
     return t;
 }
 

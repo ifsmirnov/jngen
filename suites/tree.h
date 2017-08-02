@@ -14,15 +14,15 @@ public:
 #define JNGEN_PRODUCER_ARGS int n
 
         JNGEN_ADD_PRODUCER(random1) {
-            return Tree::randomPrufer(n);
+            return Tree::random(n);
         };
 
         JNGEN_ADD_PRODUCER(random2) {
-            return Tree::randomPrufer(n);
+            return Tree::random(n);
         };
 
         JNGEN_ADD_PRODUCER(random3) {
-            return Tree::randomPrufer(n);
+            return Tree::random(n);
         };
 
         JNGEN_ADD_PRODUCER(bamboo) {
@@ -46,7 +46,7 @@ public:
         };
 
         JNGEN_ADD_PRODUCER(sqrt_branches) {
-            int k = sqrt(n) + 1;
+            int k = std::sqrt(n) + 1;
             Tree t = Tree::bamboo(k);
             while (t.n() + k - 1 <= n) {
                 t = t.glue(0, Tree::bamboo(k), 0);
@@ -111,39 +111,39 @@ public:
         };
 
         JNGEN_ADD_PRODUCER(random_w-100) {
-            return Tree::random(n, -100);
+            return Tree::randomPrim(n, -100);
         };
 
         JNGEN_ADD_PRODUCER(random_w-50) {
-            return Tree::random(n, -50);
+            return Tree::randomPrim(n, -50);
         };
 
         JNGEN_ADD_PRODUCER(random_w-10) {
-            return Tree::random(n, -10);
+            return Tree::randomPrim(n, -10);
         };
 
         JNGEN_ADD_PRODUCER(random_w-5) {
-            return Tree::random(n, -5);
+            return Tree::randomPrim(n, -5);
         };
 
         JNGEN_ADD_PRODUCER(random_w0) {
-            return Tree::random(n, 0);
+            return Tree::randomPrim(n, 0);
         };
 
         JNGEN_ADD_PRODUCER(random_w5) {
-            return Tree::random(n, 5);
+            return Tree::randomPrim(n, 5);
         };
 
         JNGEN_ADD_PRODUCER(random_w10) {
-            return Tree::random(n, 10);
+            return Tree::randomPrim(n, 10);
         };
 
         JNGEN_ADD_PRODUCER(random_w50) {
-            return Tree::random(n, 50);
+            return Tree::randomPrim(n, 50);
         };
 
         JNGEN_ADD_PRODUCER(random_w100) {
-            return Tree::random(n, 100);
+            return Tree::randomPrim(n, 100);
         };
 
 #undef JNGEN_PRODUCER_ARGS

@@ -382,8 +382,8 @@ int GenericGraph::compareTo(const GenericGraph& other) const {
         return n() < other.n() ? -1 : 1;
     }
     for (int i = 0; i < n(); ++i) {
-        auto e1 = edges(i);
-        auto e2 = other.edges(i);
+        auto e1 = edges(i).sorted();
+        auto e2 = other.edges(i).sorted();
         if (e1 != e2) {
             return e1 < e2 ? -1 : 1;
         }

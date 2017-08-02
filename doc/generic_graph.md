@@ -74,7 +74,7 @@ Graphs and trees are printed as following. If *.printN()* and *.printM()* modifi
 #### bool operator&gt;=(const GenericGraph& other) const
 * Compare two graphs. If number of vertices in two graphs is different then one with lesser vertices is less than the other. Otherwise adjacency lists of vertices are compared lexicographicaly in natural order of vertices.
 * Note: weights have no any effect on comparison result.
-* Note: two identical graphs with shuffled adjacency lists are NOT equal. You may think of equality as of «having same representations when printed».
+* Note: two identical graphs with shuffled adjacency lists are equal.
 
 ### Weights
 All things you will probably ever do with *Weight* or *WeightArray* are shown in this snippet.
