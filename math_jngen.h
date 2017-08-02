@@ -1,5 +1,9 @@
 #pragma once
 
+// This header is named 'math_jngen.h' and not 'math.h' because in the latter
+// case it will replace the standard 'math.h' if you set jngen folder as the
+// include path.
+
 #include "array.h"
 #include "common.h"
 #include "random.h"

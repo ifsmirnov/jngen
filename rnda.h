@@ -3,7 +3,7 @@
 #include "array.h"
 #include "common.h"
 #include "gcc_primes_list.h"
-#include "math.h"
+#include "math_jngen.h"
 
 #include <algorithm>
 #include <cstdlib>

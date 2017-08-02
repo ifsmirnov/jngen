@@ -1,3 +1,4 @@
+#pragma once
 /*
   Copyright (c) 2016-2017 Ivan Smirnov
 

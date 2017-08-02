@@ -14,7 +14,7 @@ LIBRARY_HEADERS = [
     "tree.h",
     "graph.h",
     "geometry.h",
-    "math.h",
+    "math_jngen.h",
     "rnda.h",
     "rnds.h",
     "testcases.h",

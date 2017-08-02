@@ -2,7 +2,7 @@
 
 #include "array.h"
 #include "common.h"
-#include "math.h"
+#include "math_jngen.h"
 
 #include <algorithm>
 #include <cstdio>

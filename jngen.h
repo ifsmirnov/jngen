@@ -3130,6 +3130,10 @@ using jngen::Array64;
 using jngen::Arrayf;
 using jngen::Arrayp;
 
+// This header is named 'math_jngen.h' and not 'math.h' because in the latter
+// case it will replace the standard 'math.h' if you set jngen folder as the
+// include path.
+
 
 #include <algorithm>
 #include <cmath>
@@ -3958,7 +3962,7 @@ private:
 #ifndef JNGEN_DECLARE_ONLY
 
 QueryBuilder::QueryBuilder(int n) :
-    QueryBuilder(0, n)
+    QueryBuilder(0, n - 1)
 {  }
 
 QueryBuilder::QueryBuilder(int l, int r) :
@@ -4014,7 +4018,7 @@ std::pair<int, int> QueryBuilder::next() {
         // generate a random segment with length from l to r without
         // calling sqrt.
         int len = rnd.wnext(lenRange_.first, lenRange_.second, -1);
-        int l = rnd.next(range_.first, range_.second - len - 1);
+        int l = rnd.next(range_.first, range_.second - len);
         if (ordered_ || rnd.next(2)) {
             return {l, l + len - 1};
         } else {
@@ -4041,7 +4045,7 @@ Arrayp QueryBuilder::next(int m) {
 
 template<typename ... Args>
 QueryBuilder rndq(Args... args) {
-    return QueryBuilder(std::forward(args)...);
+    return QueryBuilder(args...);
 }
 
 } // namespace jngen
@@ -5296,8 +5300,8 @@ int GenericGraph::compareTo(const GenericGraph& other) const {
         return n() < other.n() ? -1 : 1;
     }
     for (int i = 0; i < n(); ++i) {
-        auto e1 = edges(i);
-        auto e2 = other.edges(i);
+        auto e1 = edges(i).sorted();
+        auto e2 = other.edges(i).sorted();
         if (e1 != e2) {
             return e1 < e2 ? -1 : 1;
         }
@@ -5328,6 +5332,8 @@ public:
 
     void addEdge(int u, int v, const Weight& w = Weight{}) override;
 
+    bool canAddEdge(int u, int v);
+
     Array parents(int root) const;
 
     Tree& shuffle();
@@ -5337,8 +5343,9 @@ public:
     Tree glue(int vInThis, const Tree& other, int vInOther);
 
     static Tree bamboo(int size);
-    static Tree randomPrufer(int size);
-    static Tree random(int size, int elongation = 0);
+    static Tree random(int size);
+    static Tree randomPrim(int size, int elongation = 0);
+    static Tree randomKruskal(int size);
     static Tree star(int size);
     static Tree caterpillar(int size, int length);
     static Tree binary(int size);
@@ -5381,6 +5388,12 @@ void Tree::addEdge(int u, int v, const Weight& w) {
     if (!w.empty()) {
         setEdgeWeight(m() - 1, w);
     }
+}
+
+bool Tree::canAddEdge(int u, int v) {
+    u = vertexByLabel(u);
+    v = vertexByLabel(v);
+    return dsu_.getRoot(u) != dsu_.getRoot(v);
 }
 
 Array Tree::parents(int root) const {
@@ -5472,7 +5485,7 @@ Tree Tree::bamboo(int size) {
     return t;
 }
 
-Tree Tree::randomPrufer(int size) {
+Tree Tree::random(int size) {
     ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     if (size == 1) {
@@ -5510,7 +5523,7 @@ Tree Tree::randomPrufer(int size) {
     return t;
 }
 
-Tree Tree::random(int size, int elongation) {
+Tree Tree::randomPrim(int size, int elongation) {
     ensure(size > 0, "Number of vertices in the tree must be positive");
     checkLargeParameter(size);
     Tree t;
@@ -5519,6 +5532,20 @@ Tree Tree::random(int size, int elongation) {
         t.addEdge(parent, v);
     }
     t.normalizeEdges();
+    return t;
+}
+
+Tree Tree::randomKruskal(int size) {
+    ensure(size > 0, "Number of vertices in the tree must be positive");
+    checkLargeParameter(size);
+    Tree t;
+    t.extend(size);
+    while (!t.isConnected()) {
+        auto e = rnd.nextp(size, dpair);
+        if (t.canAddEdge(e.first, e.second)) {
+            t.addEdge(e.first, e.second);
+        }
+    }
     return t;
 }
 
@@ -5645,9 +5672,9 @@ JNGEN_DEFINE_STD_HASH(jngen::Graph);
 
 #ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_GRAPH_INL_H
-#ifndef JNGEN_INCLUDE_GRAPH_INL_H
-#error File "graph_inl.h" must not be included directly.
-#endif
+// #ifndef JNGEN_INCLUDE_GRAPH_INL_H
+// #error File "graph_inl.h" must not be included directly.
+// #endif
 
 
 namespace jngen {
@@ -5757,7 +5784,7 @@ private:
 
         if (t.connected) {
             ensure(m >= n - 1, "Not enough edges for a connected graph");
-            auto treeEdges = Tree::randomPrufer(n).edges();
+            auto treeEdges = Tree::random(n).edges();
             usedEdges.insert(treeEdges.begin(), treeEdges.end());
             ENSURE(usedEdges.size() == static_cast<size_t>(n - 1));
         }
@@ -5806,7 +5833,7 @@ private:
     }
 
     static Graph doRandomStretched(Traits t, int elongation, int spread) {
-        Tree tree = Tree::random(t.n, elongation);
+        Tree tree = Tree::randomPrim(t.n, elongation);
         Array parents = tree.parents(0);
 
         Graph graph(tree);
@@ -5897,15 +5924,15 @@ public:
 #define JNGEN_PRODUCER_ARGS int n
 
         JNGEN_ADD_PRODUCER(random1) {
-            return Tree::randomPrufer(n);
+            return Tree::random(n);
         };
 
         JNGEN_ADD_PRODUCER(random2) {
-            return Tree::randomPrufer(n);
+            return Tree::random(n);
         };
 
         JNGEN_ADD_PRODUCER(random3) {
-            return Tree::randomPrufer(n);
+            return Tree::random(n);
         };
 
         JNGEN_ADD_PRODUCER(bamboo) {
@@ -5929,7 +5956,7 @@ public:
         };
 
         JNGEN_ADD_PRODUCER(sqrt_branches) {
-            int k = sqrt(n) + 1;
+            int k = std::sqrt(n) + 1;
             Tree t = Tree::bamboo(k);
             while (t.n() + k - 1 <= n) {
                 t = t.glue(0, Tree::bamboo(k), 0);
@@ -5994,39 +6021,39 @@ public:
         };
 
         JNGEN_ADD_PRODUCER(random_w-100) {
-            return Tree::random(n, -100);
+            return Tree::randomPrim(n, -100);
         };
 
         JNGEN_ADD_PRODUCER(random_w-50) {
-            return Tree::random(n, -50);
+            return Tree::randomPrim(n, -50);
         };
 
         JNGEN_ADD_PRODUCER(random_w-10) {
-            return Tree::random(n, -10);
+            return Tree::randomPrim(n, -10);
         };
 
         JNGEN_ADD_PRODUCER(random_w-5) {
-            return Tree::random(n, -5);
+            return Tree::randomPrim(n, -5);
         };
 
         JNGEN_ADD_PRODUCER(random_w0) {
-            return Tree::random(n, 0);
+            return Tree::randomPrim(n, 0);
         };
 
         JNGEN_ADD_PRODUCER(random_w5) {
-            return Tree::random(n, 5);
+            return Tree::randomPrim(n, 5);
         };
 
         JNGEN_ADD_PRODUCER(random_w10) {
-            return Tree::random(n, 10);
+            return Tree::randomPrim(n, 10);
         };
 
         JNGEN_ADD_PRODUCER(random_w50) {
-            return Tree::random(n, 50);
+            return Tree::randomPrim(n, 50);
         };
 
         JNGEN_ADD_PRODUCER(random_w100) {
-            return Tree::random(n, 100);
+            return Tree::randomPrim(n, 100);
         };
 
 #undef JNGEN_PRODUCER_ARGS

@@ -43,7 +43,7 @@ private:
 #ifndef JNGEN_DECLARE_ONLY
 
 QueryBuilder::QueryBuilder(int n) :
-    QueryBuilder(0, n)
+    QueryBuilder(0, n - 1)
 {  }
 
 QueryBuilder::QueryBuilder(int l, int r) :
@@ -99,7 +99,7 @@ std::pair<int, int> QueryBuilder::next() {
         // generate a random segment with length from l to r without
         // calling sqrt.
         int len = rnd.wnext(lenRange_.first, lenRange_.second, -1);
-        int l = rnd.next(range_.first, range_.second - len - 1);
+        int l = rnd.next(range_.first, range_.second - len);
         if (ordered_ || rnd.next(2)) {
             return {l, l + len - 1};
         } else {
@@ -126,7 +126,7 @@ Arrayp QueryBuilder::next(int m) {
 
 template<typename ... Args>
 QueryBuilder rndq(Args... args) {
-    return QueryBuilder(std::forward(args)...);
+    return QueryBuilder(args...);
 }
 
 } // namespace jngen
