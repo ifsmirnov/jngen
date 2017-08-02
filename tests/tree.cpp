@@ -133,13 +133,13 @@ BOOST_AUTO_TEST_CASE(generators) {
     c = Tree::caterpillar(1005, 1000);
     BOOST_CHECK_EQUAL(findDiameter(c, centers, dist), 999);
 
-    auto t = Tree::random(150, 1000);
+    auto t = Tree::randomPrim(150, 1000);
     BOOST_CHECK_EQUAL(t, Tree::bamboo(150));
 }
 
 BOOST_AUTO_TEST_CASE(prufer_all_trees) {
     auto a = TArray<Tree>::randomfUnique(120, []() {
-        return Tree::randomPrufer(5);
+        return Tree::random(5);
     });
     BOOST_CHECK_EQUAL(a.size(), 5*4*3*2*1);
 }
