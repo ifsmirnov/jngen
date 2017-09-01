@@ -436,6 +436,8 @@ GenericArray<T>::operator std::string() const {
     return std::string(begin(), end());
 }
 
+// JNGEN_EXTERN template class GenericArray<int>;
+
 template<typename T>
 using TArray = GenericArray<T>;
 

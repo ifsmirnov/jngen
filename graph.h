@@ -79,6 +79,6 @@ JNGEN_DEFINE_STD_HASH(jngen::Graph);
 
 #ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_GRAPH_INL_H
-#include "graph_inl.h"
+#include "impl/graph_inl.h"
 #undef JNGEN_INCLUDE_GRAPH_INL_H
 #endif // JNGEN_DECLARE_ONLY

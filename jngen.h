@@ -1508,20 +1508,9 @@ public:
     std::string next(std::function<int(int)>&& rnd) const;
 
 private:
-    Pattern(Pattern p, std::pair<int, int> quantity) :
-        isOrPattern(false),
-        min(quantity.first),
-        max(quantity.second)
-    {
-        children.push_back(std::move(p));
-    }
+    Pattern(Pattern p, std::pair<int, int> quantity);
 
-    Pattern(std::vector<char> chars, std::pair<int, int> quantity) :
-        chars(std::move(chars)),
-        isOrPattern(false),
-        min(quantity.first),
-        max(quantity.second)
-    {  }
+    Pattern(std::vector<char> chars, std::pair<int, int> quantity);
 
     std::vector<char> chars;
     std::vector<Pattern> children;
@@ -1541,171 +1530,40 @@ public:
     }
 
 private:
-    static bool isControl(char c) {
-        static const std::string CONTROL_CHARS = "()[]{}|?";
-        return CONTROL_CHARS.find(c) != std::string::npos;
-    }
+    static bool isControl(char c);
 
-    static int control(int c) {
-        return c >> 8;
-    }
+    static int control(int c);
 
-    int next() {
-        size_t newPos;
-        int result = peekAndMove(newPos);
-        pos = newPos;
-        return result;
-    }
+    int next();
 
-    int peek() const {
-        size_t dummy;
-        return peekAndMove(dummy);
-    }
+    int peek() const;
 
-    int peekAndMove(size_t& newPos) const {
-        newPos = pos;
-        if (pos == s.size()) {
-            return -1;
-        }
-        if (s[pos] == '\\') {
-            ensure(
-                pos+1 < s.size(),
-                "Backslash at the end of the pattern is illegal");
-            newPos += 2;
-            return s[pos+1];
-        }
-
-        ++newPos;
-        int ret = s[pos];
-        return isControl(ret) ? (ret << 8) : ret;
-    }
+    int peekAndMove(size_t& newPos) const;
 
     // TODO: catch overflows
-    int readInt() {
-        ENSURE(std::isdigit(peek()));
+    int readInt();
 
-        int res = 0;
-        while (std::isdigit(peek())) {
-            res = res * 10 + next() - '0';
-        }
-        return res;
-    }
+    std::pair<int, int> parseRange();
 
-    std::pair<int, int> parseRange() {
-        ENSURE(control(next()) == '{');
+    std::pair<int, int> tryParseQuantity();
 
-        int from = readInt();
+    std::vector<char> parseBlock();
 
-        int nxt = next();
-        if (control(nxt) == '}') {
-            return {from, from};
-        } else if (nxt == ',' || nxt == '-') {
-            int to = readInt();
-            ENSURE(control(next()) == '}');
-            return {from, to};
-        } else {
-            ensure(false, "cannot parse character range");
-        }
-    }
-
-    std::pair<int, int> tryParseQuantity() {
-        std::pair<int, int> quantity = {1, 1};
-
-        int qchar = peek();
-        if (control(qchar) == '?') {
-            quantity = {0, 1};
-            next();
-        } else if (control(qchar) == '{') {
-            quantity = parseRange();
-        }
-
-        return quantity;
-    }
-
-    std::vector<char> parseBlock() {
-        std::vector<char> allowed;
-        char last = -1;
-        bool inRange = false;
-        while (control(peek()) != ']') {
-            char c = next(); // buggy on cases like [a-}]
-            ENSURE(c != -1);
-
-            if (c == '-') {
-                ensure(!inRange, "invalid pattern");
-                inRange = true;
-            } else if (inRange) {
-                ensure(c >= last, "invalid pattern");
-                for (char i = last; i <= c; ++i) {
-                    allowed.push_back(i);
-                }
-                inRange = false;
-                last = -1;
-            } else {
-                if (last != -1) {
-                    allowed.push_back(last);
-                }
-                last = c;
-            }
-        }
-
-        ENSURE(control(next()) == ']');
-
-        ENSURE(!inRange);
-        if (last != -1) {
-            allowed.push_back(last);
-        }
-
-        std::sort(allowed.begin(), allowed.end());
-        return allowed;
-    }
-
-    Pattern parsePattern() {
-        std::vector<Pattern> orPatterns;
-        Pattern cur;
-
-        while (true) {
-            int nxt = next();
-            if (nxt == -1 || control(nxt) == ')') {
-                break;
-            } else if (control(nxt) == '(') {
-                Pattern p = parsePattern();
-                cur.children.push_back(Pattern(p, tryParseQuantity()));
-            } else if (control(nxt) == '|') {
-                orPatterns.emplace_back();
-                std::swap(orPatterns.back(), cur);
-            } else {
-                std::vector<char> chars;
-                if (control(nxt) == '[') {
-                    chars = parseBlock();
-                } else {
-                    ENSURE(!control(nxt));
-                    chars = {static_cast<char>(nxt)};
-                }
-
-                cur.children.push_back(Pattern(chars, tryParseQuantity()));
-            }
-        }
-
-        if (orPatterns.empty()) {
-            return cur;
-        } else {
-            orPatterns.emplace_back();
-            std::swap(orPatterns.back(), cur);
-
-            Pattern p;
-            p.isOrPattern = true;
-            p.children = orPatterns;
-            return p;
-        }
-    }
+    Pattern parsePattern();
 
     std::string s;
     size_t pos;
 };
 
-#ifndef JNGEN_DECLARE_ONLY
+} // namespace jngen
 
-std::map<std::string, Pattern> Pattern::cachedPatterns_;
+#ifndef JNGEN_DECLARE_ONLY
+#define JNGEN_INCLUDE_PATTERN_INL_H
+#ifndef JNGEN_INCLUDE_PATTERN_INL_H
+#error File "pattern_inl.h" must not be included directly.
+#endif
+
+namespace jngen {
 
 Pattern::Pattern(const std::string& s) {
     auto iter = cachedPatterns_.find(s);
@@ -1716,6 +1574,23 @@ Pattern::Pattern(const std::string& s) {
     *this = Parser().parse(s);
     cachedPatterns_[s] = *this;
 }
+
+Pattern::Pattern(Pattern p, std::pair<int, int> quantity) :
+    isOrPattern(false),
+    min(quantity.first),
+    max(quantity.second)
+{
+    children.push_back(std::move(p));
+}
+
+Pattern::Pattern(std::vector<char> chars, std::pair<int, int> quantity) :
+    chars(std::move(chars)),
+    isOrPattern(false),
+    min(quantity.first),
+    max(quantity.second)
+{  }
+
+std::map<std::string, Pattern> Pattern::cachedPatterns_;
 
 std::string Pattern::next(std::function<int(int)>&& rnd) const {
     if (isOrPattern) {
@@ -1745,9 +1620,168 @@ std::string Pattern::next(std::function<int(int)>&& rnd) const {
 
     return result;
 }
-#endif
+
+bool Parser::isControl(char c) {
+    static const std::string CONTROL_CHARS = "()[]{}|?";
+    return CONTROL_CHARS.find(c) != std::string::npos;
+}
+
+int Parser::control(int c) {
+    return c >> 8;
+}
+
+int Parser::next() {
+    size_t newPos;
+    int result = peekAndMove(newPos);
+    pos = newPos;
+    return result;
+}
+
+int Parser::peek() const {
+    size_t dummy;
+    return peekAndMove(dummy);
+}
+
+int Parser::peekAndMove(size_t& newPos) const {
+    newPos = pos;
+    if (pos == s.size()) {
+        return -1;
+    }
+    if (s[pos] == '\\') {
+        ensure(
+            pos+1 < s.size(),
+            "Backslash at the end of the pattern is illegal");
+        newPos += 2;
+        return s[pos+1];
+    }
+
+    ++newPos;
+    int ret = s[pos];
+    return isControl(ret) ? (ret << 8) : ret;
+}
+
+// TODO: catch overflows
+int Parser::readInt() {
+    ENSURE(std::isdigit(peek()));
+
+    int res = 0;
+    while (std::isdigit(peek())) {
+        res = res * 10 + next() - '0';
+    }
+    return res;
+}
+
+std::pair<int, int> Parser::parseRange() {
+    ENSURE(control(next()) == '{');
+
+    int from = readInt();
+
+    int nxt = next();
+    if (control(nxt) == '}') {
+        return {from, from};
+    } else if (nxt == ',' || nxt == '-') {
+        int to = readInt();
+        ENSURE(control(next()) == '}');
+        return {from, to};
+    } else {
+        ensure(false, "cannot parse character range");
+    }
+}
+
+std::pair<int, int> Parser::tryParseQuantity() {
+    std::pair<int, int> quantity = {1, 1};
+
+    int qchar = peek();
+    if (control(qchar) == '?') {
+        quantity = {0, 1};
+        next();
+    } else if (control(qchar) == '{') {
+        quantity = parseRange();
+    }
+
+    return quantity;
+}
+
+std::vector<char> Parser::parseBlock() {
+    std::vector<char> allowed;
+    char last = -1;
+    bool inRange = false;
+    while (control(peek()) != ']') {
+        char c = next(); // buggy on cases like [a-}]
+        ENSURE(c != -1);
+
+        if (c == '-') {
+            ensure(!inRange, "invalid pattern");
+            inRange = true;
+        } else if (inRange) {
+            ensure(c >= last, "invalid pattern");
+            for (char i = last; i <= c; ++i) {
+                allowed.push_back(i);
+            }
+            inRange = false;
+            last = -1;
+        } else {
+            if (last != -1) {
+                allowed.push_back(last);
+            }
+            last = c;
+        }
+    }
+
+    ENSURE(control(next()) == ']');
+
+    ENSURE(!inRange);
+    if (last != -1) {
+        allowed.push_back(last);
+    }
+
+    std::sort(allowed.begin(), allowed.end());
+    return allowed;
+}
+
+Pattern Parser::parsePattern() {
+    std::vector<Pattern> orPatterns;
+    Pattern cur;
+
+    while (true) {
+        int nxt = next();
+        if (nxt == -1 || control(nxt) == ')') {
+            break;
+        } else if (control(nxt) == '(') {
+            Pattern p = parsePattern();
+            cur.children.push_back(Pattern(p, tryParseQuantity()));
+        } else if (control(nxt) == '|') {
+            orPatterns.emplace_back();
+            std::swap(orPatterns.back(), cur);
+        } else {
+            std::vector<char> chars;
+            if (control(nxt) == '[') {
+                chars = parseBlock();
+            } else {
+                ENSURE(!control(nxt));
+                chars = {static_cast<char>(nxt)};
+            }
+
+            cur.children.push_back(Pattern(chars, tryParseQuantity()));
+        }
+    }
+
+    if (orPatterns.empty()) {
+        return cur;
+    } else {
+        orPatterns.emplace_back();
+        std::swap(orPatterns.back(), cur);
+
+        Pattern p;
+        p.isOrPattern = true;
+        p.children = orPatterns;
+        return p;
+    }
+}
 
 } // namespace jngen
+#undef JNGEN_INCLUDE_PATTERN_INL_H
+#endif // JNGEN_DECLARE_ONLY
 
 using jngen::Pattern;
 
@@ -1765,29 +1799,9 @@ using jngen::Pattern;
 
 namespace jngen {
 
-static void assertRandomEngineConsistency() {
-    std::mt19937 engine(1234);
-    ENSURE(engine() == 822569775,
-        "std::mt19937 doesn't conform to the C++ standard");
-    ENSURE(engine() == 2137449171,
-        "std::mt19937 doesn't conform to the C++ standard");
-    ENSURE(engine() == 2671936806,
-        "std::mt19937 doesn't conform to the C++ standard");
-}
-
-static void assertIntegerSizes() {
-    static_assert(
-        std::numeric_limits<unsigned char>::max() == 255,
-        "max(unsigned char) != 255");
-    static_assert(sizeof(int) == 4, "sizeof(int) != 4");
-    static_assert(sizeof(long long) == 8, "sizeof(long long) != 8");
-    static_assert(
-        sizeof(size_t) == 4 || sizeof(size_t) == 8,
-        "sizeof(size_t) is neither 4 nor 8");
-    static_assert(
-        sizeof(std::size_t) == sizeof(size_t),
-        "sizeof(size_t) != sizeof(std::size_t)");
-}
+void assertRandomEngineConsistency();
+void assertIntegerSizes();
+void registerGen(int argc, char *argv[], int version = 1);
 
 class Random;
 
@@ -1802,17 +1816,7 @@ protected:
 template<typename T>
 struct TypedRandom;
 
-inline uint64_t maskForBound(uint64_t bound) {
-    --bound;
-    uint64_t mask = ~0;
-    if ((mask >> 32) >= bound) mask >>= 32;
-    if ((mask >> 16) >= bound) mask >>= 16;
-    if ((mask >> 8 ) >= bound) mask >>= 8 ;
-    if ((mask >> 4 ) >= bound) mask >>= 4 ;
-    if ((mask >> 2 ) >= bound) mask >>= 2 ;
-    if ((mask >> 1 ) >= bound) mask >>= 1 ;
-    return mask;
-}
+uint64_t maskForBound(uint64_t bound);
 
 template<typename Result, typename Source>
 Result uniformRandom(Result bound, Random& random, Source (Random::*method)()) {
@@ -1839,74 +1843,23 @@ public:
         seed(std::random_device{}());
     }
 
-    void seed(uint32_t val) {
-        randomEngine_.seed(val);
-    }
+    void seed(uint32_t val);
+    void seed(const std::vector<uint32_t>& seed);
 
-    void seed(const std::vector<uint32_t>& seed) {
-        std::seed_seq seq(seed.begin(), seed.end());
-        randomEngine_.seed(seq);
-    }
+    uint32_t next();
+    uint64_t next64();
+    double nextf();
 
-    uint32_t next() {
-        return randomEngine_();
-    }
+    int next(int n);
+    long long next(long long n);
+    size_t next(size_t n);
+    double next(double n);
 
-    uint64_t next64() {
-        uint64_t a = next();
-        uint64_t b = next();
-        return (a << 32) ^ b;
-    }
+    int next(int l, int r);
+    long long next(long long l, long long r);
+    size_t next(size_t l, size_t r);
+    double next(double l, double r);
 
-    double nextf() {
-        return (double)randomEngine_() / randomEngine_.max();
-    }
-
-    int next(int n) {
-        ensure(n > 0);
-        return uniformRandom(n, *this, (uint32_t (Random::*)())&Random::next);
-    }
-
-    long long next(long long n) {
-        ensure(n > 0);
-        return uniformRandom(n, *this, &Random::next64);
-    }
-
-    size_t next(size_t n) {
-        ensure(n > 0);
-        return uniformRandom(n, *this, &Random::next64);
-    }
-
-    double next(double n) {
-        ensure(n >= 0);
-        return nextf() * n;
-    }
-
-    int next(int l, int r) {
-        ensure(l <= r);
-        uint32_t n = static_cast<uint32_t>(r) - l + 1;
-        return l + uniformRandom(
-            n, *this, (uint32_t (Random::*)())&Random::next);
-    }
-
-    long long next(long long l, long long r) {
-        ensure(l <= r);
-        uint64_t n = static_cast<uint64_t>(r) - l + 1;
-        return l + uniformRandom(n, *this, &Random::next64);
-    }
-
-    size_t next(size_t l, size_t r) {
-        ensure(l <= r);
-        uint64_t n = static_cast<uint64_t>(r) - l + 1;
-        return l + uniformRandom(n, *this, &Random::next64);
-    }
-
-    double next(double l, double r) {
-        ensure(l <= r);
-        return l + next(r-l);
-    }
-
-    //  implemented in random_inl.h
     int wnext(int n, int w);
     long long wnext(long long n, int w);
     size_t wnext(size_t n, int w);
@@ -1917,9 +1870,7 @@ public:
     size_t wnext(size_t l, size_t r, int w);
     double wnext(double l, double r, int w);
 
-    std::string next(const std::string& pattern) {
-        return Pattern(pattern).next([this](int n) { return next(n); });
-    }
+    std::string next(const std::string& pattern);
 
     template<typename ... Args>
     std::string next(const std::string& pattern, Args... args) {
@@ -2089,7 +2040,41 @@ using jngen::dpair;
 using jngen::dopair;
 using jngen::odpair;
 
-inline void registerGen(int argc, char *argv[], int version = 1) {
+using jngen::registerGen;
+
+#ifndef JNGEN_DECLARE_ONLY
+#define JNGEN_INCLUDE_RANDOM_INL_H
+#ifndef JNGEN_INCLUDE_RANDOM_INL_H
+#error File "random_inl.h" must not be included directly.
+#endif
+
+namespace jngen {
+
+void assertRandomEngineConsistency() {
+    std::mt19937 engine(1234);
+    ENSURE(engine() == 822569775,
+        "std::mt19937 doesn't conform to the C++ standard");
+    ENSURE(engine() == 2137449171,
+        "std::mt19937 doesn't conform to the C++ standard");
+    ENSURE(engine() == 2671936806,
+        "std::mt19937 doesn't conform to the C++ standard");
+}
+
+void assertIntegerSizes() {
+    static_assert(
+        std::numeric_limits<unsigned char>::max() == 255,
+        "max(unsigned char) != 255");
+    static_assert(sizeof(int) == 4, "sizeof(int) != 4");
+    static_assert(sizeof(long long) == 8, "sizeof(long long) != 8");
+    static_assert(
+        sizeof(size_t) == 4 || sizeof(size_t) == 8,
+        "sizeof(size_t) is neither 4 nor 8");
+    static_assert(
+        sizeof(std::size_t) == sizeof(size_t),
+        "sizeof(size_t) != sizeof(std::size_t)");
+}
+
+void registerGen(int argc, char *argv[], int version) {
     (void)version; // unused, only for testlib.h compatibility
 
     std::vector<uint32_t> seed;
@@ -2104,13 +2089,84 @@ inline void registerGen(int argc, char *argv[], int version = 1) {
     rnd.seed(seed);
 }
 
-#ifndef JNGEN_DECLARE_ONLY
-#define JNGEN_INCLUDE_RANDOM_INL_H
-#ifndef JNGEN_INCLUDE_RANDOM_INL_H
-#error File "random_inl.h" must not be included directly.
-#endif
+uint64_t maskForBound(uint64_t bound) {
+    --bound;
+    uint64_t mask = ~0;
+    if ((mask >> 32) >= bound) mask >>= 32;
+    if ((mask >> 16) >= bound) mask >>= 16;
+    if ((mask >> 8 ) >= bound) mask >>= 8 ;
+    if ((mask >> 4 ) >= bound) mask >>= 4 ;
+    if ((mask >> 2 ) >= bound) mask >>= 2 ;
+    if ((mask >> 1 ) >= bound) mask >>= 1 ;
+    return mask;
+}
 
-namespace jngen {
+void Random::seed(uint32_t val) {
+    randomEngine_.seed(val);
+}
+
+void Random::seed(const std::vector<uint32_t>& seed) {
+    std::seed_seq seq(seed.begin(), seed.end());
+    randomEngine_.seed(seq);
+}
+
+uint32_t Random::next() {
+    return randomEngine_();
+}
+
+uint64_t Random::next64() {
+    uint64_t a = next();
+    uint64_t b = next();
+    return (a << 32) ^ b;
+}
+
+double Random::nextf() {
+    return (double)randomEngine_() / randomEngine_.max();
+}
+
+int Random::next(int n) {
+    ensure(n > 0);
+    return uniformRandom(n, *this, (uint32_t (Random::*)())&Random::next);
+}
+
+long long Random::next(long long n) {
+    ensure(n > 0);
+    return uniformRandom(n, *this, &Random::next64);
+}
+
+size_t Random::next(size_t n) {
+    ensure(n > 0);
+    return uniformRandom(n, *this, &Random::next64);
+}
+
+double Random::next(double n) {
+    ensure(n >= 0);
+    return nextf() * n;
+}
+
+int Random::next(int l, int r) {
+    ensure(l <= r);
+    uint32_t n = static_cast<uint32_t>(r) - l + 1;
+    return l + uniformRandom(
+        n, *this, (uint32_t (Random::*)())&Random::next);
+}
+
+long long Random::next(long long l, long long r) {
+    ensure(l <= r);
+    uint64_t n = static_cast<uint64_t>(r) - l + 1;
+    return l + uniformRandom(n, *this, &Random::next64);
+}
+
+size_t Random::next(size_t l, size_t r) {
+    ensure(l <= r);
+    uint64_t n = static_cast<uint64_t>(r) - l + 1;
+    return l + uniformRandom(n, *this, &Random::next64);
+}
+
+double Random::next(double l, double r) {
+    ensure(l <= r);
+    return l + next(r-l);
+}
 
 int Random::wnext(int n, int w) {
     ensure(n > 0);
@@ -2188,9 +2244,14 @@ double Random::wnext(double l, double r, int w) {
     }
 }
 
+std::string Random::next(const std::string& pattern) {
+    return Pattern(pattern).next([this](int n) { return next(n); });
+}
+
 } // namespace jngen
 #undef JNGEN_INCLUDE_RANDOM_INL_H
 #endif // JNGEN_DECLARE_ONLY
+
 
 #include <iostream>
 #include <type_traits>
@@ -3071,6 +3132,8 @@ GenericArray<T>::operator std::string() const {
     return std::string(begin(), end());
 }
 
+// JNGEN_EXTERN template class GenericArray<int>;
+
 template<typename T>
 using TArray = GenericArray<T>;
 
@@ -3679,9 +3742,9 @@ public:
         return *this;
     }
 
-    TPolygon<T> reflected(const TPoint<T>& vector) const {
+    TPolygon<T> reflected() const {
         auto res = *this;
-        res.reflect(vector);
+        res.reflect();
         return res;
     }
 };
@@ -3783,64 +3846,38 @@ public:
     }
 
     // point in [0, X] x [0, Y]
-    static Point point(long long X, long long Y) {
-        long long x = rnd.tnext<long long>(0, X);
-        long long y = rnd.tnext<long long>(0, Y);
-        return {x, y};
-    }
+    static Point point(long long X, long long Y);
 
     // point in [0, C] x [0, C]
-    static Point point(long long C) {
-        return point(C, C);
-    }
+    static Point point(long long C);
 
     // point in [0, X] x [0, Y]
-    static Pointf pointf(long double X, long double Y) {
-        long double x = rnd.tnext<long double>(0, X);
-        long double y = rnd.tnext<long double>(0, Y);
-        return {x, y};
-    }
+    static Pointf pointf(long double X, long double Y);
 
     // point in [0, C] x [0, C]
-    static Pointf pointf(long double C) {
-        return point(C, C);
-    }
+    static Pointf pointf(long double C);
 
-    static Polygon convexPolygon(int n, long long X, long long Y) {
-        ensure(n >= 0);
-        Polygon res = detail::convexPolygonByEllipse<long long>(
-            n * 10, // BUBEN!
-            Point(X/2, Y/2),
-            Point(X/2, 0),
-            Point(0, Y/2)
-        );
-        for (auto& x: res) {
-            ensure(x.x >= 0);
-            ensure(x.x <= X);
-            ensure(x.y >= 0);
-            ensure(x.y <= Y);
-        }
+    static Polygon convexPolygon(int n, long long X, long long Y);
 
-        ensure(
-            static_cast<int>(res.size()) >= n,
-            "Cannot generate a convex polygon with so many vertices");
-
-        return res.subseq(Array::id(res.size()).choice(n).sort());
-    }
-
-    static Polygon convexPolygon(int n, long long C) {
-        return convexPolygon(n, C, C);
-    }
+    static Polygon convexPolygon(int n, long long C);
 
     static TArray<Point> pointsInGeneralPosition(
             int n, long long X, long long Y);
 
-    static TArray<Point> pointsInGeneralPosition(int n, long long C) {
-        return pointsInGeneralPosition(n, C, C);
-    }
+    static TArray<Point> pointsInGeneralPosition(int n, long long C);
 };
 
 JNGEN_EXTERN GeometryRandom rndg;
+
+JNGEN_EXTERN template struct jngen::TPoint<long long>;
+JNGEN_EXTERN template struct jngen::TPoint<long double>;
+JNGEN_EXTERN template class jngen::TPolygon<long long>;
+JNGEN_EXTERN template class jngen::TPolygon<long double>;
+
+JNGEN_EXTERN template TPolygon<long long> detail::convexHull<long long>(
+        TArray<TPoint<long long>> points);
+JNGEN_EXTERN template TPolygon<long double> detail::convexHull<long double>(
+        TArray<TPoint<long double>> points);
 
 } // namespace jngen
 
@@ -3858,7 +3895,64 @@ using jngen::rndg;
 using jngen::setEps;
 
 #ifndef JNGEN_DECLARE_ONLY
-TArray<Point> jngen::GeometryRandom::pointsInGeneralPosition(
+#define JNGEN_INCLUDE_GEOMETRY_INL_H
+#ifndef JNGEN_INCLUDE_GEOMETRY_INL_H
+#error File "geometry_inl.h" must not be included directly.
+#endif
+
+namespace jngen {
+
+Point GeometryRandom::point(long long X, long long Y) {
+    long long x = rnd.tnext<long long>(0, X);
+    long long y = rnd.tnext<long long>(0, Y);
+    return {x, y};
+}
+
+Point GeometryRandom::point(long long C) {
+    return point(C, C);
+}
+
+Pointf GeometryRandom::pointf(long double X, long double Y) {
+    long double x = rnd.tnext<long double>(0, X);
+    long double y = rnd.tnext<long double>(0, Y);
+    return {x, y};
+}
+
+Pointf GeometryRandom::pointf(long double C) {
+    return point(C, C);
+}
+
+Polygon GeometryRandom::convexPolygon(int n, long long X, long long Y) {
+    ensure(n >= 0);
+    Polygon res = detail::convexPolygonByEllipse<long long>(
+        n * 10, // BUBEN!
+        Point(X/2, Y/2),
+        Point(X/2, 0),
+        Point(0, Y/2)
+    );
+    for (auto& x: res) {
+        ensure(x.x >= 0);
+        ensure(x.x <= X);
+        ensure(x.y >= 0);
+        ensure(x.y <= Y);
+    }
+
+    ensure(
+        static_cast<int>(res.size()) >= n,
+        "Cannot generate a convex polygon with so many vertices");
+
+    return res.subseq(Array::id(res.size()).choice(n).sort());
+}
+
+Polygon GeometryRandom::convexPolygon(int n, long long C) {
+    return convexPolygon(n, C, C);
+}
+
+TArray<Point> GeometryRandom::pointsInGeneralPosition(int n, long long C) {
+    return pointsInGeneralPosition(n, C, C);
+}
+
+TArray<Point> GeometryRandom::pointsInGeneralPosition(
         int n, long long X, long long Y)
 {
     struct Line {
@@ -3921,6 +4015,9 @@ TArray<Point> jngen::GeometryRandom::pointsInGeneralPosition(
     }
     return res;
 }
+
+} // namespace jngen
+#undef JNGEN_INCLUDE_GEOMETRY_INL_H
 #endif // JNGEN_DECLARE_ONLY
 
 
@@ -4955,55 +5052,16 @@ public:
 
     // order: by labels
     // TODO: think about ordering here
-    virtual void setVertexWeights(const WeightArray& weights) {
-        ensure(
-            static_cast<int>(weights.size()) == n(),
-            "The argument of setVertexWeights must have exactly n elements");
-        vertexWeights_.resize(n());
-        for (int i = 0; i < n(); ++i) {
-            vertexWeights_[i] = weights[vertexByLabel(i)];
-        }
-    }
+    virtual void setVertexWeights(const WeightArray& weights);
+    // v: label
+    virtual void setVertexWeight(int v, const Weight& weight);
+
+    virtual void setEdgeWeights(const WeightArray& weights);
+    virtual void setEdgeWeight(size_t index, const Weight& weight);
 
     // v: label
-    virtual void setVertexWeight(int v, const Weight& weight) {
-        ensure(v < n(), "setVertexWeight");
-        v = vertexByLabel(v);
-
-        vertexWeights_.extend(v + 1);
-        vertexWeights_[v] = weight;
-    }
-
-    virtual void setEdgeWeights(const WeightArray& weights) {
-        ensure(
-            static_cast<int>(weights.size()) == m(),
-            "The argument of setEdgeWeights must have exactly m elements");
-        edgeWeights_ = weights;
-    }
-
-    virtual void setEdgeWeight(size_t index, const Weight& weight) {
-        ensure(static_cast<int>(index) < m(), "setEdgeWeight");
-        edgeWeights_.extend(index + 1);
-        edgeWeights_[index] = weight;
-    }
-
-    // v: label
-    virtual Weight vertexWeight(int v) const {
-        ensure(v < n(), "vertexWeight");
-        size_t index = vertexByLabel(v);
-        if (index >= vertexWeights_.size()) {
-            return Weight{};
-        }
-        return vertexWeights_[index];
-    }
-
-    virtual Weight edgeWeight(size_t index) const {
-        ensure(static_cast<int>(index) < m(), "edgeWeight");
-        if (index >= edgeWeights_.size()) {
-            return Weight{};
-        }
-        return edgeWeights_[index];
-    }
+    virtual Weight vertexWeight(int v) const;
+    virtual Weight edgeWeight(size_t index) const;
 
     // TODO: should it really be public?
     virtual void doPrintEdges(
@@ -5034,7 +5092,13 @@ protected:
 
     void permuteEdges(const Array& order);
 
-    void normalizeEdges();
+    void normalizeEdges() {
+#ifndef JNGEN_NO_NORMALIZE_EDGES
+        doNormalizeEdges();
+#endif
+    }
+
+    void doNormalizeEdges();
 
     int compareTo(const GenericGraph& other) const;
 
@@ -5063,9 +5127,68 @@ struct Hash<GenericGraph> {
     }
 };
 
+} // namespace jngen
+
+JNGEN_DEFINE_STD_HASH(jngen::GenericGraph);
+
 #ifndef JNGEN_DECLARE_ONLY
+#define JNGEN_INCLUDE_GENERIC_GRAPH_INL_H
+#ifndef JNGEN_INCLUDE_GENERIC_GRAPH_INL_H
+#error File "generic_graph_inl.h" must not be included directly.
+#endif
+
+namespace jngen {
+
+void GenericGraph::setVertexWeights(const WeightArray& weights) {
+    ensure(
+        static_cast<int>(weights.size()) == n(),
+        "The argument of setVertexWeights must have exactly n elements");
+    vertexWeights_.resize(n());
+    for (int i = 0; i < n(); ++i) {
+        vertexWeights_[i] = weights[vertexByLabel(i)];
+    }
+}
+
+void GenericGraph::setVertexWeight(int v, const Weight& weight) {
+    ensure(v < n(), "setVertexWeight");
+    v = vertexByLabel(v);
+
+    vertexWeights_.extend(v + 1);
+    vertexWeights_[v] = weight;
+}
+
+void GenericGraph::setEdgeWeights(const WeightArray& weights) {
+    ensure(
+        static_cast<int>(weights.size()) == m(),
+        "The argument of setEdgeWeights must have exactly m elements");
+    edgeWeights_ = weights;
+}
+
+void GenericGraph::setEdgeWeight(size_t index, const Weight& weight) {
+    ensure(static_cast<int>(index) < m(), "setEdgeWeight");
+    edgeWeights_.extend(index + 1);
+    edgeWeights_[index] = weight;
+}
+
+Weight GenericGraph::vertexWeight(int v) const {
+    ensure(v < n(), "vertexWeight");
+    size_t index = vertexByLabel(v);
+    if (index >= vertexWeights_.size()) {
+        return Weight{};
+    }
+    return vertexWeights_[index];
+}
+
+Weight GenericGraph::edgeWeight(size_t index) const {
+    ensure(static_cast<int>(index) < m(), "edgeWeight");
+    if (index >= edgeWeights_.size()) {
+        return Weight{};
+    }
+    return edgeWeights_[index];
+}
 
 Array GenericGraph::edges(int v) const {
+
     ensure(v < n(), "Graph::edges(v)");
     v = vertexByLabel(v);
 
@@ -5170,29 +5293,6 @@ void GenericGraph::permuteEdges(const Array& order) {
     }
 }
 
-void GenericGraph::normalizeEdges() {
-#ifndef JNGEN_NO_NORMALIZE_EDGES
-    ENSURE(
-        vertexLabel_ == Array::id(n()),
-        "Can call normalizeEdges() only on newly created graph");
-
-    if (!directed_) {
-        for (auto& edge: edges_) {
-            if (edge.first > edge.second) {
-                std::swap(edge.first, edge.second);
-            }
-        }
-    }
-
-    auto order = Array::id(numEdges_).sorted(
-        [this](int i, int j) {
-            return edges_[i] < edges_[j];
-        });
-
-    permuteEdges(order);
-#endif // JNGEN_NO_NORMALIZE_EDGES
-}
-
 void GenericGraph::addEdge(int u, int v, const Weight& w) {
     extend(std::max(u, v) + 1);
 
@@ -5295,6 +5395,28 @@ bool GenericGraph::operator>=(const GenericGraph& other) const {
     return compareTo(other) != -1;
 }
 
+void GenericGraph::doNormalizeEdges() {
+    ENSURE(
+        vertexLabel_ == Array::id(n()),
+        "Can call normalizeEdges() only on newly created graph");
+
+    if (!directed_) {
+        for (auto& edge: edges_) {
+            if (edge.first > edge.second) {
+                std::swap(edge.first, edge.second);
+            }
+        }
+    }
+
+    auto order = Array::id(numEdges_).sorted(
+        [this](int i, int j) {
+            return edges_[i] < edges_[j];
+        });
+
+    permuteEdges(order);
+}
+
+
 int GenericGraph::compareTo(const GenericGraph& other) const {
     if (n() != other.n()) {
         return n() < other.n() ? -1 : 1;
@@ -5309,11 +5431,9 @@ int GenericGraph::compareTo(const GenericGraph& other) const {
     return 0;
 }
 
-#endif // JNGEN_DECLARE_ONLY
-
 } // namespace jngen
-
-JNGEN_DEFINE_STD_HASH(jngen::GenericGraph);
+#undef JNGEN_INCLUDE_GENERIC_GRAPH_INL_H
+#endif // JNGEN_DECLARE_ONLY
 
 
 #include <algorithm>
@@ -5372,7 +5492,17 @@ struct Hash<Tree> {
     }
 };
 
+} // namespace jngen
+
+JNGEN_DEFINE_STD_HASH(jngen::Tree);
+
+using jngen::Tree;
+
 #ifndef JNGEN_DECLARE_ONLY
+#define JNGEN_INCLUDE_TREE_INL_H
+#ifndef JNGEN_INCLUDE_TREE_INL_H
+#error File "tree_inl.h" must not be included directly.
+#endif
 
 void Tree::addEdge(int u, int v, const Weight& w) {
     extend(std::max(u, v) + 1);
@@ -5589,13 +5719,8 @@ Tree Tree::kary(int size, int k) {
     return t;
 }
 
+#undef JNGEN_INCLUDE_TREE_INL_H
 #endif // JNGEN_DECLARE_ONLY
-
-} // namespace jngen
-
-JNGEN_DEFINE_STD_HASH(jngen::Tree);
-
-using jngen::Tree;
 
 
 #include <memory>
@@ -5672,9 +5797,9 @@ JNGEN_DEFINE_STD_HASH(jngen::Graph);
 
 #ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_GRAPH_INL_H
-// #ifndef JNGEN_INCLUDE_GRAPH_INL_H
-// #error File "graph_inl.h" must not be included directly.
-// #endif
+#ifndef JNGEN_INCLUDE_GRAPH_INL_H
+#error File "graph_inl.h" must not be included directly.
+#endif
 
 
 namespace jngen {

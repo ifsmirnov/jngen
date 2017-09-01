@@ -16,29 +16,9 @@
 
 namespace jngen {
 
-static void assertRandomEngineConsistency() {
-    std::mt19937 engine(1234);
-    ENSURE(engine() == 822569775,
-        "std::mt19937 doesn't conform to the C++ standard");
-    ENSURE(engine() == 2137449171,
-        "std::mt19937 doesn't conform to the C++ standard");
-    ENSURE(engine() == 2671936806,
-        "std::mt19937 doesn't conform to the C++ standard");
-}
-
-static void assertIntegerSizes() {
-    static_assert(
-        std::numeric_limits<unsigned char>::max() == 255,
-        "max(unsigned char) != 255");
-    static_assert(sizeof(int) == 4, "sizeof(int) != 4");
-    static_assert(sizeof(long long) == 8, "sizeof(long long) != 8");
-    static_assert(
-        sizeof(size_t) == 4 || sizeof(size_t) == 8,
-        "sizeof(size_t) is neither 4 nor 8");
-    static_assert(
-        sizeof(std::size_t) == sizeof(size_t),
-        "sizeof(size_t) != sizeof(std::size_t)");
-}
+void assertRandomEngineConsistency();
+void assertIntegerSizes();
+void registerGen(int argc, char *argv[], int version = 1);
 
 class Random;
 
@@ -53,17 +33,7 @@ protected:
 template<typename T>
 struct TypedRandom;
 
-inline uint64_t maskForBound(uint64_t bound) {
-    --bound;
-    uint64_t mask = ~0;
-    if ((mask >> 32) >= bound) mask >>= 32;
-    if ((mask >> 16) >= bound) mask >>= 16;
-    if ((mask >> 8 ) >= bound) mask >>= 8 ;
-    if ((mask >> 4 ) >= bound) mask >>= 4 ;
-    if ((mask >> 2 ) >= bound) mask >>= 2 ;
-    if ((mask >> 1 ) >= bound) mask >>= 1 ;
-    return mask;
-}
+uint64_t maskForBound(uint64_t bound);
 
 template<typename Result, typename Source>
 Result uniformRandom(Result bound, Random& random, Source (Random::*method)()) {
@@ -90,74 +60,23 @@ public:
         seed(std::random_device{}());
     }
 
-    void seed(uint32_t val) {
-        randomEngine_.seed(val);
-    }
+    void seed(uint32_t val);
+    void seed(const std::vector<uint32_t>& seed);
 
-    void seed(const std::vector<uint32_t>& seed) {
-        std::seed_seq seq(seed.begin(), seed.end());
-        randomEngine_.seed(seq);
-    }
+    uint32_t next();
+    uint64_t next64();
+    double nextf();
 
-    uint32_t next() {
-        return randomEngine_();
-    }
+    int next(int n);
+    long long next(long long n);
+    size_t next(size_t n);
+    double next(double n);
 
-    uint64_t next64() {
-        uint64_t a = next();
-        uint64_t b = next();
-        return (a << 32) ^ b;
-    }
+    int next(int l, int r);
+    long long next(long long l, long long r);
+    size_t next(size_t l, size_t r);
+    double next(double l, double r);
 
-    double nextf() {
-        return (double)randomEngine_() / randomEngine_.max();
-    }
-
-    int next(int n) {
-        ensure(n > 0);
-        return uniformRandom(n, *this, (uint32_t (Random::*)())&Random::next);
-    }
-
-    long long next(long long n) {
-        ensure(n > 0);
-        return uniformRandom(n, *this, &Random::next64);
-    }
-
-    size_t next(size_t n) {
-        ensure(n > 0);
-        return uniformRandom(n, *this, &Random::next64);
-    }
-
-    double next(double n) {
-        ensure(n >= 0);
-        return nextf() * n;
-    }
-
-    int next(int l, int r) {
-        ensure(l <= r);
-        uint32_t n = static_cast<uint32_t>(r) - l + 1;
-        return l + uniformRandom(
-            n, *this, (uint32_t (Random::*)())&Random::next);
-    }
-
-    long long next(long long l, long long r) {
-        ensure(l <= r);
-        uint64_t n = static_cast<uint64_t>(r) - l + 1;
-        return l + uniformRandom(n, *this, &Random::next64);
-    }
-
-    size_t next(size_t l, size_t r) {
-        ensure(l <= r);
-        uint64_t n = static_cast<uint64_t>(r) - l + 1;
-        return l + uniformRandom(n, *this, &Random::next64);
-    }
-
-    double next(double l, double r) {
-        ensure(l <= r);
-        return l + next(r-l);
-    }
-
-    //  implemented in random_inl.h
     int wnext(int n, int w);
     long long wnext(long long n, int w);
     size_t wnext(size_t n, int w);
@@ -168,9 +87,7 @@ public:
     size_t wnext(size_t l, size_t r, int w);
     double wnext(double l, double r, int w);
 
-    std::string next(const std::string& pattern) {
-        return Pattern(pattern).next([this](int n) { return next(n); });
-    }
+    std::string next(const std::string& pattern);
 
     template<typename ... Args>
     std::string next(const std::string& pattern, Args... args) {
@@ -340,23 +257,10 @@ using jngen::dpair;
 using jngen::dopair;
 using jngen::odpair;
 
-inline void registerGen(int argc, char *argv[], int version = 1) {
-    (void)version; // unused, only for testlib.h compatibility
-
-    std::vector<uint32_t> seed;
-    for (int i = 1; i < argc; ++i) {
-        int startPosition = seed.size();
-        seed.emplace_back();
-        for (char *s = argv[i]; *s; ++s) {
-            ++seed[startPosition];
-            seed.push_back(*s);
-        }
-    }
-    rnd.seed(seed);
-}
+using jngen::registerGen;
 
 #ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_RANDOM_INL_H
-#include "random_inl.h"
+#include "impl/random_inl.h"
 #undef JNGEN_INCLUDE_RANDOM_INL_H
 #endif // JNGEN_DECLARE_ONLY

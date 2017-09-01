@@ -1,6 +1,7 @@
-// #ifndef JNGEN_INCLUDE_GRAPH_INL_H
-// #error File "graph_inl.h" must not be included directly.
-// #endif
+#ifndef JNGEN_INCLUDE_GRAPH_INL_H
+#error File "graph_inl.h" must not be included directly.
+#include "../graph.h" // for completion emgine
+#endif
 
 #include "array.h"
 #include "common.h"
