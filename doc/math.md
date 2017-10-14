@@ -20,16 +20,12 @@ Jngen provides several free functions and a generator class *MathRandom* to help
 #### long long previousPrime(long long n)
 * Returns: the first prime larger (or smaller) than *n*, including *n*.
 
-#### Array partition(int n, int numParts)
-#### Array partitionNonEmpty(int n, int numParts)
-#### Array64 partition(long long n, int numParts)
-#### Array64 partitionNonEmpty(long long n, int numParts)
-* Returns: a random ordered partition of *n* into *numParts* parts. In case of *partitionNonEmpty* each element of the result is positive.
+#### Array partition(int n, int numParts, int minSize = 0, int maxSize = -1)
+* Returns: a random ordered partition of *n* into *numParts* parts, where the size of each part is between *minSize* and *maxSize*. If *maxSize* is *-1* (the default value) then sizes can be arbitrary large.
 
-#### template&lt;typename T> <br> TArray&lt;TArray&lt;T>> partition(TArray&lt;T> elements, int numParts)
-#### template&lt;typename T> <br> TArray&lt;TArray&lt;T>> partitionNonEmpty(TArray&lt;T> elements, int numParts)
+#### template&lt;typename T> <br> TArray&lt;TArray&lt;T>> partition(TArray&lt;T> elements, int numParts, int minSize = 0, int maxSize = -1)
 * Returns: a random partition of the array *elements* into *numParts* parts.
 
-#### template&lt;typename T> <br> TArray&lt;TArray&lt;T>> partitionNonEmpty(TArray&lt;T> elements, const Array& sizes)
+#### template&lt;typename T> <br> TArray&lt;TArray&lt;T>> partition(TArray&lt;T> elements, const Array& sizes)
 * Returns: a random partition of the array *elements* into parts, where the size of each part is specified.
 * Note: sum(*sizes*) must be equal to *elements.size()*.

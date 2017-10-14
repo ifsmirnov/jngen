@@ -48,4 +48,26 @@ BOOST_AUTO_TEST_CASE(primes) {
     BOOST_CHECK_THROW(rndm.randomPrime(14, 16), jngen::Exception);
 }
 
+BOOST_AUTO_TEST_CASE(partitions) {
+    rnd.seed(456);
+
+    auto a = rnda.randomfAll([]() {
+            return rndm.partition(5, 3);
+    });
+    BOOST_TEST(a.size() == 21);
+
+    auto b = rndm.partition(100, 10, 5, 12);
+    for (auto x: b) {
+        BOOST_TEST(5 <= x);
+        BOOST_TEST(x <= 12);
+    }
+
+    auto c = rndm.partition(Array::id(10), {1, 2, 3, 4});
+    std::set<int> sizes;
+    for (const auto& t: c) {
+        sizes.insert(t.size());
+    }
+    BOOST_TEST((sizes == std::set<int>{1, 2, 3, 4}));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -80,29 +80,11 @@ Array64 randomTestSizes(
     }
     ensure(totalSize >= 0, "Sum of predefined test sizes exceeds total size");
     ensure(count * minSize <= totalSize, "minSize is too large");
+    ensure(count * maxSize >= totalSize, "maxSize is too small");
     ensure(minSize <= maxSize);
 
-    auto partition = rndm.partition(totalSize - count * minSize, count)
-        .sort().reverse();
-    long long remaining = 0;
-
-    long long localMax = maxSize - minSize;
-    for (auto& x: partition) {
-        if (x > localMax) {
-            remaining += x - localMax;
-            x = localMax;
-        } else {
-            long long add = std::min(remaining, localMax - x);
-            x += add;
-            remaining -= add;
-        }
-
-        x += minSize;
-    }
-
-    ensure(remaining == 0, "maxSize is too small");
-
-    return (partition + predefined).shuffled();
+    return (rndm.partition(totalSize, count, minSize, maxSize) +
+            predefined).shuffle();
 }
 
 Array randomTestSizes(

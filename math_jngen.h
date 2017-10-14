@@ -189,55 +189,95 @@ public:
         return n;
     }
 
-    static Array partition(int n, int numParts) {
+    static Array partition(
+            int n,
+            int numParts,
+            int minSize = 0,
+            int maxSize = -1)
+    {
         auto res = partition(
-            static_cast<long long>(n), static_cast<long long>(numParts));
+            static_cast<long long>(n),
+            numParts,
+            static_cast<long long>(minSize),
+            static_cast<long long>(maxSize));
         return Array(res.begin(), res.end());
     }
 
-    static Array64 partition(long long n, int numParts) {
-        auto res = partitionNonEmpty(n + numParts, numParts);
-        for (auto& x: res) {
-            --x;
+    static Array64 partition(
+            long long n,
+            int numParts,
+            long long minSize = 0,
+            long long maxSize = -1)
+    {
+        if (maxSize == -1) {
+            maxSize = n;
         }
-        return res;
-    }
 
-    static Array partitionNonEmpty(int n, int numParts) {
-        auto res = partitionNonEmpty(
-            static_cast<long long>(n), static_cast<long long>(numParts));
-        return Array(res.begin(), res.end());
-    }
+        ensure(n >= 0);
+        ensure(numParts >= 0);
+        ensure(numParts * minSize <= n, "minSize is too large");
+        ensure(numParts * maxSize >= n, "maxSize is too small");
+        ensure(minSize <= maxSize);
 
-    static Array64 partitionNonEmpty(long long n, int numParts) {
-        ensure(numParts > 0);
-        ensure(
-            numParts <= n,
-            format("Cannot divide %lld into %lld nonempty parts",
-                n, numParts));
+        n -= minSize * numParts;
 
-        auto delimiters = Array64::randomUnique(numParts - 1, 1, n - 1).sorted();
+        auto delimiters = Array64::random(
+                numParts - 1, 0, n).sorted();
         delimiters.insert(delimiters.begin(), 0);
         delimiters.push_back(n);
-        Array64 res(numParts);
+
+        Array64 partition(numParts);
         for (long long i = 0; i < numParts; ++i) {
-            res[i] = delimiters[i + 1] - delimiters[i];
+            partition[i] = delimiters[i + 1] - delimiters[i];
         }
-        return res;
+        partition.sort().reverse();
+
+        long long remaining = 0;
+
+        long long localMax = maxSize - minSize;
+        for (auto& x: partition) {
+            if (x > localMax) {
+                remaining += x - localMax;
+                x = localMax;
+            }
+
+            x += minSize;
+        }
+
+        // Here we try to distribute the remaining part in some even manner
+        // between remaining slots. Looks like crap anyway, need a smarter way.
+
+        for (int divisor: { 2, 1 }) {
+            partition.shuffle();
+            for (auto& x: partition) {
+                if (x < maxSize) {
+                    long long add = std::min(
+                            remaining, (maxSize - x) / divisor);
+                    x += add;
+                    remaining -= add;
+                }
+            }
+        }
+
+        ensure(remaining == 0, "maxSize is too small");
+
+        return partition;
     }
 
     template<typename T>
-    TArray<TArray<T>> partition(TArray<T> elements, int numParts) {
+    TArray<TArray<T>> partition(
+            TArray<T> elements,
+            int numParts,
+            int minSize = 0,
+            int maxSize = -1)
+    {
         return partition(
             std::move(elements),
-            partition(static_cast<int>(elements.size()), numParts));
-    }
-
-    template<typename T>
-    TArray<TArray<T>> partitionNonEmpty(TArray<T> elements, int numParts) {
-        return partition(
-            std::move(elements),
-            partitionNonEmpty(static_cast<int>(elements.size()), numParts));
+            partition(
+                static_cast<int>(elements.size()),
+                numParts,
+                minSize,
+                maxSize));
     }
 
     template<typename T>
