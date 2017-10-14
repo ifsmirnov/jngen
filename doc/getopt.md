@@ -47,7 +47,8 @@ double h = getOpt("height");
 
 #### template&lt;typename T> <br> *unspecified_type* getOpt(size_t index, T def)
 #### template&lt;typename T> <br> *unspecified_type* getOpt(const std::string& name, T def)
-* Reads an option denoted by *index* or *name*. If it doesn't exist, *def* is returned. Else, if its value can be interpreted as *T*, the read value is returned. Otherwise the function throws.
+* Same as *getOpt(index)* and *getOpt(name)*, but if the option doens't exist then *def* is returned.
+* Note: the function still throws if the option exists but the cast fails.
 
 #### bool hasOpt(size_t index)
 #### bool hasOpt(const std::string& name)
