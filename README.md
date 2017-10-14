@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     getPositional(n, m);
 
     Tree t = Tree::bamboo(n).link(n - 1, Tree::star(m), 0);
-    if (getOptOr("shuffled", false)) {
+    if (getOpt("shuffled", false)) {
         t.shuffle();
     }
 

@@ -12,14 +12,13 @@ int main(int argc, char *argv[]) {
     n = getOpt(0); // n = 10
     pi = getOpt("pi"); // pi = 3.14
 
+    n = getOpt(5, 100); // n = 100 as there is no option #5
+    pi = getOpt("PI", 3.1415); // pi = 3.1415 as there is no option "PI"
+
     getPositional(n, m); // n = 10, m = 20
     getNamed(hw, pi); // hw = "hello-world", pi = 3.14
 
-    int otherN;
-    double otherPi;
-    getOpt(0, otherN); // otherN = 10, 0 is an index
-    getOpt("pi", otherPi); // otherPi = 3.14, "pi" is a name
-    cout << getOptOr("none", 10) << endl; // 10 as there is no "none" option
+    cout << (int)getOpt("none", 10) << endl; // 10 as there is no "none" option
 }
 ```
 
@@ -36,8 +35,8 @@ int main(int argc, char *argv[]) {
 #### void parseArgs(int argc, char *argv)
 * Parse arguments and prepare variable map. Required to be called before any *getOpt...* calls.
 
-### *unspecified_type* getOpt(size_t index)
-### *unspecified_type* getOpt(const std::string& name)
+#### *unspecified_type* getOpt(size_t index)
+#### *unspecified_type* getOpt(const std::string& name)
 * Reads an option denoted by *index* (positional, 0-indexed) or *name*. Throws if the option does not exist.
 * Return type can be casted to any other type. See the expected usage:
 ```cpp
@@ -46,14 +45,13 @@ double h = getOpt("height");
 ```
 * Note: if the cast fails (e.g. you try to interpret "adsfasd" as int) the function throws.
 
-#### template&lt;typename T> <br> bool getOpt(size_t index, T& t)
-#### template&lt;typename T> <br> bool getOpt(const std::string& name, T& t)
-* Reads an option denoted by *index* or *name*. In case if *index* is out of bound, *name* option does not exist or the given option fails to be read as *T*, *t* is not modified.
-* Returns: true if option exist and *T* was succesfully read, false otherwise.
+#### template&lt;typename T> <br> *unspecified_type* getOpt(size_t index, T def)
+#### template&lt;typename T> <br> *unspecified_type* getOpt(const std::string& name, T def)
+* Reads an option denoted by *index* or *name*. If it doesn't exist, *def* is returned. Else, if its value can be interpreted as *T*, the read value is returned. Otherwise the function throws.
 
-#### template&lt;typename T> <br> T getOptOr(size_t index, T def)
-#### template&lt;typename T> <br> T getOptOr(const std::string& name, T def)
-* Reads an option denoted by *index* or *name*. If it exists and can be interpreted as *T*, the read value is returned. Otherwise *def* is returned.
+#### bool hasOpt(size_t index)
+#### bool hasOpt(const std::string& name)
+* Checks if the option denoted by *index* or *name* is present. Its value is not examined.
 
 #### int getPositional(Args&... args)
 * Reads positional options to *args...* in order. Arguments which could not be read are not modified.

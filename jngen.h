@@ -1192,6 +1192,37 @@ struct hash<std::pair<T, U>> {
 
 namespace jngen {
 
+namespace detail {
+
+template<typename T>
+constexpr bool isValidOptionType() {
+    return std::is_same<T, std::string>::value ||
+        (std::is_arithmetic<T>::value && !std::is_same<T, char>::value);
+}
+
+template<typename T>
+using StringIfCharPtrElseT = typename std::conditional<
+    std::is_same<typename std::decay<T>::type, const char*>::value ||
+        std::is_same<typename std::decay<T>::type, char*>::value,
+    std::string,
+    T>::type;
+
+} // namespace detail
+
+struct Index {
+    size_t index;
+    std::string name;
+
+    Index(size_t index) : index(index) {}
+    Index(const std::string& name) : name(name) {
+        ensure(!name.empty(), "Variable name cannot be empty");
+    }
+
+    bool isNamed() const {
+        return !name.empty();
+    }
+};
+
 struct VariableMap {
     std::vector<std::string> positional;
     std::map<std::string, std::string> named;
@@ -1218,19 +1249,111 @@ struct VariableMap {
         return named.at(name);
     }
 
+    int count(const Index& index) const {
+        if (index.isNamed()) {
+            return count(index.name);
+        } else {
+            return count(index.index);
+        }
+    }
+
+    std::string operator[](const Index& index) const {
+        if (index.isNamed()) {
+            return (*this)[index.name];
+        } else {
+            return (*this)[index.index];
+        }
+    }
+
+    void assertExistence(const Index& index) const {
+        if (count(index)) {
+            return;
+        }
+        if (index.isNamed()) {
+            ensure(false, format(
+                    "There is no variable with name '%s'", index.name.c_str()));
+        } else {
+            ensure(false, format(
+                    "There is no variable with index %d", index.index));
+        }
+    }
+
     bool initialized = false;
 };
 
+template<typename T>
 class PendingVariable {
 public:
-    explicit PendingVariable(const std::string& value) :
-        value_(value)
+    explicit PendingVariable(std::string value) :
+        value_(std::move(value))
     {  }
 
-    template<typename T>
-    operator T() const {
+    PendingVariable(std::string value, T defaultValue) :
+        value_(std::move(value)),
+        default_(std::move(defaultValue))
+    {  }
+
+    explicit PendingVariable(std::nullptr_t, T defaultValue) :
+        valid_(false),
+        default_(std::move(defaultValue))
+    {  }
+
+    // We need this check in order to make the following work:
+    // string s = getOpt(0);
+    // s = getOpt(0);
+    // Weird things happen if we allow all kind of casts. See
+    // https://stackoverflow.com/questions/46740341
+    template<
+        typename U,
+        typename std::enable_if<
+            detail::isValidOptionType<U>()>::type* = nullptr>
+    operator U() const
+    {
+        if (!valid_) {
+            return static_cast<U>(default_);
+        }
+
         std::istringstream ss(value_);
-        T t;
+        U t;
+        if (ss >> t) {
+            return t;
+        } else {
+            ensure(
+                false,
+                format(
+                    "Cannot parse option. Raw value: '%s'",
+                    value_.c_str()));
+        }
+    }
+
+    // TODO: getOpt operators, like getOpt("n") == 100
+
+private:
+    bool valid_ = true;
+    std::string value_;
+    T default_;
+};
+
+template<>
+class PendingVariable<void> {
+public:
+    explicit PendingVariable(std::string value) :
+        value_(std::move(value))
+    {  }
+
+    // We need this check in order to make the following work:
+    // string s = getOpt(0);
+    // s = getOpt(0);
+    // Weird things happen if we allow all kind of casts. See
+    // https://stackoverflow.com/questions/46740341
+    template<
+        typename U,
+        typename std::enable_if<
+            detail::isValidOptionType<U>()>::type* = nullptr>
+    operator U() const
+    {
+        std::istringstream ss(value_);
+        U t;
         if (ss >> t) {
             return t;
         } else {
@@ -1318,89 +1441,31 @@ inline VariableMap parseArguments(const std::vector<std::string>& args) {
 
 JNGEN_EXTERN VariableMap vmap;
 
-template<typename T>
-bool readVariable(const std::string& value, T& var) {
-    std::istringstream ss(value);
-
-    T t;
-    if (ss >> t) {
-        var = t;
-        return true;
-    }
-    return false;
-}
-
-inline PendingVariable getOpt(size_t index) {
-    ensure(
-        vmap.initialized,
-        "parseArgs(args, argv) must be called before getOpt(...)");
-    ensure(
-        vmap.count(index),
-        format("There is no variable with index %d", index));
-    return PendingVariable(vmap[index]);
-}
-
-inline PendingVariable getOpt(const std::string& name) {
-    ensure(
-        vmap.initialized,
-        "parseArgs(args, argv) must be called before getOpt(...)");
-    ensure(
-        vmap.count(name),
-        format("There is no variable with name '%s'", name.c_str()));
-    return PendingVariable(vmap[name]);
-}
-
-template<typename T>
-bool getOpt(size_t index, T& var) {
-    ensure(
-        vmap.initialized,
-        "parseArgs(args, argv) must be called before getOpt(...)");
-    if (!vmap.count(index)) {
-        return false;
-    }
-    return readVariable(vmap[index], var);
-}
-
-template<typename T>
-bool getOpt(const std::string& name, T& var) {
-    ensure(
-        vmap.initialized,
-        "parseArgs(args, argv) must be called before getOpt(...)");
-    if (!vmap.count(name)) {
-        return false;
-    }
-    return readVariable(vmap[name], var);
-}
-
-template<typename T>
-T getOptOr(size_t index, T def) {
-    getOpt(index, def);
-    return def;
-}
-
-template<typename T>
-T getOptOr(const std::string& name, T def) {
-    getOpt(name, def);
-    return def;
-}
-
-inline std::string getOptOr(size_t index, const char* def) {
-    std::string defString(def);
-    getOpt(index, defString);
-    return defString;
-}
-
-inline std::string getOptOr(const std::string& name, const char* def) {
-    std::string defString(def);
-    getOpt(name, defString);
-    return defString;
-}
-
-inline void parseArgs(int argc, char *argv[]) {
-    vmap = parseArguments(std::vector<std::string>(argv + 1, argv + argc));
-}
-
 namespace detail {
+
+inline PendingVariable<void> getOpt(const Index& index) {
+    ensure(
+        vmap.initialized,
+        "parseArgs(args, argv) must be called before getOpt(...)");
+    vmap.assertExistence(index);
+    return PendingVariable<void>(vmap[index]);
+}
+
+template<typename T, typename U = detail::StringIfCharPtrElseT<T>>
+PendingVariable<U> getOpt(const Index& index, const T& defaultValue) {
+    ensure(
+        vmap.initialized,
+        "parseArgs(args, argv) must be called before getOpt(...)");
+    if (vmap.count(index)) {
+        return PendingVariable<U>(vmap[index], U{defaultValue});
+    } else {
+        return PendingVariable<U>(nullptr, U{defaultValue});
+    }
+}
+
+inline bool hasOpt(const Index& index) {
+    return vmap.count(index);
+}
 
 inline std::vector<std::string> splitByComma(std::string s) {
     auto strip = [](std::string s) {
@@ -1431,13 +1496,30 @@ inline std::vector<std::string> splitByComma(std::string s) {
     return result;
 }
 
+template<typename T>
+bool readVariable(const std::string& value, T& var) {
+    std::istringstream ss(value);
+
+    T t;
+    if (ss >> t) {
+        var = t;
+        return true;
+    }
+    return false;
+}
+
 inline int getNamedImpl(std::vector<std::string>::const_iterator) { return 0; }
 
 template<typename T, typename ... Args>
 int getNamedImpl(
     std::vector<std::string>::const_iterator it, T& var, Args&... args)
 {
-    int res = getOpt(*it, var);
+    T value;
+    int res = 0;
+    if (readVariable(vmap[*it], value)) {
+        var = value;
+        ++res;
+    }
     res += getNamedImpl(++it, args...);
     return res;
 }
@@ -1446,7 +1528,12 @@ inline int getPositionalImpl(size_t) { return 0; }
 
 template<typename T, typename ... Args>
 int getPositionalImpl(size_t index, T& var, Args&... args) {
-    int res = getOpt(index, var);
+    T value;
+    int res = 0;
+    if (readVariable(vmap[index], value)) {
+        var = value;
+        ++res;
+    }
     res += getPositionalImpl(index + 1, args...);
     return res;
 }
@@ -1477,15 +1564,45 @@ int getPositional(Args&... args) {
     return detail::getPositionalImpl(0, args...);
 }
 
+inline void parseArgs(int argc, char *argv[]) {
+    vmap = parseArguments(std::vector<std::string>(argv + 1, argv + argc));
+}
+
+inline PendingVariable<void> getOpt(size_t index) {
+    return detail::getOpt(Index(index));
+}
+
+inline PendingVariable<void> getOpt(const std::string& name) {
+    return detail::getOpt(Index(name));
+}
+
+template<typename T, typename U = detail::StringIfCharPtrElseT<T>>
+PendingVariable<U> getOpt(size_t index, const T& defaultValue) {
+    return detail::getOpt(Index(index), defaultValue);
+}
+
+template<typename T, typename U = detail::StringIfCharPtrElseT<T>>
+PendingVariable<U> getOpt(const std::string& name, const T& defaultValue) {
+    return detail::getOpt(Index(name), defaultValue);
+}
+
+inline bool hasOpt(size_t index) {
+    return vmap.count(index);
+}
+
+inline bool hasOpt(const std::string& name) {
+    return vmap.count(name);
+}
+
 } // namespace jngen
 
 using jngen::parseArgs;
 using jngen::getOpt;
-using jngen::getOptOr;
+using jngen::hasOpt;
 
 using jngen::getPositional;
 
-#define getNamed(...) jngen::doGetNamed(#__VA_ARGS__, __VA_ARGS__)
+#define getNamed(...) ::jngen::doGetNamed(#__VA_ARGS__, __VA_ARGS__)
 
 
 #include <algorithm>
