@@ -488,6 +488,7 @@ std::string SvgEngine::getStyle() const {
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <functional>
 #include <initializer_list>
 #include <map>
 #include <memory>
@@ -2580,9 +2581,14 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 2, 4)
     if (mod.printN) {
         out << t.size() << "\n";
     }
+    bool first = true;
     for (const auto& x: t) {
+        if (first) {
+            first = false;
+        } else {
+            out << '\n';
+        }
         JNGEN_PRINT(x);
-        out << "\n";
     }
 }
 
@@ -2897,7 +2903,7 @@ GenericArray<T> GenericArray<T>::randomfAll(
     typename detail::DictContainer<T>::type set;
     GenericArray<T> result;
 
-    int timeAfterLastHit = 0;
+    size_t timeAfterLastHit = 0;
 
     while (true) {
         T t = func(args...);
@@ -6086,7 +6092,7 @@ public:
             while (t.n() + k - 1 <= n) {
                 t = t.glue(0, Tree::bamboo(k), 0);
             }
-            ENSURE(t.n() < n);
+            ENSURE(t.n() <= n);
             return t;
         };
 

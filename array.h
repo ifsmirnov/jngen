@@ -201,7 +201,7 @@ GenericArray<T> GenericArray<T>::randomfAll(
     typename detail::DictContainer<T>::type set;
     GenericArray<T> result;
 
-    int timeAfterLastHit = 0;
+    size_t timeAfterLastHit = 0;
 
     while (true) {
         T t = func(args...);

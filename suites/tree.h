@@ -51,7 +51,7 @@ public:
             while (t.n() + k - 1 <= n) {
                 t = t.glue(0, Tree::bamboo(k), 0);
             }
-            ENSURE(t.n() < n);
+            ENSURE(t.n() <= n);
             return t;
         };
 

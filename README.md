@@ -22,7 +22,7 @@ Among its features there are:
 * various random and not-so graphs and trees generators, manipulation with graphs and trees;
 * generating random geometrical primitives (including large convex polygons) and built-in drawing geometry in SVG; 
 * random primes, partitions, anti-hash and anti-hashset tests;
-* and else.
+* and more.
 
 Check out the larger [overview](/doc/overview.md) to see more capabilities and examples
 or see [Getting started](/doc/getting_started.md) section to learn the simplest usecases immediately.
@@ -78,12 +78,12 @@ Output a bamboo on *n* vertices connected to a star on *m* vertices, probably sh
 int main(int argc, char *argv[]) {
     parseArgs(argc, argv);
     int n, m;
-    getPositional(n, m); 
+    getPositional(n, m);
 
-    Tree t = Tree::bamboo(n).link(n - 1, Tree::star(m), 0); 
+    Tree t = Tree::bamboo(n).link(n - 1, Tree::star(m), 0);
     if (getOptOr("shuffled", false)) {
         t.shuffle();
-    }   
+    }
 
     cout << t.printN().add1() << endl;
 }
