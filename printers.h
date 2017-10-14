@@ -147,16 +147,38 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1 &&
 JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 2, 4)
 {
     if (mod.printN) {
-        out << t.size() << "\n";
+        out << t.size() << (mod.printM ? " " : "");
     }
-    bool first = true;
-    for (const auto& x: t) {
-        if (first) {
-            first = false;
+    if (mod.printM) {
+        if (t.empty()) {
+            out << 0;
         } else {
-            out << '\n';
+            auto size = t[0].size();
+            out << size;
+            for (const auto& vec: t) {
+                ensure(size == vec.size(), "Size of all matrix elements must "
+                        "be equal if printM is specified");
+            }
         }
-        JNGEN_PRINT(x);
+    }
+
+    if ((mod.printN || mod.printM) && !t.empty()) {
+        out << "\n";
+    }
+
+    auto tmp = mod;
+    {
+        auto mod = tmp;
+        mod.printN = mod.printM = false;
+        bool first = true;
+        for (const auto& x: t) {
+            if (first) {
+                first = false;
+            } else {
+                out << '\n';
+            }
+            JNGEN_PRINT(x);
+        }
     }
 }
 

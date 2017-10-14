@@ -142,4 +142,32 @@ BOOST_AUTO_TEST_CASE(random_generation) {
     BOOST_CHECK_EQUAL(b.sorted(), c.sorted().uniqued());
 }
 
+BOOST_AUTO_TEST_CASE(print_matrix) {
+    Array2d a = {{1, 2, 3}, {4, 5, 6}};
+    std::ostringstream out;
+
+    setMod().reset();
+
+    out.str("");
+    out << a << std::endl;
+    BOOST_TEST(out.str() == "1 2 3\n4 5 6\n");
+
+    out.str("");
+    out << a.printN() << std::endl;
+    BOOST_TEST(out.str() == "2\n1 2 3\n4 5 6\n");
+
+    out.str("");
+    out << a.printN().printM() << std::endl;
+    BOOST_TEST(out.str() == "2 3\n1 2 3\n4 5 6\n");
+
+    out.str("");
+    out << a.printN().printM().add1() << std::endl;
+    BOOST_TEST(out.str() == "2 3\n2 3 4\n5 6 7\n");
+
+    a.clear();
+    out.str("");
+    out << a.printN().printM().add1() << std::endl;
+    BOOST_TEST(out.str() == "0 0\n");
+}
+
 BOOST_AUTO_TEST_SUITE_END()
