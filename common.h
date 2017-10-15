@@ -144,6 +144,9 @@ inline void checkLargeParameter(int n) {
 template<bool B, typename T = void>
 using enable_if_t = typename std::enable_if<B, T>::type;
 
+template<typename T>
+using decay_t = typename std::decay<T>::type;
+
 namespace util {
 
 inline long long gcd(long long a, long long b) {

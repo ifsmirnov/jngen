@@ -173,6 +173,9 @@ inline void checkLargeParameter(int n) {
 template<bool B, typename T = void>
 using enable_if_t = typename std::enable_if<B, T>::type;
 
+template<typename T>
+using decay_t = typename std::decay<T>::type;
+
 namespace util {
 
 inline long long gcd(long long a, long long b) {
@@ -4806,7 +4809,6 @@ using jngen::setNextTestNumber;
 using jngen::randomTestSizes;
 
 
-#include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <type_traits>
@@ -4816,12 +4818,6 @@ namespace jngen {
 namespace variant_detail {
 
 constexpr static int NO_TYPE = -1;
-
-template<typename T>
-struct PlainType {
-    using type = typename std::remove_cv<
-        typename std::remove_reference<T>::type>::type;
-};
 
 template<size_t Size, typename ... Args>
 class VariantImpl;
@@ -4857,8 +4853,8 @@ protected:
         throw;
     }
 
-    void move(char* dst) const {
-        memmove(dst, data(), Size);
+    void move(char*) const {
+        throw;
     }
 
     void setType(int) {
@@ -4903,6 +4899,14 @@ protected:
     void copy(char* dst) const {
         if (this->type() == MY_ID) {
             new(dst) T(*reinterpret_cast<const T*>(this->data()));
+        } else {
+            Base::copy(dst);
+        }
+    }
+
+    void move(char* dst) const {
+        if (this->type() == MY_ID) {
+            new(dst) T(std::move(*reinterpret_cast<const T*>(this->data())));
         } else {
             Base::copy(dst);
         }
@@ -4957,7 +4961,7 @@ class Variant : public VariantImpl<0, Args...> {
     using Base = VariantImpl<0, Args...>;
 
 public:
-    Variant() {}
+    Variant() { }
 
     Variant(const Variant<Args...>& other) {
         if (other.type() != NO_TYPE) {
@@ -4967,6 +4971,9 @@ public:
     }
 
     Variant& operator=(const Variant<Args...>& other) {
+        if (&other == this) {
+            return *this;
+        }
         if (this->type() != NO_TYPE) {
             this->doDestroy();
         }
@@ -4981,18 +4988,21 @@ public:
         if (other.type() != NO_TYPE) {
             other.move(this->data());
             unsafeType() = other.type();
-            other.unsafeType() = NO_TYPE;
+        } else {
+            unsafeType() = other.type();
         }
     }
 
     Variant& operator=(Variant<Args...>&& other) {
+        if (&other == this) {
+            return *this;
+        }
         if (this->type() != NO_TYPE) {
             this->doDestroy();
         }
         if (other.type() != NO_TYPE) {
             other.move(this->data());
             unsafeType() = other.type();
-            other.unsafeType() = NO_TYPE;
         }
         return *this;
     }
@@ -5052,8 +5062,9 @@ public:
     }
 
 private:
-    template<typename T_, typename T = typename PlainType<T_>::type>
-    T* ptr() {
+    template<typename T_>
+    decay_t<T_>* ptr() {
+        using T = decay_t<T_>;
         if (type() != this->template typeId<T>()) {
             if (type() != NO_TYPE) {
                 this->doDestroy();
@@ -5064,8 +5075,9 @@ private:
         return reinterpret_cast<T*>(this->data());
     }
 
-    template<typename T_, typename T = typename PlainType<T_>::type>
-    const T* cptr() const {
+    template<typename T_>
+    decay_t<T_>* cptr() const {
+        using T = decay_t<T_>;
         if (type() != this->template typeId<T>()) {
             return nullptr;
         }
