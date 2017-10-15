@@ -38,18 +38,17 @@ public:
     static Tree caterpillar(int size, int length);
     static Tree binary(int size);
     static Tree kary(int size, int k);
+
+    void doPrintParents(std::ostream& out, const OutputModifier& mod) const;
 };
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
     ensure(t.isConnected(), "Cannot print a tree: it is not connected");
 
-    if (mod.printParents) {
-        ensure(false, "Printing parents is not implemented");
-    } else if (mod.printEdges) {
+    if (mod.printEdges) {
         t.doPrintEdges(out, mod);
     } else {
-        ensure(false, "Print mode is not set, select one of 'printParents'"
-            " or 'printEdges'");
+        t.doPrintParents(out, mod);
     }
 }
 

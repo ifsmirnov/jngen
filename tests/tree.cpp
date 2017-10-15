@@ -221,6 +221,31 @@ BOOST_AUTO_TEST_CASE(check_glue) {
     checkEquals(glued, t);
 }
 
+BOOST_AUTO_TEST_CASE(print_parents) {
+    rnd.seed(123);
+
+    std::ostringstream ss;
+
+    const std::string res1 = "5\ngrt kzw bar pja oap\n5 1 3 3\n";
+
+    Tree t = Tree::random(5);
+    t.setVertexWeights(TArray<std::string>::random(t.n(), "[a-z]{%d}", 3));
+    ss << t.add1().printN().printParents() << std::endl;
+
+    BOOST_TEST(ss.str() == res1);
+
+    t.setVertexWeights(WeightArray(t.n()));
+
+    ss.str("");
+    ss << t.printParents(0);
+    BOOST_TEST(ss.str() == "-1 4 0 2 2");
+
+    ss.str("");
+    ss << t.printParents(1);
+    BOOST_TEST(ss.str() == "2 -1 4 2 1");
+
+}
+
 // TODO: add tests to check random generators exactly
 
 BOOST_AUTO_TEST_SUITE_END()

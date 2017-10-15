@@ -64,11 +64,13 @@ Note that Jngen does not interact with stl-defined operators. That mean that wri
 * Action: print number of edges of a graph.
 * Default: unset.
 #### printEdges(bool value = true)
-* Action: when printing a tree, print a list of edges. Opposite to *printParents*.
+* Action: when printing a tree, print a list of edges.
 * Default: set.
-#### printParents(bool value = true)
+#### printParents(int value = -1)
 * Action: when printing a tree, print a parent of each vertex. Opposite to *printEdges*.
-* Default: unset.
+* Arguments: *value* stands for the root of the tree. If *value* is *0* or greater, then the parent of each vertex is printed, having root's parent as
+    *-1* (*0* if *add1()* is present). *value = -1* is a special value: in this case tree is rooted at *0* and its parent is not printed (printing *n-1* values in total).
+* Note: this option and *printEdges* cancel each other.
 #### endl(bool value = true)
 * Action: separate elements of the array with line breaks instead of spaces.
 * Default: unset.

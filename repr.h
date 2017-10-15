@@ -16,8 +16,9 @@ struct OutputModifier {
     bool printN = false;
     bool printM = false;
 
-    bool printParents = false;
+    int printParents;
     bool printEdges = true;
+    bool printWeights = true;
 
     char sep = ' ';
 };
@@ -65,15 +66,22 @@ public:
         return *this;
     }
 
-    Repr<T>& printParents(bool value = true) {
+    Repr<T>& printParents(int value = -1) {
         mod_.printParents = value;
-        mod_.printEdges = !value;
+        mod_.printEdges = false;
         return *this;
     }
 
     Repr<T>& printEdges(bool value = true) {
         mod_.printEdges = value;
-        mod_.printParents = !value;
+        if (!value) {
+            mod_.printParents = -1;
+        }
+        return *this;
+    }
+
+    Repr<T>& printWeights(bool value = true) {
+        mod_.printWeights = value;
         return *this;
     }
 
@@ -121,7 +129,7 @@ public:
         return repr;
     }
 
-    Repr<T> printParents(bool value = true) {
+    Repr<T> printParents(int value = -1) {
         Repr<T> repr(static_cast<const T&>(*this));
         repr.printParents(value);
         return repr;
@@ -130,6 +138,12 @@ public:
     Repr<T> printEdges(bool value = true) {
         Repr<T> repr(static_cast<const T&>(*this));
         repr.printEdges(value);
+        return repr;
+    }
+
+    Repr<T> printWeights(bool value = true) {
+        Repr<T> repr(static_cast<const T&>(*this));
+        repr.printWeights(value);
         return repr;
     }
 

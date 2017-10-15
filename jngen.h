@@ -2388,8 +2388,9 @@ struct OutputModifier {
     bool printN = false;
     bool printM = false;
 
-    bool printParents = false;
+    int printParents;
     bool printEdges = true;
+    bool printWeights = true;
 
     char sep = ' ';
 };
@@ -2437,15 +2438,22 @@ public:
         return *this;
     }
 
-    Repr<T>& printParents(bool value = true) {
+    Repr<T>& printParents(int value = -1) {
         mod_.printParents = value;
-        mod_.printEdges = !value;
+        mod_.printEdges = false;
         return *this;
     }
 
     Repr<T>& printEdges(bool value = true) {
         mod_.printEdges = value;
-        mod_.printParents = !value;
+        if (!value) {
+            mod_.printParents = -1;
+        }
+        return *this;
+    }
+
+    Repr<T>& printWeights(bool value = true) {
+        mod_.printWeights = value;
         return *this;
     }
 
@@ -2493,7 +2501,7 @@ public:
         return repr;
     }
 
-    Repr<T> printParents(bool value = true) {
+    Repr<T> printParents(int value = -1) {
         Repr<T> repr(static_cast<const T&>(*this));
         repr.printParents(value);
         return repr;
@@ -2502,6 +2510,12 @@ public:
     Repr<T> printEdges(bool value = true) {
         Repr<T> repr(static_cast<const T&>(*this));
         repr.printEdges(value);
+        return repr;
+    }
+
+    Repr<T> printWeights(bool value = true) {
+        Repr<T> repr(static_cast<const T&>(*this));
+        repr.printWeights(value);
         return repr;
     }
 
@@ -5219,8 +5233,8 @@ public:
     virtual void addEdge(int u, int v, const Weight& w = Weight{});
     virtual bool isConnected() const { return dsu_.isConnected(); }
 
-    virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
-    virtual int vertexByLabel(int v) const { return vertexByLabel_[v]; }
+    virtual int vertexLabel(int v) const { return vertexLabel_.at(v); }
+    virtual int vertexByLabel(int v) const { return vertexByLabel_.at(v); }
 
     // v: label
     // return: array<label>
@@ -5254,6 +5268,8 @@ public:
     virtual bool operator>=(const GenericGraph& other) const;
 
 protected:
+    static WeightArray prepareWeightArray(WeightArray a, int requiredSize);
+
     void doShuffle();
 
     void extend(size_t size);
@@ -5388,6 +5404,20 @@ Arrayp GenericGraph::edges() const {
     return edges;
 }
 
+WeightArray GenericGraph::prepareWeightArray(WeightArray a, int requiredSize) {
+    ENSURE(a.hasNonEmpty(), "Attempt to print empty weight array");
+
+    a.extend(requiredSize);
+    int type = a.anyType();
+    for (auto& x: a) {
+        if (x.empty()) {
+            x.setType(type);
+        }
+    }
+
+    return a;
+}
+
 void GenericGraph::doShuffle() {
     // this if is to be removed after all checks pass
     if (vertexLabel_.size() < static_cast<size_t>(n())) {
@@ -5485,24 +5515,6 @@ void GenericGraph::addEdge(int u, int v, const Weight& w) {
         setEdgeWeight(m() - 1, w);
     }
 }
-
-namespace {
-
-WeightArray prepareWeightArray(WeightArray a, int requiredSize) {
-    ENSURE(a.hasNonEmpty(), "Attempt to print empty weight array");
-
-    a.extend(requiredSize);
-    int type = a.anyType();
-    for (auto& x: a) {
-        if (x.empty()) {
-            x.setType(type);
-        }
-    }
-
-    return a;
-}
-
-} // namespace
 
 void GenericGraph::doPrintEdges(
     std::ostream& out, const OutputModifier& mod) const
@@ -5649,18 +5661,17 @@ public:
     static Tree caterpillar(int size, int length);
     static Tree binary(int size);
     static Tree kary(int size, int k);
+
+    void doPrintParents(std::ostream& out, const OutputModifier& mod) const;
 };
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Tree, 2) {
     ensure(t.isConnected(), "Cannot print a tree: it is not connected");
 
-    if (mod.printParents) {
-        ensure(false, "Printing parents is not implemented");
-    } else if (mod.printEdges) {
+    if (mod.printEdges) {
         t.doPrintEdges(out, mod);
     } else {
-        ensure(false, "Print mode is not set, select one of 'printParents'"
-            " or 'printEdges'");
+        t.doPrintParents(out, mod);
     }
 }
 
@@ -5710,7 +5721,7 @@ Array Tree::parents(int root) const {
     root = vertexByLabel(root);
 
     Array parents(n());
-    parents[root] = root;
+    parents[root] = -1;
     std::vector<int> used(n());
     std::vector<int> queue{root};
     for (size_t i = 0; i < queue.size(); ++i) {
@@ -5725,7 +5736,9 @@ Array Tree::parents(int root) const {
     }
 
     for (auto& x: parents) {
-        x = vertexLabel(x);
+        if (x != -1) {
+            x = vertexLabel(x);
+        }
     }
 
     return parents;
@@ -5896,6 +5909,53 @@ Tree Tree::kary(int size, int k) {
     }
     t.normalizeEdges();
     return t;
+}
+
+void Tree::doPrintParents(std::ostream& out, const OutputModifier& mod) const {
+    int root = mod.printParents;
+    if (root == -1) {
+        root = 0;
+    }
+
+    auto parents = this->parents(root);
+    if (mod.printParents == -1) {
+        parents.erase(parents.begin());
+    }
+
+    if (mod.printN) {
+        out << n() << "\n";
+    }
+
+    // TODO: avoid copy-paste from doPrintEdges
+    if (mod.printWeights && vertexWeights_.hasNonEmpty()) {
+        auto vertexWeights = prepareWeightArray(vertexWeights_, n());
+        for (int i = 0; i < n(); ++i) {
+            if (i > 0) {
+                out << " ";
+            }
+            JNGEN_PRINT_NO_MOD(vertexWeights[vertexByLabel(i)]);
+        }
+        out << "\n";
+    }
+
+    auto t(mod);
+    {
+        auto mod(t);
+        mod.printN = false;
+
+        if (mod.printWeights && edgeWeights_.hasNonEmpty()) {
+            ensure(false, "Printing parents and edge weights is not supported");
+            ensure(
+                mod.printParents == -1,
+                "Root must not be set to any exact value when printing a tree "
+                "with edge weights. To fix it, either set printParents() "
+                "or printWeights(false)");
+            ENSURE(root == 0);
+            // TODO: some code to be here
+        } else {
+            JNGEN_PRINT(parents);
+        }
+    }
 }
 
 #undef JNGEN_INCLUDE_TREE_INL_H

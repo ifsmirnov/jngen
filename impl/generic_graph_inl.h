@@ -75,6 +75,20 @@ Arrayp GenericGraph::edges() const {
     return edges;
 }
 
+WeightArray GenericGraph::prepareWeightArray(WeightArray a, int requiredSize) {
+    ENSURE(a.hasNonEmpty(), "Attempt to print empty weight array");
+
+    a.extend(requiredSize);
+    int type = a.anyType();
+    for (auto& x: a) {
+        if (x.empty()) {
+            x.setType(type);
+        }
+    }
+
+    return a;
+}
+
 void GenericGraph::doShuffle() {
     // this if is to be removed after all checks pass
     if (vertexLabel_.size() < static_cast<size_t>(n())) {
@@ -172,24 +186,6 @@ void GenericGraph::addEdge(int u, int v, const Weight& w) {
         setEdgeWeight(m() - 1, w);
     }
 }
-
-namespace {
-
-WeightArray prepareWeightArray(WeightArray a, int requiredSize) {
-    ENSURE(a.hasNonEmpty(), "Attempt to print empty weight array");
-
-    a.extend(requiredSize);
-    int type = a.anyType();
-    for (auto& x: a) {
-        if (x.empty()) {
-            x.setType(type);
-        }
-    }
-
-    return a;
-}
-
-} // namespace
 
 void GenericGraph::doPrintEdges(
     std::ostream& out, const OutputModifier& mod) const

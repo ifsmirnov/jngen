@@ -25,8 +25,8 @@ public:
     virtual void addEdge(int u, int v, const Weight& w = Weight{});
     virtual bool isConnected() const { return dsu_.isConnected(); }
 
-    virtual int vertexLabel(int v) const { return vertexLabel_[v]; }
-    virtual int vertexByLabel(int v) const { return vertexByLabel_[v]; }
+    virtual int vertexLabel(int v) const { return vertexLabel_.at(v); }
+    virtual int vertexByLabel(int v) const { return vertexByLabel_.at(v); }
 
     // v: label
     // return: array<label>
@@ -60,6 +60,8 @@ public:
     virtual bool operator>=(const GenericGraph& other) const;
 
 protected:
+    static WeightArray prepareWeightArray(WeightArray a, int requiredSize);
+
     void doShuffle();
 
     void extend(size_t size);

@@ -48,7 +48,7 @@ Note that all generators return trees with sorted edges to make tests more human
     * randomly swap egdes' endpoints.
 
 #### Array parents(int root) const
-* Returns: array of size *n*, where *i*-th element is a parent of vertex *i* if the tree is rooted at *root*. Parent of *root* is *root* itself.
+* Returns: array of size *n*, where *i*-th element is a parent of vertex *i* if the tree is rooted at *root*. Parent of *root* is *-1*.
 
 #### Tree link(int vInThis, const Tree& other, int vInOther)
 * Returns: a tree made of _*this_ and *other*, with an extra edge between two vertices with ids *vInThis* and *vInOther*, respectively.

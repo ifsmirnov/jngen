@@ -30,7 +30,7 @@ Array Tree::parents(int root) const {
     root = vertexByLabel(root);
 
     Array parents(n());
-    parents[root] = root;
+    parents[root] = -1;
     std::vector<int> used(n());
     std::vector<int> queue{root};
     for (size_t i = 0; i < queue.size(); ++i) {
@@ -45,7 +45,9 @@ Array Tree::parents(int root) const {
     }
 
     for (auto& x: parents) {
-        x = vertexLabel(x);
+        if (x != -1) {
+            x = vertexLabel(x);
+        }
     }
 
     return parents;
@@ -216,5 +218,52 @@ Tree Tree::kary(int size, int k) {
     }
     t.normalizeEdges();
     return t;
+}
+
+void Tree::doPrintParents(std::ostream& out, const OutputModifier& mod) const {
+    int root = mod.printParents;
+    if (root == -1) {
+        root = 0;
+    }
+
+    auto parents = this->parents(root);
+    if (mod.printParents == -1) {
+        parents.erase(parents.begin());
+    }
+
+    if (mod.printN) {
+        out << n() << "\n";
+    }
+
+    // TODO: avoid copy-paste from doPrintEdges
+    if (mod.printWeights && vertexWeights_.hasNonEmpty()) {
+        auto vertexWeights = prepareWeightArray(vertexWeights_, n());
+        for (int i = 0; i < n(); ++i) {
+            if (i > 0) {
+                out << " ";
+            }
+            JNGEN_PRINT_NO_MOD(vertexWeights[vertexByLabel(i)]);
+        }
+        out << "\n";
+    }
+
+    auto t(mod);
+    {
+        auto mod(t);
+        mod.printN = false;
+
+        if (mod.printWeights && edgeWeights_.hasNonEmpty()) {
+            ensure(false, "Printing parents and edge weights is not supported");
+            ensure(
+                mod.printParents == -1,
+                "Root must not be set to any exact value when printing a tree "
+                "with edge weights. To fix it, either set printParents() "
+                "or printWeights(false)");
+            ENSURE(root == 0);
+            // TODO: some code to be here
+        } else {
+            JNGEN_PRINT(parents);
+        }
+    }
 }
 
