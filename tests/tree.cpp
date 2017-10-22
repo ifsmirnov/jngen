@@ -243,7 +243,6 @@ BOOST_AUTO_TEST_CASE(print_parents) {
     ss.str("");
     ss << t.printParents(1);
     BOOST_TEST(ss.str() == "2 -1 4 2 1");
-
 }
 
 // TODO: add tests to check random generators exactly

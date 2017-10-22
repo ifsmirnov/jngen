@@ -8,12 +8,14 @@ Jngen provides a *GenericGraph* class. You will mostly use its two subclasses: *
 
 Graph vertices are always numbered from 0 to n-1, where n is the number of vertices. Other numerations will be supported later. Currently can output a graph in 1-numeration using *.add1()* output modifier.
 
-You can assign weights to edges and vertices of a graph. Weight is implemented as (self-written, waiting for C++17) kinda *std::variant* with some predefined types: *int*, *double*, *string*, *pair&lt;int, int>*. However, you can add your own types. To do it define a macro *JNGEN_EXTRA_WEIGHT_TYPES* containing comma-separated extra types you want to use.
+You can assign weights to edges and vertices of a graph. Weight is implemented as (self-written, waiting for C++17) kinda *std::variant* with some predefined types: *int*, *double*, *string*, *pair&lt;int, int>*. However, you can add your own types. To do it define a macro `JNGEN_EXTRA_WEIGHT_TYPES` containing comma-separated extra types you want to use.
 
 ```cpp
 #define JNGEN_EXTRA_WEIGHT_TYPES std::vector<int>, std::pair<char, double>
 #include "jngen.h"
 ```
+
+Note that if you use precompiled library and compile your code with `JNGEN_DECLARE_ONLY`, you must precompile the library with the same `JNGEN_EXTRA_WEIGHT_TYPES` as well.
 
 Like all containers in jngen, graphs support pretty-printing and output modifiers.
 

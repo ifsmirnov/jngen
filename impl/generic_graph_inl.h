@@ -257,7 +257,7 @@ bool GenericGraph::operator>=(const GenericGraph& other) const {
     return compareTo(other) != -1;
 }
 
-void GenericGraph::doNormalizeEdges() {
+void GenericGraph::normalizeEdges() {
     ENSURE(
         vertexLabel_ == Array::id(n()),
         "Can call normalizeEdges() only on newly created graph");

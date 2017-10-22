@@ -24,3 +24,5 @@ $ g++ -O2 -std=c++11 -Wall -DJNGEN_DECLARE_ONLY main.cpp lib.o
 
 On the author's laptop this trick reduces compilation time by approximately 2.5 times.
 
+Note that if you use some other Jngen defines, like `JNGEN_EXTRA_WEIGHT_TYPES`, the library and your program must be compiled with the same set of defines.
+

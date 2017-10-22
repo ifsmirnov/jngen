@@ -79,13 +79,7 @@ protected:
 
     void permuteEdges(const Array& order);
 
-    void normalizeEdges() {
-#ifndef JNGEN_NO_NORMALIZE_EDGES
-        doNormalizeEdges();
-#endif
-    }
-
-    void doNormalizeEdges();
+    void normalizeEdges();
 
     int compareTo(const GenericGraph& other) const;
 
