@@ -221,10 +221,10 @@ struct TypedRandom<std::pair<int, int>> : public BaseTypedRandom {
     }
 
     std::pair<int, int> next(int n, RandomPairTraits traits) {
-        int first = rnd.next(n);
+        int first = random.next(n);
         int second;
         do {
-            second = rnd.next(n);
+            second = random.next(n);
         } while (traits.distinct && first == second);
         if (traits.ordered && first > second) {
             std::swap(first, second);
