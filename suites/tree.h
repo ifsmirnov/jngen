@@ -25,6 +25,54 @@ public:
             return Tree::random(n);
         };
 
+        JNGEN_ADD_PRODUCER(kruskal1) {
+            return Tree::randomKruskal(n);
+        };
+
+        JNGEN_ADD_PRODUCER(kruskal2) {
+            return Tree::randomKruskal(n);
+        };
+
+        JNGEN_ADD_PRODUCER(kruskal3) {
+            return Tree::randomKruskal(n);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-100) {
+            return Tree::randomPrim(n, -100);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-50) {
+            return Tree::randomPrim(n, -50);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-10) {
+            return Tree::randomPrim(n, -10);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-5) {
+            return Tree::randomPrim(n, -5);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w0) {
+            return Tree::randomPrim(n, 0);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w5) {
+            return Tree::randomPrim(n, 5);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w10) {
+            return Tree::randomPrim(n, 10);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w50) {
+            return Tree::randomPrim(n, 50);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w100) {
+            return Tree::randomPrim(n, 100);
+        };
+
         JNGEN_ADD_PRODUCER(bamboo) {
             return Tree::bamboo(n);
         };
@@ -108,42 +156,6 @@ public:
             auto t1 = Tree::bamboo(n/2);
             auto t2 = Tree::star(n - n/2);
             return t1.link(n/2 - 1, t2, 0);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w-100) {
-            return Tree::randomPrim(n, -100);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w-50) {
-            return Tree::randomPrim(n, -50);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w-10) {
-            return Tree::randomPrim(n, -10);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w-5) {
-            return Tree::randomPrim(n, -5);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w0) {
-            return Tree::randomPrim(n, 0);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w5) {
-            return Tree::randomPrim(n, 5);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w10) {
-            return Tree::randomPrim(n, 10);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w50) {
-            return Tree::randomPrim(n, 50);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w100) {
-            return Tree::randomPrim(n, 100);
         };
 
 #undef JNGEN_PRODUCER_ARGS
