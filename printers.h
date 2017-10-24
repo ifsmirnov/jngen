@@ -5,6 +5,7 @@
 #include <iostream>
 #include <tuple>
 #include <type_traits>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -27,7 +28,7 @@ class Has ## name ## Helper<T,\
 > : public std::true_type {};\
 
 #define JNGEN_HAS_FUNCTION(name)\
-    detail::Has ## name ## Helper<T>::value
+    ::jngen::detail::Has ## name ## Helper<T>::value
 
 JNGEN_DEFINE_FUNCTION_CHECKER(
     OstreamMethod,
@@ -87,11 +88,17 @@ printValue(out, value, OutputModifier{}, PTagMax{})
 
 JNGEN_DECLARE_PRINTER(!JNGEN_HAS_OSTREAM(), 0)
 {
-    // can't just write 'false' here because assertion always fails
-    static_assert(!std::is_same<T, T>::value, "operator<< is undefined");
-    (void)out;
+    static bool locked = false;
+
+    ensure(
+            !locked,
+            std::string{} + "You are trying to print a type for which "
+            "operator<< is not defined: " + typeid(T).name());
+
+    locked = true;
     (void)mod;
-    (void)t;
+    out << t;
+    locked = false;
 }
 
 JNGEN_DECLARE_PRINTER(JNGEN_HAS_OSTREAM(), 10)
