@@ -3,7 +3,7 @@
 Strings are generated with the help of *StringRandom* class. As usual, you should interact with it via its global instance *rnds*.
 
 ### Generators (*rnds* static methods)
-#### std::string random(int len, const std::string& alphabet)
+#### std::string random(int len, const std::string& alphabet = "a-z")
 * Returns: random string of length *len* made of characters from *alphabet*.
 * Note: *alphabet* can contain single chars and groups of form *A-Z*. For example, *"0-9abcdefA-F"* includes all hexadecimal characters.
 
@@ -19,7 +19,7 @@ Strings are generated with the help of *StringRandom* class. As usual, you shoul
 #### std::string abacaba(int len, char first = 'a')
 * Returns: a prefix of length *n* of the string of form *abacabadabacaba...* starting with character *first*.
 
-#### std::pair&lt;std::string, std::string> antiHash(<br>&emsp;&emsp;const std::vector&lt;std::pair&lt;long long, long long>>& bases, <br>&emsp;&emsp;const std::string& alphabet, <br>&emsp;&emsp;int length = -1)
+#### std::pair&lt;std::string, std::string> antiHash(<br>&emsp;&emsp;const std::vector&lt;std::pair&lt;long long, long long>>& bases, <br>&emsp;&emsp;const std::string& alphabet = "a-z", <br>&emsp;&emsp;int length = -1)
 * Returns: a pair of different strings of length *length* (or minimal found if *length* is -1) with the same polynomial hash for specified bases.
 * Parameters:
     * *bases*: vector of pairs (mod, base);
@@ -36,4 +36,7 @@ int base2 = rnd.next(2000, 10000) * 2 + 1;
 
 auto res = rnds.antiHash( {{mod1, base1}, {mod2, base2}}, "a-z", -1);
 cout << res.first << "\n" << res.second << "\n";
+
+// or simply
+cout << rnds.antiHash({{1000000007, 107}, {1000000009, 109}}) << "\n";
 ```
