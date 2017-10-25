@@ -68,6 +68,17 @@ struct VectorDepth<C<T>> {
         >::value ? VectorDepth<T>::value + 1 : 0;
 };
 
+template<typename T>
+struct NeedEndlAfterSelf {
+    template<typename U = T>
+    static typename std::tuple_size<U>::type f(T*);
+
+    static void f(...) {}
+
+    constexpr static bool value =
+        !std::is_same<decltype(f(nullptr)), void>::value;
+};
+
 } // namespace detail
 
 #define JNGEN_DECLARE_PRINTER(constraint, priority)\
@@ -134,7 +145,7 @@ JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1, 3)
 }
 
 JNGEN_DECLARE_PRINTER(detail::VectorDepth<T>::value == 1 &&
-    std::tuple_size<typename T::value_type>::value == 2, 4)
+        detail::NeedEndlAfterSelf<typename T::value_type>::value, 4)
 {
     if (mod.printN) {
         out << t.size() << "\n";
@@ -205,8 +216,8 @@ JNGEN_DECLARE_PRINTER(JNGEN_HAS_FUNCTION(Container), 2)
     }
 }
 
-JNGEN_DECLARE_PRINTER(JNGEN_HAS_FUNCTION(Container)
-    && std::tuple_size<typename T::value_type>::value == 2, 3)
+JNGEN_DECLARE_PRINTER(JNGEN_HAS_FUNCTION(Container) &&
+        detail::NeedEndlAfterSelf<typename T::value_type>::value, 3)
 {
     if (mod.printN) {
         out << t.size() << "\n";

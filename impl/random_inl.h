@@ -199,6 +199,20 @@ double Random::wnext(double l, double r, int w) {
     }
 }
 
+int Random::nextByDistribution(const std::vector<int>& distribution) {
+    long long total = std::accumulate(
+            distribution.begin(),
+            distribution.end(),
+            0ll);
+    long long value = rnd.next(total);
+    size_t i = 0;
+    while (distribution[i] <= value) {
+        value -= distribution[i++];
+        ENSURE(i < distribution.size());
+    }
+    return i;
+}
+
 std::string Random::next(const std::string& pattern) {
     return Pattern(pattern).next([this](int n) { return next(n); });
 }

@@ -87,6 +87,9 @@ public:
     size_t wnext(size_t l, size_t r, int w);
     double wnext(double l, double r, int w);
 
+    int nextByDistribution(const std::vector<int>& distribution);
+    // int nextByDistribution(const std::vector<double>& distribution);
+
     std::string next(const std::string& pattern);
 
     template<typename ... Args>
