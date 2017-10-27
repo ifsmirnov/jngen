@@ -3262,6 +3262,9 @@ GenericArray<T> GenericArray<T>::choiceWithRepetition(size_t count) const {
 
 template<typename T>
 GenericArray<T>& GenericArray<T>::operator+=(const GenericArray<T>& other) {
+    if (&other == this) {
+        return *this *= 2;
+    }
     insert(end(), other.begin(), other.end());
     return *this;
 }
@@ -3279,12 +3282,10 @@ GenericArray<T>& GenericArray<T>::operator*=(int k) {
         return *this;
     }
 
-    this->reserve(this->size() * k);
+    this->reserve(size() * k);
 
-    size_t size = this->size();
-    while (k-- > 1) {
-        insert(end(), begin(), begin() + size);
-    }
+    std::copy_n(begin(), size() * (k - 1), std::back_inserter(*this));
+
     return *this;
 }
 
@@ -4128,7 +4129,7 @@ Pointf GeometryRandom::pointf(long double X, long double Y) {
 }
 
 Pointf GeometryRandom::pointf(long double C) {
-    return point(C, C);
+    return pointf(C, C);
 }
 
 Polygon GeometryRandom::convexPolygon(int n, long long X, long long Y) {
@@ -4380,7 +4381,7 @@ public:
         created = true;
     }
 
-    static std::string random(int len, const std::string& alphabet);
+    static std::string random(int len, const std::string& alphabet = "a-z");
 
     template<typename ... Args>
     static std::string random(const std::string& pattern, Args... args) {
@@ -4399,9 +4400,21 @@ public:
 
 JNGEN_EXTERN StringRandom rnds;
 
+} // namespace jngen
+
+using jngen::rnds;
+
+#ifndef JNGEN_DECLARE_ONLY
+#define JNGEN_INCLUDE_RNDS_INL_H
+#ifndef JNGEN_INCLUDE_RNDS_INL_H
+#error File "rnds_inl.h" must not be included directly.
+#endif
+
+namespace jngen {
+
 namespace detail {
 
-inline int popcount(long long x) {
+int popcount(long long x) {
     int res = 0;
     while (x) {
         ++res;
@@ -4410,7 +4423,7 @@ inline int popcount(long long x) {
     return res;
 }
 
-inline int trailingZeroes(long long x) {
+int trailingZeroes(long long x) {
     int res = 0;
     ENSURE(x != 0);
     while (!(x&1)) {
@@ -4420,7 +4433,7 @@ inline int trailingZeroes(long long x) {
     return res;
 }
 
-inline std::string parseAllowedChars(std::string pattern) {
+std::string parseAllowedChars(std::string pattern) {
     std::string result;
     pattern += "\0\0";
     for (size_t i = 0; i < pattern.length(); ++i) {
@@ -4439,7 +4452,7 @@ inline std::string parseAllowedChars(std::string pattern) {
     return result;
 }
 
-inline std::vector<std::string> extendAntiHash(
+std::vector<std::string> extendAntiHash(
         const std::vector<std::string>& chars,
         HashBase base,
         int count)
@@ -4524,7 +4537,7 @@ inline std::vector<std::string> extendAntiHash(
     }
 }
 
-inline StringPair minimalAntiHashTest(
+StringPair minimalAntiHashTest(
         std::vector<HashBase> bases,
         const std::string allowedChars)
 {
@@ -4563,7 +4576,6 @@ inline StringPair minimalAntiHashTest(
 
 } // namespace detail
 
-#ifndef JNGEN_DECLARE_ONLY
 
 std::string StringRandom::random(int len, const std::string& alphabet) {
     checkLargeParameter(len);
@@ -4626,11 +4638,9 @@ StringPair StringRandom::antiHash(
     };
 }
 
-#endif
-
 } // namespace jngen
-
-using jngen::rnds;
+#undef JNGEN_INCLUDE_RNDS_INL_H
+#endif // JNGEN_DECLARE_ONLY
 
 
 #include <algorithm>
@@ -4672,16 +4682,15 @@ public:
 
     T gen(size_t id, Args... args) const {
         ensure(
-            0 < id && id <= producers_.size(),
-            format("Cannot generate test #%d in suite '%s', valid numbers are "
-                " from 1 to %d",
-                (int)id, name_.c_str(), (int)producers_.size()));
+            id < producers_.size(),
+            format("Cannot generate test #%d in suite '%s', there are only "
+                "%d", (int)id, name_.c_str(), (int)producers_.size()));
         return producers_[id](args...);
     }
 
     T gen(const std::string& name, Args... args) const {
-        size_t pos =
-            std::find(names_.begin(), names_.end(), name) - names_.begin();
+        size_t pos = std::find(names_.begin(), names_.end(), name)
+            - names_.begin();
         ensure(
             pos < names_.size(),
             format("There is no test '%s' in suite '%s'",
@@ -4692,19 +4701,17 @@ public:
     TArray<T> genMany(size_t count, Args... args) const {
         ensure(
             count <= producers_.size(),
-            format("Cannot generate test #%d in suite '%s', valid numbers are "
-                " from 1 to %d",
-                (int)count, name_.c_str(), (int)producers_.size()));
+            format("Cannot generate %d tests in suite '%s', there are only "
+                "%d", (int)count, name_.c_str(), (int)producers_.size()));
 
         TArray<T> result;
         result.reserve(count);
-        for (size_t id = 1; id <= count; ++id) {
+        for (size_t id = 0; id < count; ++id) {
             try {
                 result.push_back(gen(id, args...));
             } catch (...) {
-                std::cerr << "Failed to generate test #" << id << " of suite "
+                std::cerr << "Cannot generate test #" << id << " of suite "
                     << name_ << "\n";
-                throw;
             }
         }
 
@@ -6303,54 +6310,6 @@ public:
             return Tree::random(n);
         };
 
-        JNGEN_ADD_PRODUCER(kruskal1) {
-            return Tree::randomKruskal(n);
-        };
-
-        JNGEN_ADD_PRODUCER(kruskal2) {
-            return Tree::randomKruskal(n);
-        };
-
-        JNGEN_ADD_PRODUCER(kruskal3) {
-            return Tree::randomKruskal(n);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w-100) {
-            return Tree::randomPrim(n, -100);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w-50) {
-            return Tree::randomPrim(n, -50);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w-10) {
-            return Tree::randomPrim(n, -10);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w-5) {
-            return Tree::randomPrim(n, -5);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w0) {
-            return Tree::randomPrim(n, 0);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w5) {
-            return Tree::randomPrim(n, 5);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w10) {
-            return Tree::randomPrim(n, 10);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w50) {
-            return Tree::randomPrim(n, 50);
-        };
-
-        JNGEN_ADD_PRODUCER(random_w100) {
-            return Tree::randomPrim(n, 100);
-        };
-
         JNGEN_ADD_PRODUCER(bamboo) {
             return Tree::bamboo(n);
         };
@@ -6434,6 +6393,42 @@ public:
             auto t1 = Tree::bamboo(n/2);
             auto t2 = Tree::star(n - n/2);
             return t1.link(n/2 - 1, t2, 0);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-100) {
+            return Tree::randomPrim(n, -100);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-50) {
+            return Tree::randomPrim(n, -50);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-10) {
+            return Tree::randomPrim(n, -10);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w-5) {
+            return Tree::randomPrim(n, -5);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w0) {
+            return Tree::randomPrim(n, 0);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w5) {
+            return Tree::randomPrim(n, 5);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w10) {
+            return Tree::randomPrim(n, 10);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w50) {
+            return Tree::randomPrim(n, 50);
+        };
+
+        JNGEN_ADD_PRODUCER(random_w100) {
+            return Tree::randomPrim(n, 100);
         };
 
 #undef JNGEN_PRODUCER_ARGS

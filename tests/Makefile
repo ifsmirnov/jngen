@@ -1,6 +1,7 @@
 CXXFLAGS = -O2 -Wall -Wextra -Werror -std=c++11
 CXXFLAGS += -DJNGEN_DECLARE_ONLY
 LDFLAGS += -lboost_system -lboost_unit_test_framework
+CXXFLAGS += -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
 
 CXX = g++-5
 # CXX = clang++-3.5

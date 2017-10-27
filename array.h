@@ -397,6 +397,9 @@ GenericArray<T> GenericArray<T>::choiceWithRepetition(size_t count) const {
 
 template<typename T>
 GenericArray<T>& GenericArray<T>::operator+=(const GenericArray<T>& other) {
+    if (&other == this) {
+        return *this *= 2;
+    }
     insert(end(), other.begin(), other.end());
     return *this;
 }
@@ -414,12 +417,10 @@ GenericArray<T>& GenericArray<T>::operator*=(int k) {
         return *this;
     }
 
-    this->reserve(this->size() * k);
+    this->reserve(size() * k);
 
-    size_t size = this->size();
-    while (k-- > 1) {
-        insert(end(), begin(), begin() + size);
-    }
+    std::copy_n(begin(), size() * (k - 1), std::back_inserter(*this));
+
     return *this;
 }
 

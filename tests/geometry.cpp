@@ -14,9 +14,21 @@ BOOST_AUTO_TEST_CASE(comparators) {
     BOOST_CHECK(eq(1 + 1e-10, 1 - 1e-10));
 }
 
+BOOST_AUTO_TEST_CASE(points_generation) {
+    auto a = rnda.randomfAll([]() { return rndg.point(3); });
+    BOOST_TEST(a.size() == 16);
+
+    auto b = rnda.randomfAll([]() { return rndg.point(2, 3); });
+    BOOST_TEST(b.size() == 12);
+
+    auto c = rnda.randomf(100, []() { return rndg.pointf(1); });
+    BOOST_TEST(c.size() == 100);
+}
+
 BOOST_AUTO_TEST_CASE(polygon) {
     rnd.seed(123);
     auto p = rndg.convexPolygon(10, 100, 100);
+    // TODO: check that it is convex
     BOOST_CHECK_EQUAL(p.size(), 10);
 }
 

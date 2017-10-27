@@ -22,7 +22,7 @@ Pointf GeometryRandom::pointf(long double X, long double Y) {
 }
 
 Pointf GeometryRandom::pointf(long double C) {
-    return point(C, C);
+    return pointf(C, C);
 }
 
 Polygon GeometryRandom::convexPolygon(int n, long long X, long long Y) {
