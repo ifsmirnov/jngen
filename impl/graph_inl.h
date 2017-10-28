@@ -90,6 +90,9 @@ public:
             "Number of vertices and edges in the graph must be nonnegative");
         checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
+            ensure(
+                t.n <= 1 || !t.connected,
+                "Empty graph on >1 vertices cannot be connected");
             Graph g;
             if (t.directed) {
                 g.directed_ = true;
@@ -108,6 +111,7 @@ public:
             Graph g;
             if (t.directed) {
                 g.directed_ = true;
+                ensure(!t.acyclic, "Cannot generate acyclic cycle");
             }
             for (int i = 0; i < t.n; ++i) {
                 g.addEdge(i, (i+1)%t.n);
@@ -132,9 +136,6 @@ public:
 
 private:
     static Graph doRandom(Traits t) {
-        if (t.directed && t.acyclic) {
-            return doDag(t);
-        }
         int n = t.n;
         int m = t.m;
 
@@ -159,15 +160,6 @@ private:
         }
 
         auto edgeIsGood = [&usedEdges, t](std::pair<int, int> edge) {
-            // TODO: move this check to edges generation loop
-            if (!t.allowLoops && edge.first == edge.second) {
-                ENSURE(false);
-                return false;
-            }
-            if (!t.directed && edge.first > edge.second) {
-                ENSURE(false);
-                std::swap(edge.first, edge.second);
-            }
             if (!t.allowMulti && usedEdges.count(edge)) {
                 return false;
             }
@@ -194,6 +186,10 @@ private:
             "Not enough edges found");
 
         Graph graph;
+
+        if (t.directed && t.acyclic) {
+            makeAcyclic(result);
+        }
         if (t.directed) {
             graph.directed_ = true;
         }
@@ -209,18 +205,34 @@ private:
     }
 
     static Graph doRandomStretched(Traits t, int elongation, int spread) {
-        ensure(
-                !t.directed,
-                "randomStretched not available for directed graphs");
-
         Tree tree = Tree::randomPrim(t.n, elongation);
         Array parents = tree.parents(0);
+        parents[0] = 0;
 
         Graph graph(tree);
 
         auto treeEdges = tree.edges();
+        if (t.directed && !t.acyclic) {
+            for (auto& edge: treeEdges) {
+                if (rnd.next(2)) {
+                    std::swap(edge.first, edge.second);
+                }
+            }
+        }
         std::set<std::pair<int, int>> usedEdges(
             treeEdges.begin(), treeEdges.end());
+
+        auto edgeIsGood = [&usedEdges, t](std::pair<int, int> edge) {
+            if (!t.allowMulti && usedEdges.count(edge)) {
+                return false;
+            }
+            if (t.directed && !t.allowAntiparallel &&
+                    usedEdges.count({edge.second, edge.first}))
+            {
+                return false;
+            }
+            return true;
+        };
 
         while (graph.m() != t.m) {
             int u = rnd.next(t.n);
@@ -236,8 +248,12 @@ private:
                 continue;
             }
 
-            if (!t.allowMulti && usedEdges.count({v, u})) {
+            if (!edgeIsGood({v, u})) {
                 continue;
+            }
+
+            if (t.directed && !t.acyclic && rnd.next(2)) {
+                std::swap(u, v);
             }
 
             graph.addEdge(u, v);
@@ -246,12 +262,6 @@ private:
 
         graph.normalizeEdges();
         return graph;
-    }
-
-    static Graph doDag(Traits t) {
-        (void)t;
-        ENSURE(false, "No dags at the moment");
-
     }
 
     static std::pair<int, int> randomEdge(int n, const Traits& t) {
@@ -268,6 +278,15 @@ private:
             res += n;
         }
         return res;
+    }
+
+    static void makeAcyclic(Arrayp& edges) {
+        auto numbering = Array::id(edges.size()).shuffle();
+        for (auto& edge: edges) {
+            if (numbering[edge.first] > numbering[edge.second]) {
+                std::swap(edge.first, edge.second);
+            }
+        }
     }
 };
 
