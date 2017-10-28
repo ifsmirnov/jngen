@@ -6283,7 +6283,10 @@ private:
         Array parents = tree.parents(0);
         parents[0] = 0;
 
-        Graph graph(tree);
+        Graph graph(t.n);
+        if (t.directed) {
+            graph.directed_ = true;
+        }
 
         auto treeEdges = tree.edges();
         if (t.directed && !t.acyclic) {
@@ -6293,6 +6296,11 @@ private:
                 }
             }
         }
+
+        for (const auto& edge: treeEdges) {
+            graph.addEdge(edge.first, edge.second);
+        }
+
         std::set<std::pair<int, int>> usedEdges(
             treeEdges.begin(), treeEdges.end());
 
@@ -6330,8 +6338,8 @@ private:
                 std::swap(u, v);
             }
 
-            graph.addEdge(u, v);
-            usedEdges.emplace(u, v);
+            graph.addEdge(v, u);
+            usedEdges.emplace(v, u);
         }
 
         graph.normalizeEdges();

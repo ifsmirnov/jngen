@@ -23,29 +23,28 @@ cout << Graph::complete(5).allowLoops() << endl;
 
 All graph generators return graph with sorted edges to make tests more human-readable. If you want to have your graph shuffled, use *.shuffle()* method, as in the example.
 
-Currently only generation of undirected graphs is supported.
-
 ### Generators
 #### random(int n, int m)
 * Returns: a random graph with *n* vertices and *m* edges.
-* Available modifiers: *connected*, *allowLoops*, *allowMulti*.
+* Available modifiers: *connected*, *allowLoops*, *allowMulti*, *directed*, *allowAntiparallel*, *acyclic*.
 
 #### complete(int n)
-* Returns: a complete graph with *n* vertices.
-* Available modifiers: *allowLoops*.
+* Returns: a complete graph with *n* vertices. If *directed* is specified, the direction of each edge is selected randomly, taking into account *allowAntiparallel* and *acyclic* flags.
+* Available modifiers: *allowLoops*, *directed*, *allowAntiparallel*, *acyclic*.
 
 #### cycle(int n)
 * Returns: a cycle with *n* vertices, connected in order.
-* Available modifiers: none.
+* Available modifiers: *directed*.
 
 #### empty(int n)
 * Returns: an empty graph with *n* vertices.
-* Available modifiers: none.
+* Available modifiers: *directed*.
 
 #### randomStretched(int n, int m, int elongation, int spread)
 * Returns: a connected stretched graph with *n* vertices and *m* vertices.
-* Available modifiers: *allowLoops*, *allowMulti*.
+* Available modifiers: *allowLoops*, *allowMulti*, *directed*, *allowAntiparallel*, *acyclic*.
 * Description: first a random tree on *n* vertices with given *elongation* (see [tree docs](/tree.md)) is generated. Then remaining *m*-*n*+*1* edges are added. One endpoint of an edge is selected at random. The second is a result of jumping to a tree parent of the first endoint a random number of times, from 0 to *spread*.
+* If the graph is directed, the direction of each edge is selected at random, unless it is acyclic: in this case the direction of all edges is down the tree.
 
 ### Modifiers
 All options are unset by default. If the generator contradicts some option (like *randomStretched*, which always produces a connected graph), it is ignored.
@@ -55,6 +54,12 @@ All options are unset by default. If the generator contradicts some option (like
 * Action: allow multiple edges in the generated graph (i.e. several edges with the same endpoints).
 #### allowLoops(bool value = true)
 * Action: allow loops in the generated graph (i.e. edges from a vertex to itself).
+#### directed(bool value = true)
+* Action: create a directed graph.
+#### allowAntiparallel(bool value = true)
+* Action: allow antiparallel edges (that is, edges u-v and v-u) in a directed graph. Ignored if *directed* is unset.
+#### acyclic(bool value = true)
+* Action: make the directed graph acyclic (DAG). Ignored if *directed* is unset.
 
 ### Graph methods
 #### Graph(int n)
@@ -68,4 +73,4 @@ All options are unset by default. If the generator contradicts some option (like
 * Shuffle the graph. This means:
     * relabel vertices in random order;
     * shuffle edges;
-    * randomly swap egdes' endpoints.
+    * randomly swap egdes' endpoints (for undirected graphs only).

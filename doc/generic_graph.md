@@ -44,6 +44,8 @@ Graphs and trees are printed as following. If *.printN()* and *.printM()* modifi
 * Returns: the number of vertices in the graph.
 #### int m() const
 * Returns: the number of edges in the graph.
+#### bool directed() const
+* Returns: true if and only the graph is directed.
 #### void addEdge(int u, int v, const Weight& w = Weight{})
 * Add an edge *(u, v)*, possbly, with weight *w*, to a graph.
 #### bool isConnected() const
@@ -55,7 +57,7 @@ Graphs and trees are printed as following. If *.printN()* and *.printM()* modifi
 #### Array edges(int v) const
 * Returns: array of vertices incident to *v*.
 #### Arrayp edges() const
-* Returns: array of all edges of the graph. // directed?
+* Returns: array of all edges of the graph.
 #### void setVertexWeights(const WeightArray& weights)
 * Set weight of *i*-th vertex to *weights[i]*. Size of *weights* must be equal to *n*.
 #### void setVertexWeight(int v, const Weight& weight)
