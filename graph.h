@@ -17,6 +17,7 @@ class Graph : public ReprProxy<Graph>, public GenericGraph {
     using Traits = graph_detail::Traits;
 
     friend class graph_detail::GraphRandom;
+    friend class graph_detail::BuilderProxy;
 
 public:
     virtual ~Graph() {}

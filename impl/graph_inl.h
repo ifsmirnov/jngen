@@ -3,9 +3,9 @@
 #include "../graph.h" // for completion emgine
 #endif
 
-#include "array.h"
-#include "common.h"
-#include "printers.h"
+#include "../array.h"
+#include "../common.h"
+#include "../printers.h"
 
 namespace jngen {
 
@@ -43,16 +43,39 @@ public:
         ensure(
             n >= 0,
             "Number of vertices and edges in the graph must be nonnegative");
-        checkLargeParameter(n);
+        checkLargeParameter(n * n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
+            if (t.directed) {
+                g.directed_ = true;
+            }
             for (int i = 0; i < t.n; ++i) {
-                for (int j = 0; j < t.n; ++j) {
-                    if (i < j ||
-                        (i == j && t.allowLoops) ||
-                        (i > j && t.directed))
-                    {
+                for (int j = 0; j <= i; ++j) {
+                    if (i == j) {
+                        if (t.allowLoops) {
+                            g.addEdge(i, j);
+                        }
+                        continue;
+                    }
+
+                    if (t.directed) {
+                        if (t.acyclic) {
+                            g.addEdge(i, j);
+                        } else if (t.allowAntiparallel) {
+                            g.addEdge(i, j);
+                            g.addEdge(j, i);
+                        } else {
+                            if (rnd.next(2)) {
+                                g.addEdge(i, j);
+                            } else {
+                                g.addEdge(j, i);
+                            }
+                        }
+                    } else {
                         g.addEdge(i, j);
+                        if (t.allowMulti) {
+                            g.addEdge(j, i);
+                        }
                     }
                 }
             }
@@ -68,6 +91,9 @@ public:
         checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
+            if (t.directed) {
+                g.directed_ = true;
+            }
             g.setN(t.n);
             return g;
         });
@@ -80,6 +106,9 @@ public:
         checkLargeParameter(n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
+            if (t.directed) {
+                g.directed_ = true;
+            }
             for (int i = 0; i < t.n; ++i) {
                 g.addEdge(i, (i+1)%t.n);
             }
@@ -103,6 +132,9 @@ public:
 
 private:
     static Graph doRandom(Traits t) {
+        if (t.directed && t.acyclic) {
+            return doDag(t);
+        }
         int n = t.n;
         int m = t.m;
 
@@ -115,6 +147,13 @@ private:
         if (t.connected) {
             ensure(m >= n - 1, "Not enough edges for a connected graph");
             auto treeEdges = Tree::random(n).edges();
+            if (t.directed) {
+                for (auto& edge: treeEdges) {
+                    if (rnd.next(2)) {
+                        std::swap(edge.first, edge.second);
+                    }
+                }
+            }
             usedEdges.insert(treeEdges.begin(), treeEdges.end());
             ENSURE(usedEdges.size() == static_cast<size_t>(n - 1));
         }
@@ -129,8 +168,12 @@ private:
                 ENSURE(false);
                 std::swap(edge.first, edge.second);
             }
-
             if (!t.allowMulti && usedEdges.count(edge)) {
+                return false;
+            }
+            if (t.directed && !t.allowAntiparallel &&
+                    usedEdges.count({edge.second, edge.first}))
+            {
                 return false;
             }
             return true;
@@ -151,6 +194,9 @@ private:
             "Not enough edges found");
 
         Graph graph;
+        if (t.directed) {
+            graph.directed_ = true;
+        }
 
         graph.setN(n);
         for (const auto& edge: result) {
@@ -163,6 +209,10 @@ private:
     }
 
     static Graph doRandomStretched(Traits t, int elongation, int spread) {
+        ensure(
+                !t.directed,
+                "randomStretched not available for directed graphs");
+
         Tree tree = Tree::randomPrim(t.n, elongation);
         Array parents = tree.parents(0);
 
@@ -198,6 +248,12 @@ private:
         return graph;
     }
 
+    static Graph doDag(Traits t) {
+        (void)t;
+        ENSURE(false, "No dags at the moment");
+
+    }
+
     static std::pair<int, int> randomEdge(int n, const Traits& t) {
         return rnd.nextp(n, RandomPairTraits{!t.directed, !t.allowLoops});
     }
@@ -205,7 +261,7 @@ private:
     static long long maxEdges(int n, const Traits& t) {
         ENSURE(!t.allowMulti);
         long long res = static_cast<long long>(n) * (n-1);
-        if (!t.directed) {
+        if (!(t.directed && t.allowAntiparallel)) {
             res /= 2;
         }
         if (t.allowLoops) {

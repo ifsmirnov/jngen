@@ -296,6 +296,7 @@ public:
     static TArray<Point> pointsInGeneralPosition(int n, long long C);
 };
 
+
 JNGEN_EXTERN GeometryRandom rndg;
 
 JNGEN_EXTERN template struct jngen::TPoint<long long>;
@@ -322,6 +323,14 @@ using jngen::Polygonf;
 using jngen::rndg;
 
 using jngen::setEps;
+
+// workaround for g++-7
+namespace std {
+
+JNGEN_EXTERN template class std::allocator<Point>;
+JNGEN_EXTERN template class std::allocator<Pointf>;
+
+} // namespace std
 
 #ifndef JNGEN_DECLARE_ONLY
 #define JNGEN_INCLUDE_GEOMETRY_INL_H

@@ -14,8 +14,10 @@ struct Traits {
     int n;
     int m;
     bool directed = false;
+    bool acyclic = false;
     bool allowLoops = false;
     bool allowMulti = false;
+    bool allowAntiparallel = false;
     bool connected = false;
 
     Traits() {}
@@ -46,8 +48,23 @@ public:
         return *this;
     }
 
+    BuilderProxy& allowAntiparallel(bool value = true) {
+        traits_.allowAntiparallel = value;
+        return *this;
+    }
+
     BuilderProxy& connected(bool value = true) {
         traits_.connected = value;
+        return *this;
+    }
+
+    BuilderProxy& directed(bool value = true) {
+        traits_.directed = value;
+        return *this;
+    }
+
+    BuilderProxy& acyclic(bool value = true) {
+        traits_.acyclic = value;
         return *this;
     }
 

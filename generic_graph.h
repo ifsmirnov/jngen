@@ -21,6 +21,8 @@ public:
     virtual int n() const { return adjList_.size(); }
     virtual int m() const { return numEdges_; }
 
+    bool directed() const { return directed_; }
+
     // u, v: labels
     virtual void addEdge(int u, int v, const Weight& w = Weight{});
     virtual bool isConnected() const { return dsu_.isConnected(); }
