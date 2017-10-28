@@ -168,6 +168,13 @@ struct TypedRandom<double> : public BaseTypedRandom {
 };
 
 template<>
+struct TypedRandom<long double> : public BaseTypedRandom {
+    using BaseTypedRandom::BaseTypedRandom;
+    double next(double n) { return random.next(n); }
+    double next(double l, double r) { return random.next(l, r); }
+};
+
+template<>
 struct TypedRandom<long long> : public BaseTypedRandom {
     using BaseTypedRandom::BaseTypedRandom;
     long long next(long long n) { return random.next(n); }

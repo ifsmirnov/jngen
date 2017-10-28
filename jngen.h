@@ -1699,6 +1699,13 @@ struct TypedRandom<double> : public BaseTypedRandom {
 };
 
 template<>
+struct TypedRandom<long double> : public BaseTypedRandom {
+    using BaseTypedRandom::BaseTypedRandom;
+    double next(double n) { return random.next(n); }
+    double next(double l, double r) { return random.next(l, r); }
+};
+
+template<>
 struct TypedRandom<long long> : public BaseTypedRandom {
     using BaseTypedRandom::BaseTypedRandom;
     long long next(long long n) { return random.next(n); }
@@ -4185,24 +4192,24 @@ public:
         created = true;
     }
 
-    // point in [0, X] x [0, Y]
-    static Point point(long long X, long long Y);
+    // point in [C1, C2] x [C1, C2]
+    static Point point(long long C1, long long C2);
 
     // point in [0, C] x [0, C]
     static Point point(long long C);
 
-    // point in [0, X] x [0, Y]
-    static Pointf pointf(long double X, long double Y);
+    // point in [C1, C2] x [C1, C2]
+    static Pointf pointf(long double C1, long double C2);
 
     // point in [0, C] x [0, C]
     static Pointf pointf(long double C);
 
-    static Polygon convexPolygon(int n, long long X, long long Y);
+    static Polygon convexPolygon(int n, long long C1, long long C2);
 
     static Polygon convexPolygon(int n, long long C);
 
     static TArray<Point> pointsInGeneralPosition(
-            int n, long long X, long long Y);
+            int n, long long C1, long long C2);
 
     static TArray<Point> pointsInGeneralPosition(int n, long long C);
 };
@@ -4251,27 +4258,31 @@ JNGEN_EXTERN template class std::allocator<Pointf>;
 
 namespace jngen {
 
-Point GeometryRandom::point(long long X, long long Y) {
-    long long x = rnd.tnext<long long>(0, X);
-    long long y = rnd.tnext<long long>(0, Y);
+Point GeometryRandom::point(long long C1, long long C2) {
+    long long x = rnd.tnext<long long>(C1, C2);
+    long long y = rnd.tnext<long long>(C1, C2);
     return {x, y};
 }
 
 Point GeometryRandom::point(long long C) {
-    return point(C, C);
+    return point(0, C);
 }
 
-Pointf GeometryRandom::pointf(long double X, long double Y) {
-    long double x = rnd.tnext<long double>(0, X);
-    long double y = rnd.tnext<long double>(0, Y);
+Pointf GeometryRandom::pointf(long double C1, long double C2) {
+    long double x = rnd.tnext<long double>(C1, C2);
+    long double y = rnd.tnext<long double>(C1, C2);
     return {x, y};
 }
 
 Pointf GeometryRandom::pointf(long double C) {
-    return pointf(C, C);
+    return pointf(0, C);
 }
 
-Polygon GeometryRandom::convexPolygon(int n, long long X, long long Y) {
+Polygon GeometryRandom::convexPolygon(int n, long long C1, long long C2) {
+    // TODO - c1, c2;
+    (void)C1;
+    auto X = C2;
+    auto Y = C2;
     ensure(n >= 0);
     Polygon res = detail::convexPolygonByEllipse<long long>(
         n * 10, // BUBEN!
@@ -4294,15 +4305,15 @@ Polygon GeometryRandom::convexPolygon(int n, long long X, long long Y) {
 }
 
 Polygon GeometryRandom::convexPolygon(int n, long long C) {
-    return convexPolygon(n, C, C);
+    return convexPolygon(n, 0, C);
 }
 
 TArray<Point> GeometryRandom::pointsInGeneralPosition(int n, long long C) {
-    return pointsInGeneralPosition(n, C, C);
+    return pointsInGeneralPosition(n, 0, C);
 }
 
 TArray<Point> GeometryRandom::pointsInGeneralPosition(
-        int n, long long X, long long Y)
+        int n, long long C1, long long C2)
 {
     struct Line {
         long long A, B, C; // Ax + By + C = 0
@@ -4332,7 +4343,7 @@ TArray<Point> GeometryRandom::pointsInGeneralPosition(
 
     const long long LIMIT = 2e9;
     ensure(
-        X <= LIMIT && Y <= LIMIT,
+        std::abs(C1 - C2) <= LIMIT && C1 <= LIMIT && C2 <= LIMIT,
         "rndg.pointsInGeneralPosition must not be called with coordinates "
         "larger than 2e9");
 
@@ -4342,7 +4353,7 @@ TArray<Point> GeometryRandom::pointsInGeneralPosition(
     TArray<Point> res;
 
     while (static_cast<int>(res.size()) != n) {
-        Point p = point(X, Y);
+        Point p = point(C1, C2);
 
         if (points.count(p)) {
             continue;

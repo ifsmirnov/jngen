@@ -19,10 +19,13 @@ BOOST_AUTO_TEST_CASE(points_generation) {
     BOOST_TEST(a.size() == 16);
 
     auto b = rnda.randomfAll([]() { return rndg.point(2, 3); });
-    BOOST_TEST(b.size() == 12);
+    BOOST_TEST(b.size() == 4);
 
     auto c = rnda.randomf(100, []() { return rndg.pointf(1); });
     BOOST_TEST(c.size() == 100);
+
+    auto d = rnda.randomfAll([]() { return rndg.point(-2, 2); });
+    BOOST_TEST(d.size() == 25);
 }
 
 BOOST_AUTO_TEST_CASE(polygon) {

@@ -274,24 +274,24 @@ public:
         created = true;
     }
 
-    // point in [0, X] x [0, Y]
-    static Point point(long long X, long long Y);
+    // point in [C1, C2] x [C1, C2]
+    static Point point(long long C1, long long C2);
 
     // point in [0, C] x [0, C]
     static Point point(long long C);
 
-    // point in [0, X] x [0, Y]
-    static Pointf pointf(long double X, long double Y);
+    // point in [C1, C2] x [C1, C2]
+    static Pointf pointf(long double C1, long double C2);
 
     // point in [0, C] x [0, C]
     static Pointf pointf(long double C);
 
-    static Polygon convexPolygon(int n, long long X, long long Y);
+    static Polygon convexPolygon(int n, long long C1, long long C2);
 
     static Polygon convexPolygon(int n, long long C);
 
     static TArray<Point> pointsInGeneralPosition(
-            int n, long long X, long long Y);
+            int n, long long C1, long long C2);
 
     static TArray<Point> pointsInGeneralPosition(int n, long long C);
 };
