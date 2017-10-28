@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "range_option.h"
 
 #include <map>
 #include <sstream>
@@ -284,35 +285,6 @@ inline bool hasOpt(const Index& index) {
     return vmap.count(index);
 }
 
-inline std::vector<std::string> splitByComma(std::string s) {
-    auto strip = [](std::string s) {
-        size_t l = 0;
-        while (l < s.size() && s[l] == ' ') {
-            ++l;
-        }
-        s = s.substr(l);
-        while (!s.empty() && s.back() == ' ') {
-            s.pop_back();
-        }
-        return s;
-    };
-
-    std::vector<std::string> result;
-    s += ',';
-    std::string cur;
-
-    for (char c: s) {
-        if (c == ',') {
-            result.push_back(strip(cur));
-            cur.clear();
-        } else {
-            cur += c;
-        }
-    }
-
-    return result;
-}
-
 template<typename T>
 bool readVariable(const std::string& value, T& var) {
     std::istringstream ss(value);
@@ -363,7 +335,7 @@ int doGetNamed(const std::string& names, Args&... args) {
         vmap.initialized,
         "parseArgs(args, argv) must be called before getNamed(...)");
 
-    auto namesSplit = detail::splitByComma(names);
+    auto namesSplit = util::split(names, ',');
 
     ENSURE(
         namesSplit.size() == sizeof...(args),
@@ -411,11 +383,17 @@ inline bool hasOpt(const std::string& name) {
     return vmap.count(name);
 }
 
+inline options::Range parseRange(const std::string& value) {
+    return options::Range::fromString(value);
+
+}
+
 } // namespace jngen
 
 using jngen::parseArgs;
 using jngen::getOpt;
 using jngen::hasOpt;
+using jngen::parseRange;
 
 using jngen::getPositional;
 

@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 #ifdef JNGEN_DECLARE_ONLY
 #define JNGEN_EXTERN extern
@@ -165,6 +166,35 @@ inline long long gcd(long long a, long long b) {
         }
     }
     return a + b;
+}
+
+inline std::vector<std::string> split(std::string s, char delimiter) {
+    auto strip = [](std::string s) {
+        size_t l = 0;
+        while (l < s.size() && s[l] == ' ') {
+            ++l;
+        }
+        s = s.substr(l);
+        while (!s.empty() && s.back() == ' ') {
+            s.pop_back();
+        }
+        return s;
+    };
+
+    std::vector<std::string> result;
+    s += delimiter;
+    std::string cur;
+
+    for (char c: s) {
+        if (c == delimiter) {
+            result.push_back(strip(cur));
+            cur.clear();
+        } else {
+            cur += c;
+        }
+    }
+
+    return result;
 }
 
 } // namespace util
