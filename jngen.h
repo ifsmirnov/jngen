@@ -5554,6 +5554,21 @@ struct QueryResult : public ReprProxy<QueryResult> {
     int second = 0;
     Weight value;
 
+    // waiting for Variant::operator<
+    /*
+    bool operator<(const QueryResult& other) const {
+        return std::tie(type, prefix, first, second, value) <
+            std::tie(other.type, other.prefix, other.first,
+                    other.second, other.value);
+    }
+
+    bool operator==(const QueryResult& other) const {
+        return std::tie(type, prefix, first, second, value) ==
+            std::tie(other.type, other.prefix, other.first,
+                    other.second, other.value);
+    }
+    */
+
     std::function<void(void)> function;
     uint64_t savedRandomState = 0;
 
@@ -5766,19 +5781,19 @@ class FunctionQueryBuilder;
 template<typename T>
 class CrtpQueryBuilder : public GenericQueryBuilder {
 public:
-    T& prefix(std::string s) {
+    T&& prefix(std::string s) {
         prefix_ = std::move(s);
-        return static_cast<T&>(*this);
+        return static_cast<T&&>(*this);
     }
 
-    T& ratio(int ratio) {
+    T&& ratio(int ratio) {
         ratio_ = ratio;
-        return static_cast<T&>(*this);
+        return static_cast<T&&>(*this);
     }
 
-    T& withValue(std::function<Weight(void)> func);
+    T&& withValue(std::function<Weight(void)> func);
     template<typename ... Args>
-    T& withRandomValue(Args... args);
+    T&& withRandomValue(Args... args);
 
     PointQueryBuilder& addPoint() &;
     SegmentQueryBuilder& addSegment() &;
@@ -5916,15 +5931,15 @@ FunctionQueryBuilder& CrtpQueryBuilder<T>::addFunction(
 }
 
 template<typename T>
-T& CrtpQueryBuilder<T>::withValue(std::function<Weight(void)> func) {
+T&& CrtpQueryBuilder<T>::withValue(std::function<Weight(void)> func) {
     setValueAdder(std::make_shared<FunctionValueAdder>(func));
-    return static_cast<T&>(*this);
+    return static_cast<T&&>(*this);
 }
 template<typename T>
 template<typename ... Args>
-T& CrtpQueryBuilder<T>::withRandomValue(Args... args) {
+T&& CrtpQueryBuilder<T>::withRandomValue(Args... args) {
     setValueAdder(std::make_shared<RndValueAdder<Args...>>(args...));
-    return static_cast<T&>(*this);
+    return static_cast<T&&>(*this);
 }
 
 struct Rndq {
