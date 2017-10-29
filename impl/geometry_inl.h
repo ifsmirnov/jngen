@@ -5,43 +5,69 @@
 
 namespace jngen {
 
-Point GeometryRandom::point(long long C1, long long C2) {
-    long long x = rnd.tnext<long long>(C1, C2);
-    long long y = rnd.tnext<long long>(C1, C2);
-    return {x, y};
-}
-
 Point GeometryRandom::point(long long C) {
-    return point(0, C);
+    return point(0, 0, C, C);
 }
 
-Pointf GeometryRandom::pointf(long double C1, long double C2) {
-    long double x = rnd.tnext<long double>(C1, C2);
-    long double y = rnd.tnext<long double>(C1, C2);
-    return {x, y};
+Point GeometryRandom::point(long long min, long long max) {
+    return point(min, min, max, max);
 }
 
-Pointf GeometryRandom::pointf(long double C) {
-    return pointf(0, C);
+Point GeometryRandom::point(
+        long long X1, long long Y1,
+        long long X2, long long Y2) {
+    long long x = rnd.tnext<long long>(X1, X2);
+    long long y = rnd.tnext<long long>(Y1, Y2);
+    return Point(x, y);
 }
 
-Polygon GeometryRandom::convexPolygon(int n, long long C1, long long C2) {
-    // TODO - c1, c2;
-    (void)C1;
-    auto X = C2;
-    auto Y = C2;
+Point GeometryRandom::pointf(long double C) {
+    return pointf(0, 0, C, C);
+}
+
+Point GeometryRandom::pointf(long double min, long double max) {
+    return pointf(min, min, max, max);
+}
+
+Point GeometryRandom::pointf(
+        long double X1, long double Y1,
+        long double X2, long double Y2)
+{
+    long double x = rnd.tnext<long double>(X1, X2);
+    long double y = rnd.tnext<long double>(Y1, Y2);
+    return Pointf(x, y);
+}
+
+
+Polygon GeometryRandom::convexPolygon(int n, long long C) {
+    return convexPolygon(n, 0, 0, C, C);
+}
+
+Polygon GeometryRandom::convexPolygon(int n, long long min, long long max) {
+    return convexPolygon(n, min, min, max, max);
+}
+
+Polygon GeometryRandom::convexPolygon(
+            int n,
+            long long X1, long long Y1,
+            long long X2, long long Y2)
+{
+    // todo: off-by-one error?
+    auto dx = X2 - X1;
+    auto dy = Y2 - Y1;
     ensure(n >= 0);
     Polygon res = detail::convexPolygonByEllipse<long long>(
         n * 10, // BUBEN!
-        Point(X/2, Y/2),
-        Point(X/2, 0),
-        Point(0, Y/2)
+        Point(dx / 2, dy / 2),
+        Point(dx / 2, 0),
+        Point(0, dy / 2)
     );
+    res.shift(Point(X1, Y1));
     for (auto& x: res) {
-        ensure(x.x >= 0);
-        ensure(x.x <= X);
-        ensure(x.y >= 0);
-        ensure(x.y <= Y);
+        ENSURE(x.x >= X1);
+        ENSURE(x.x <= X2);
+        ENSURE(x.y >= Y1);
+        ENSURE(x.y <= Y2);
     }
 
     ensure(
@@ -51,16 +77,21 @@ Polygon GeometryRandom::convexPolygon(int n, long long C1, long long C2) {
     return res.subseq(Array::id(res.size()).choice(n).sort());
 }
 
-Polygon GeometryRandom::convexPolygon(int n, long long C) {
-    return convexPolygon(n, 0, C);
-}
 
 TArray<Point> GeometryRandom::pointsInGeneralPosition(int n, long long C) {
-    return pointsInGeneralPosition(n, 0, C);
+    return pointsInGeneralPosition(n, 0, 0, C, C);
 }
 
 TArray<Point> GeometryRandom::pointsInGeneralPosition(
-        int n, long long C1, long long C2)
+        int n, long long min, long long max)
+{
+    return pointsInGeneralPosition(n, min, min, max, max);
+}
+
+TArray<Point> GeometryRandom::pointsInGeneralPosition(
+        int n,
+        long long X1, long long Y1,
+        long long X2, long long Y2)
 {
     struct Line {
         long long A, B, C; // Ax + By + C = 0
@@ -90,7 +121,8 @@ TArray<Point> GeometryRandom::pointsInGeneralPosition(
 
     const long long LIMIT = 2e9;
     ensure(
-        std::abs(C1 - C2) <= LIMIT && C1 <= LIMIT && C2 <= LIMIT,
+        std::abs(X2 - X1) <= LIMIT && X1 <= LIMIT && X2 <= LIMIT &&
+            std::abs(Y2 - Y1) <= LIMIT && Y1 <= LIMIT && Y2 <= LIMIT,
         "rndg.pointsInGeneralPosition must not be called with coordinates "
         "larger than 2e9");
 
@@ -100,7 +132,7 @@ TArray<Point> GeometryRandom::pointsInGeneralPosition(
     TArray<Point> res;
 
     while (static_cast<int>(res.size()) != n) {
-        Point p = point(C1, C2);
+        Point p = point(X1, Y1, X2, Y2);
 
         if (points.count(p)) {
             continue;

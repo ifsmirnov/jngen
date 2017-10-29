@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE(points_generation) {
 
 BOOST_AUTO_TEST_CASE(polygon) {
     rnd.seed(123);
-    auto p = rndg.convexPolygon(10, 100, 100);
+    auto p = rndg.convexPolygon(10, 100);
     // TODO: check that it is convex
     BOOST_CHECK_EQUAL(p.size(), 10);
 }

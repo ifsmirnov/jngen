@@ -13,12 +13,17 @@ If you are looking for an SVG drawing tool, please refer to [this](drawer.md) pa
 #### Pointf pointf(long double C)
 * Returns: random point with coordinates between 0 and C, inclusive.
 
-#### Point point(long long X, long long Y)
-#### Pointf pointf(long double X, long double Y)
-* Returns: random point with x-coordinate between 0 and X and y-coordinate between 0 and Y, inclusive.
+#### Point point(long long min, long long max)
+#### Pointf pointf(long double min, long double max)
+* Returns: random point with coordinates between *min* and *max*, inclusive.
+
+#### Point point(long long x1, long long y1, long long x2, long long y2)
+#### Pointf pointf(long double x1, long double y1, long double x2, long double y2)
+* Returns: random point with x-coordinate between *x1* and *x2* and y-coordinate between *y1* and *y2*, inclusive.
 
 #### Polygon convexPolygon(int n, long long C)
-#### Polygon convexPolygon(int n, long long X, long long Y)
+#### Polygon convexPolygon(int n, long long min, long long max)
+#### Polygon convexPolygon(int n, long long x1, long long y1, long long x2, long long y2)
 * Returns: random convex polygon with *n* vertices and coordinates lying in specified range.
 * No three consecutive vertices lie on the same line, no two points coincide.
 * Polygon is generated like following: convex hull of *10n* random points on an ellipse is taken,
@@ -26,7 +31,8 @@ If you are looking for an SVG drawing tool, please refer to [this](drawer.md) pa
 * Throws if the are less than *n* points on the above convex hull.
 
 #### TArray&lt;Point> pointsInGeneralPosition(int n, long long C)
-#### TArray&lt;Point> pointsInGeneralPosition(int n, long long X, long long Y)
+#### TArray&lt;Point> pointsInGeneralPosition(int n, long long min, long long max)
+#### TArray&lt;Point> pointsInGeneralPosition(int n, long long x1, long long y1, long long x2, long long y2)
 * Returns: *n* random points such that no two coincide and no three lie on the same line.
 * Complexity: *O(n<sup>2</sup> log n)*.
 
