@@ -26,6 +26,8 @@ public:
 
     Tree& shuffle();
     Tree shuffled() const;
+    Tree& shuffleAllBut(const Array& except);
+    Tree shuffledAllBut(const Array& except) const;
 
     Tree link(int vInThis, const Tree& other, int vInOther);
     Tree glue(int vInThis, const Tree& other, int vInOther);

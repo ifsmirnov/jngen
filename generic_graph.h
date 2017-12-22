@@ -65,6 +65,8 @@ protected:
     static WeightArray prepareWeightArray(WeightArray a, int requiredSize);
 
     void doShuffle();
+    void doShuffleAllBut(const Array& except);
+    void doShuffleEdges();
 
     void extend(size_t size);
 

@@ -74,3 +74,12 @@ All options are unset by default. If the generator contradicts some option (like
     * relabel vertices in random order;
     * shuffle edges;
     * randomly swap egdes' endpoints (for undirected graphs only).
+
+#### Graph& shuffleAllBut(const Array& except)
+#### Graph shuffledAllBut(const Array& except)
+* Same as *shuffle*, but vertices from *except* do not change their numbers.
+    * Possible usecase: we may generate a graph where *s-t* path is supposed to be found. Then shuffle the graph in such a way that path endpoints are still *1* and *n*:
+```cpp
+g = Graph::random(n, m)...;
+g.shuffleAllBut({0, n-1});
+```

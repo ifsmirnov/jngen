@@ -5492,6 +5492,8 @@ protected:
     static WeightArray prepareWeightArray(WeightArray a, int requiredSize);
 
     void doShuffle();
+    void doShuffleAllBut(const Array& except);
+    void doShuffleEdges();
 
     void extend(size_t size);
 
@@ -5643,6 +5645,29 @@ void GenericGraph::doShuffle() {
     vertexLabel_.shuffle();
     vertexByLabel_ = vertexLabel_.inverse();
 
+    doShuffleEdges();
+}
+
+void GenericGraph::doShuffleAllBut(const Array& except) {
+    Array index = except.sorted();
+    Array needed = Array::id(n());
+    needed.erase(std::set_difference(
+                needed.begin(), needed.end(),
+                index.begin(), index.end(),
+                needed.begin()), needed.end());
+    Array neededShuffled = needed.shuffled();
+    Array perm = Array::id(n());
+    for (size_t i = 0; i < needed.size(); ++i) {
+        perm[needed[i]] = neededShuffled[i];
+    }
+
+    vertexLabel_ = vertexLabel_.subseq(perm);
+    vertexByLabel_ = vertexLabel_.inverse();
+
+    doShuffleEdges();
+}
+
+void GenericGraph::doShuffleEdges() {
     if (!directed_) {
         for (auto& edge: edges_) {
             if (rnd.next(2)) {
@@ -5864,6 +5889,8 @@ public:
 
     Tree& shuffle();
     Tree shuffled() const;
+    Tree& shuffleAllBut(const Array& except);
+    Tree shuffledAllBut(const Array& except) const;
 
     Tree link(int vInThis, const Tree& other, int vInOther);
     Tree glue(int vInThis, const Tree& other, int vInOther);
@@ -5967,6 +5994,16 @@ Tree& Tree::shuffle() {
 Tree Tree::shuffled() const {
     Tree t = *this;
     return t.shuffle();
+}
+
+inline Tree& Tree::shuffleAllBut(const Array& except) {
+    doShuffleAllBut(except);
+    return *this;
+}
+
+inline Tree Tree::shuffledAllBut(const Array& except) const {
+    Tree g(*this);
+    return g.shuffleAllBut(except);
 }
 
 Tree Tree::link(int vInThis, const Tree& other, int vInOther) {
@@ -6205,6 +6242,8 @@ public:
 
     Graph& shuffle();
     Graph shuffled() const;
+    Graph& shuffleAllBut(const Array& except);
+    Graph shuffledAllBut(const Array& except) const;
 
     static BuilderProxy random(int n, int m);
     static BuilderProxy complete(int n);
@@ -6227,6 +6266,16 @@ inline Graph& Graph::shuffle() {
 inline Graph Graph::shuffled() const {
     Graph g(*this);
     return g.shuffle();
+}
+
+inline Graph& Graph::shuffleAllBut(const Array& except) {
+    doShuffleAllBut(except);
+    return *this;
+}
+
+inline Graph Graph::shuffledAllBut(const Array& except) const {
+    Graph g(*this);
+    return g.shuffleAllBut(except);
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Graph, 2) {

@@ -99,6 +99,29 @@ void GenericGraph::doShuffle() {
     vertexLabel_.shuffle();
     vertexByLabel_ = vertexLabel_.inverse();
 
+    doShuffleEdges();
+}
+
+void GenericGraph::doShuffleAllBut(const Array& except) {
+    Array index = except.sorted();
+    Array needed = Array::id(n());
+    needed.erase(std::set_difference(
+                needed.begin(), needed.end(),
+                index.begin(), index.end(),
+                needed.begin()), needed.end());
+    Array neededShuffled = needed.shuffled();
+    Array perm = Array::id(n());
+    for (size_t i = 0; i < needed.size(); ++i) {
+        perm[needed[i]] = neededShuffled[i];
+    }
+
+    vertexLabel_ = vertexLabel_.subseq(perm);
+    vertexByLabel_ = vertexLabel_.inverse();
+
+    doShuffleEdges();
+}
+
+void GenericGraph::doShuffleEdges() {
     if (!directed_) {
         for (auto& edge: edges_) {
             if (rnd.next(2)) {

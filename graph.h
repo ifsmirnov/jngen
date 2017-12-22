@@ -33,6 +33,8 @@ public:
 
     Graph& shuffle();
     Graph shuffled() const;
+    Graph& shuffleAllBut(const Array& except);
+    Graph shuffledAllBut(const Array& except) const;
 
     static BuilderProxy random(int n, int m);
     static BuilderProxy complete(int n);
@@ -55,6 +57,16 @@ inline Graph& Graph::shuffle() {
 inline Graph Graph::shuffled() const {
     Graph g(*this);
     return g.shuffle();
+}
+
+inline Graph& Graph::shuffleAllBut(const Array& except) {
+    doShuffleAllBut(except);
+    return *this;
+}
+
+inline Graph Graph::shuffledAllBut(const Array& except) const {
+    Graph g(*this);
+    return g.shuffleAllBut(except);
 }
 
 JNGEN_DECLARE_SIMPLE_PRINTER(Graph, 2) {

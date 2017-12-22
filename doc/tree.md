@@ -47,6 +47,15 @@ Note that all generators return trees with sorted edges to make tests more human
     * shuffle edges;
     * randomly swap egdes' endpoints.
 
+#### Tree& shuffleAllBut(const Array& except)
+#### Tree shuffledAllBut(const Array& except)
+* Same as *shuffle*, but vertices from *except* do not change their numbers.
+    * Possible usecase: we may generate a rooted tree and shuffle it in such a way that root still has number *1*.
+```cpp
+t = Tree::randomPrim(n, 1000);
+t.shuffleAllBut({0});
+```
+
 #### Array parents(int root) const
 * Returns: array of size *n*, where *i*-th element is a parent of vertex *i* if the tree is rooted at *root*. Parent of *root* is *-1*.
 
