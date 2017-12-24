@@ -6405,6 +6405,7 @@ public:
         checkLargeParameter(n * n);
         return BuilderProxy(Traits(n), [](Traits t) {
             Graph g;
+            g.setN(t.n);
             if (t.directed) {
                 g.directed_ = true;
             }
@@ -6559,10 +6560,6 @@ private:
         Array parents = tree.parents(0);
         parents[0] = 0;
 
-        Graph graph(t.n);
-        if (t.directed) {
-            graph.directed_ = true;
-        }
 
         auto treeEdges = tree.edges();
         if (t.directed && !t.acyclic) {
@@ -6573,11 +6570,10 @@ private:
             }
         }
 
-        for (const auto& edge: treeEdges) {
-            graph.addEdge(edge.first, edge.second);
-        }
+        Arrayp edges = treeEdges;
+        edges.reserve(t.m);
 
-        std::set<std::pair<int, int>> usedEdges(
+        std::unordered_set<std::pair<int, int>> usedEdges(
             treeEdges.begin(), treeEdges.end());
 
         auto edgeIsGood = [&usedEdges, t](std::pair<int, int> edge) {
@@ -6592,8 +6588,7 @@ private:
             return true;
         };
 
-        // TODO: add initWithEdges here and to other generators
-        while (graph.m() != t.m) {
+        while (static_cast<int>(edges.size()) != t.m) {
             int u = rnd.next(t.n);
             int up = rnd.next(0, spread);
             int v = u;
@@ -6615,11 +6610,15 @@ private:
                 std::swap(u, v);
             }
 
-            graph.addEdge(v, u);
-            usedEdges.emplace(v, u);
+            edges.emplace_back(v, u);
         }
 
-        graph.normalizeEdges();
+        Graph graph;
+        if (t.directed) {
+            graph.directed_ = true;
+        }
+
+        graph.initWithEdges(t.n, edges);
         return graph;
     }
 
