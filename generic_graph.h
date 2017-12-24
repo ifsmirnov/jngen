@@ -61,6 +61,8 @@ public:
     virtual bool operator<=(const GenericGraph& other) const;
     virtual bool operator>=(const GenericGraph& other) const;
 
+    void initWithEdges(int n, const Arrayp& edges);
+
 protected:
     static WeightArray prepareWeightArray(WeightArray a, int requiredSize);
 

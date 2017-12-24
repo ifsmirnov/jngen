@@ -143,7 +143,7 @@ private:
             ensure(m <= maxEdges(n, t), "Too many edges in the graph");
         }
 
-        std::set<std::pair<int, int>> usedEdges;
+        std::unordered_set<std::pair<int, int>> usedEdges;
 
         if (t.connected) {
             ensure(m >= n - 1, "Not enough edges for a connected graph");
@@ -172,6 +172,7 @@ private:
         };
 
         Arrayp result(usedEdges.begin(), usedEdges.end());
+        result.reserve(m);
 
         while (result.size() < static_cast<size_t>(m)) {
             auto edge = randomEdge(n, t);
@@ -180,10 +181,6 @@ private:
                 result.push_back(edge);
             }
         }
-
-        ENSURE(
-            result.size() == static_cast<size_t>(m),
-            "Not enough edges found");
 
         Graph graph;
 
@@ -194,13 +191,7 @@ private:
             graph.directed_ = true;
         }
 
-        graph.setN(n);
-        for (const auto& edge: result) {
-            graph.addEdge(edge.first, edge.second);
-        }
-
-        graph.normalizeEdges();
-
+        graph.initWithEdges(n, result);
         return graph;
     }
 
@@ -242,6 +233,7 @@ private:
             return true;
         };
 
+        // TODO: add initWithEdges here and to other generators
         while (graph.m() != t.m) {
             int u = rnd.next(t.n);
             int up = rnd.next(0, spread);

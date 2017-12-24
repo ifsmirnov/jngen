@@ -3,6 +3,7 @@
 #include "array.h"
 #include "generic_graph.h"
 #include "graph_builder_proxy.h"
+#include "hash.h"
 #include "tree.h"
 
 #include <memory>

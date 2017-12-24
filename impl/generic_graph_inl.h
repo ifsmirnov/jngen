@@ -304,7 +304,6 @@ void GenericGraph::normalizeEdges() {
     permuteEdges(order);
 }
 
-
 int GenericGraph::compareTo(const GenericGraph& other) const {
     if (n() != other.n()) {
         return n() < other.n() ? -1 : 1;
@@ -317,6 +316,37 @@ int GenericGraph::compareTo(const GenericGraph& other) const {
         }
     }
     return 0;
+}
+
+void GenericGraph::initWithEdges(int n, const Arrayp& edges) {
+    ENSURE(this->n() == 0, "Can call initWithEdges only on empty graph");
+    extend(n);
+
+    edges_ = edges;
+    numEdges_ = edges.size();
+
+
+    Array degree(n);
+    for (const auto& edge: edges) {
+        ++degree[edge.first];
+        if (!directed_ && edge.first != edge.second) {
+            ++degree[edge.second];
+        }
+
+        dsu_.unite(edge.first, edge.second);
+    }
+    for (int i = 0; i < n; ++i) {
+        adjList_[i].reserve(degree[i]);
+    }
+    for (size_t id = 0; id != edges.size(); ++id) {
+        const auto& edge = edges[id];
+        adjList_[edge.first].push_back(id);
+        if (!directed_ && edge.first != edge.second) {
+            adjList_[edge.second].push_back(id);
+        }
+    }
+
+    normalizeEdges();
 }
 
 } // namespace jngen

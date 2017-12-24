@@ -5513,6 +5513,8 @@ public:
     virtual bool operator<=(const GenericGraph& other) const;
     virtual bool operator>=(const GenericGraph& other) const;
 
+    void initWithEdges(int n, const Arrayp& edges);
+
 protected:
     static WeightArray prepareWeightArray(WeightArray a, int requiredSize);
 
@@ -5875,7 +5877,6 @@ void GenericGraph::normalizeEdges() {
     permuteEdges(order);
 }
 
-
 int GenericGraph::compareTo(const GenericGraph& other) const {
     if (n() != other.n()) {
         return n() < other.n() ? -1 : 1;
@@ -5888,6 +5889,37 @@ int GenericGraph::compareTo(const GenericGraph& other) const {
         }
     }
     return 0;
+}
+
+void GenericGraph::initWithEdges(int n, const Arrayp& edges) {
+    ENSURE(this->n() == 0, "Can call initWithEdges only on empty graph");
+    extend(n);
+
+    edges_ = edges;
+    numEdges_ = edges.size();
+
+
+    Array degree(n);
+    for (const auto& edge: edges) {
+        ++degree[edge.first];
+        if (!directed_ && edge.first != edge.second) {
+            ++degree[edge.second];
+        }
+
+        dsu_.unite(edge.first, edge.second);
+    }
+    for (int i = 0; i < n; ++i) {
+        adjList_[i].reserve(degree[i]);
+    }
+    for (size_t id = 0; id != edges.size(); ++id) {
+        const auto& edge = edges[id];
+        adjList_[edge.first].push_back(id);
+        if (!directed_ && edge.first != edge.second) {
+            adjList_[edge.second].push_back(id);
+        }
+    }
+
+    normalizeEdges();
 }
 
 } // namespace jngen
@@ -6470,7 +6502,7 @@ private:
             ensure(m <= maxEdges(n, t), "Too many edges in the graph");
         }
 
-        std::set<std::pair<int, int>> usedEdges;
+        std::unordered_set<std::pair<int, int>> usedEdges;
 
         if (t.connected) {
             ensure(m >= n - 1, "Not enough edges for a connected graph");
@@ -6499,6 +6531,7 @@ private:
         };
 
         Arrayp result(usedEdges.begin(), usedEdges.end());
+        result.reserve(m);
 
         while (result.size() < static_cast<size_t>(m)) {
             auto edge = randomEdge(n, t);
@@ -6507,10 +6540,6 @@ private:
                 result.push_back(edge);
             }
         }
-
-        ENSURE(
-            result.size() == static_cast<size_t>(m),
-            "Not enough edges found");
 
         Graph graph;
 
@@ -6521,13 +6550,7 @@ private:
             graph.directed_ = true;
         }
 
-        graph.setN(n);
-        for (const auto& edge: result) {
-            graph.addEdge(edge.first, edge.second);
-        }
-
-        graph.normalizeEdges();
-
+        graph.initWithEdges(n, result);
         return graph;
     }
 
@@ -6569,6 +6592,7 @@ private:
             return true;
         };
 
+        // TODO: add initWithEdges here and to other generators
         while (graph.m() != t.m) {
             int u = rnd.next(t.n);
             int up = rnd.next(0, spread);
