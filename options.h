@@ -31,7 +31,16 @@ struct Index {
     size_t index;
     std::string name;
 
-    Index(size_t index) : index(index) {}
+    Index(size_t index) : index(index) {
+        if (!config.largeOptionIndices) {
+            ensure(
+                index < 32,
+                "Looks like you called getOpt('c'). Consider using "
+                "getOpt(\"c\") or set 'config.largeOptionIndices = true' "
+                "if you indeed have more than 32 options.");
+        }
+    }
+
     Index(const std::string& name) : name(name) {
         ensure(!name.empty(), "Variable name cannot be empty");
     }

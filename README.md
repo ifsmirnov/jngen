@@ -39,6 +39,7 @@ or see [Getting started](/doc/getting_started.md) section to learn the simplest 
 * [[rnds.h] Strings](/doc/strings.md)
 * [[geometry.h] Geometric primitives](/doc/geometry.md)
 * [[drawer/drawer.h] Drawing figures in SVG](/doc/drawer.md)
+* [[config.h] Internal library options](/doc/config.md)
 
 ### Compatibility note
 * **This is not a standard "provided as-is" legal warning!** Opposite to testlib.h, which is already well-tested and pretty stable, Jngen is only yet being developed. First, not everything was properly tested and there may be bugs. Second and more important: there is no backward compatibility at the moment. It means that if you download Jngen tomorrow and run the same code then it may produce different result. Do not blindly update Jngen header if you need that tests for your problem remain exactly the same.

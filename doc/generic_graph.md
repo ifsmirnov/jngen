@@ -38,6 +38,14 @@ Graphs and trees are printed as following. If *.printN()* and *.printM()* modifi
 
 **Output modifiers do not apply to vertex/edge weights**. When you set edge length to 10, you probably don't want it to increase to 11 when you switch to 1-numeration, right?
 
+By default, edges of a newly generated graph are printed in sorted order, because it makes tests more human-readable. If you generate large graphs and care about performance rather than presentation, sorting may be disabled using [config](config.md). Simply add this line at the top of *main*:
+
+```cpp
+config.normalizeEdges = false;
+```
+
+Of course, edges are not sorted anymore after the graph is shuffled.
+
 ### Documentation
 
 #### int n() const

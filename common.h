@@ -1,5 +1,7 @@
 #pragma once
 
+#include "config.h"
+
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
@@ -130,15 +132,13 @@ auto distribution(int n, F&& f) -> std::map<decltype(f()), int> {
 }
 
 inline void checkLargeParameter(int n) {
-#ifdef JNGEN_I_WANT_LARGE_OBJECTS
-    (void)n;
-#else
-    constexpr static int BOUND = 5e6;
-    ensure(
-        n <= BOUND,
-        "If you want to generate an object of size > 5'000'000, please use "
-        "#define JNGEN_I_WANT_LARGE_OBJECTS prior to including Jngen");
-#endif // JNGEN_I_WANT_LARGE_OBJECTS
+    if (!config.generateLargeObjects) {
+        constexpr static int BOUND = 5e6;
+        ensure(
+            n <= BOUND,
+            "If you want to generate an object of size > 5'000'000, please set "
+            "'config.generateLargeObjects = true'.");
+    }
 }
 
 // Some type traits helpers. Based on ideas from TCPPPL v4.

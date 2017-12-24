@@ -281,6 +281,9 @@ bool GenericGraph::operator>=(const GenericGraph& other) const {
 }
 
 void GenericGraph::normalizeEdges() {
+    if (!config.normalizeEdges) {
+        return;
+    }
     ENSURE(
         vertexLabel_ == Array::id(n()),
         "Can call normalizeEdges() only on newly created graph");

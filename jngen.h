@@ -29,6 +29,24 @@
 
 #define JNGEN_VERSION 0.1
 
+namespace jngen {
+
+struct Config {
+    bool generateLargeObjects = false;
+    bool largeOptionIndices = false;
+    bool normalizeEdges = true;
+};
+
+#ifdef JNGEN_DECLARE_ONLY
+extern
+#endif
+Config config;
+
+} // namespace jngen
+
+using jngen::config;
+
+
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
@@ -159,15 +177,13 @@ auto distribution(int n, F&& f) -> std::map<decltype(f()), int> {
 }
 
 inline void checkLargeParameter(int n) {
-#ifdef JNGEN_I_WANT_LARGE_OBJECTS
-    (void)n;
-#else
-    constexpr static int BOUND = 5e6;
-    ensure(
-        n <= BOUND,
-        "If you want to generate an object of size > 5'000'000, please use "
-        "#define JNGEN_I_WANT_LARGE_OBJECTS prior to including Jngen");
-#endif // JNGEN_I_WANT_LARGE_OBJECTS
+    if (!config.generateLargeObjects) {
+        constexpr static int BOUND = 5e6;
+        ensure(
+            n <= BOUND,
+            "If you want to generate an object of size > 5'000'000, please set "
+            "'config.generateLargeObjects = true'.");
+    }
 }
 
 // Some type traits helpers. Based on ideas from TCPPPL v4.
@@ -2142,7 +2158,16 @@ struct Index {
     size_t index;
     std::string name;
 
-    Index(size_t index) : index(index) {}
+    Index(size_t index) : index(index) {
+        if (!config.largeOptionIndices) {
+            ensure(
+                index < 32,
+                "Looks like you called getOpt('c'). Consider using "
+                "getOpt(\"c\") or set 'config.largeOptionIndices = true' "
+                "if you indeed have more than 32 options.");
+        }
+    }
+
     Index(const std::string& name) : name(name) {
         ensure(!name.empty(), "Variable name cannot be empty");
     }
@@ -5827,6 +5852,9 @@ bool GenericGraph::operator>=(const GenericGraph& other) const {
 }
 
 void GenericGraph::normalizeEdges() {
+    if (!config.normalizeEdges) {
+        return;
+    }
     ENSURE(
         vertexLabel_ == Array::id(n()),
         "Can call normalizeEdges() only on newly created graph");
