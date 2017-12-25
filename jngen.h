@@ -29,6 +29,61 @@
 
 #define JNGEN_VERSION 0.1
 
+#define JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, name) \
+int _ ## name = 0; \
+Class& name(int val = 1) { _ ## name = val; return *this; }
+
+#define JNGEN_CHAINING_TRAITS_INNER_0(Class)
+#define JNGEN_CHAINING_TRAITS_INNER_1(Class, arg)       JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg)
+#define JNGEN_CHAINING_TRAITS_INNER_2(Class, arg, ...)  JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_1(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_3(Class, arg, ...)  JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_2(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_4(Class, arg, ...)  JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_3(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_5(Class, arg, ...)  JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_4(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_6(Class, arg, ...)  JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_5(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_7(Class, arg, ...)  JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_6(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_8(Class, arg, ...)  JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_7(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_9(Class, arg, ...)  JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_8(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_10(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_9(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_11(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_10(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_12(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_11(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_13(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_12(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_14(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_13(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_15(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_14(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_16(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_15(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_17(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_16(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_18(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_17(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_19(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_18(Class, __VA_ARGS__)
+#define JNGEN_CHAINING_TRAITS_INNER_20(Class, arg, ...) JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, arg) JNGEN_CHAINING_TRAITS_INNER_19(Class, __VA_ARGS__)
+
+#define JNGEN_GET_CHAINING_TRAITS_INNER_IMPL(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, x, ...) x
+
+#define JNGEN_GET_CHAINING_TRAITS_INNER(...) JNGEN_GET_CHAINING_TRAITS_INNER_IMPL(\
+        __VA_ARGS__,\
+        JNGEN_CHAINING_TRAITS_INNER_20,\
+        JNGEN_CHAINING_TRAITS_INNER_19,\
+        JNGEN_CHAINING_TRAITS_INNER_18,\
+        JNGEN_CHAINING_TRAITS_INNER_17,\
+        JNGEN_CHAINING_TRAITS_INNER_16,\
+        JNGEN_CHAINING_TRAITS_INNER_15,\
+        JNGEN_CHAINING_TRAITS_INNER_14,\
+        JNGEN_CHAINING_TRAITS_INNER_13,\
+        JNGEN_CHAINING_TRAITS_INNER_12,\
+        JNGEN_CHAINING_TRAITS_INNER_11,\
+        JNGEN_CHAINING_TRAITS_INNER_10,\
+        JNGEN_CHAINING_TRAITS_INNER_9,\
+        JNGEN_CHAINING_TRAITS_INNER_8,\
+        JNGEN_CHAINING_TRAITS_INNER_7,\
+        JNGEN_CHAINING_TRAITS_INNER_6,\
+        JNGEN_CHAINING_TRAITS_INNER_5,\
+        JNGEN_CHAINING_TRAITS_INNER_4,\
+        JNGEN_CHAINING_TRAITS_INNER_3,\
+        JNGEN_CHAINING_TRAITS_INNER_2,\
+        JNGEN_CHAINING_TRAITS_INNER_1,\
+        JNGEN_CHAINING_TRAITS_INNER_0)
+
+#define JNGEN_CHAINING_TRAITS(Class, ...) \
+    struct Class { JNGEN_GET_CHAINING_TRAITS_INNER(__VA_ARGS__)(Class, __VA_ARGS__) };
+
 namespace jngen {
 
 struct Config {
@@ -4892,12 +4947,15 @@ namespace suites {
         }\
         names_.emplace_back(name);\
     }\
-    *std::back_inserter(producers_) = [] (JNGEN_PRODUCER_ARGS)
+    *std::back_inserter(producers_) = [this] (JNGEN_PRODUCER_ARGS) -> value_type
 
-template<typename T, typename ... Args>
+template<typename T, typename Traits, typename ... Args>
 class BaseTestSuite {
 public:
     explicit BaseTestSuite(const std::string& name) : name_(name) {  }
+
+    BaseTestSuite(const BaseTestSuite&) = delete;
+    BaseTestSuite& operator=(const BaseTestSuite&) = delete;
 
     size_t size() const {
         return producers_.size();
@@ -4945,11 +5003,16 @@ public:
         return result;
     }
 
+    Traits& conf() { return conf_; }
+
 protected:
     using Producer = std::function<T(Args...)>;
+    using value_type = T;
 
     std::vector<Producer> producers_;
     std::vector<std::string> names_;
+
+    Traits conf_;
 
 private:
     std::string name_;
@@ -6433,9 +6496,6 @@ public:
                         }
                     } else {
                         g.addEdge(i, j);
-                        if (t.allowMulti) {
-                            g.addEdge(j, i);
-                        }
                     }
                 }
             }
@@ -6676,12 +6736,120 @@ Graph::BuilderProxy Graph::randomStretched(
 #endif // JNGEN_DECLARE_ONLY
 
 
+#include <algorithm>
 #include <cstdlib>
 
 namespace jngen {
 namespace suites {
 
-class GeneralTreeSuite : public BaseTestSuite<Tree, int> {
+JNGEN_CHAINING_TRAITS(GeneralGraphSuiteTraits, allowLoops, allowMulti, connected)
+
+class GeneralGraphSuite : public BaseTestSuite<Graph, GeneralGraphSuiteTraits, int, int> {
+    graph_detail::BuilderProxy&& apply(graph_detail::BuilderProxy&& builder) const {
+        builder.allowLoops(conf_._allowLoops);
+        builder.allowMulti(conf_._allowMulti);
+        builder.connected(conf_._connected);
+        return std::move(builder);
+    }
+
+    int selectMForRandom(int n, int m, double ratio) const {
+        if (conf_._connected) {
+            return std::min(m, n + static_cast<int>((m - n + 1) * ratio));
+        } else {
+            return std::max(1, static_cast<int>(m * ratio));
+        }
+    }
+
+    Graph randomWithRatio(int n, int m, double ratio) const {
+        return apply(Graph::random(n, selectMForRandom(n, m, ratio))).g();
+    }
+
+public:
+    GeneralGraphSuite() : BaseTestSuite("GeneralGraphSuite") {
+#define JNGEN_PRODUCER_ARGS int n, int m
+
+        JNGEN_ADD_PRODUCER(random0.001) {
+            return randomWithRatio(n, m, 0.001);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.005) {
+            return randomWithRatio(n, m, 0.005);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.01) {
+            return randomWithRatio(n, m, 0.01);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.02) {
+            return randomWithRatio(n, m, 0.02);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.05) {
+            return randomWithRatio(n, m, 0.05);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.1) {
+            return randomWithRatio(n, m, 0.1);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.2) {
+            return randomWithRatio(n, m, 0.2);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.3) {
+            return randomWithRatio(n, m, 0.3);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.4) {
+            return randomWithRatio(n, m, 0.4);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.6) {
+            return randomWithRatio(n, m, 0.6);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.7) {
+            return randomWithRatio(n, m, 0.7);
+        };
+
+        JNGEN_ADD_PRODUCER(random0.9) {
+            return randomWithRatio(n, m, 0.9);
+        };
+
+        JNGEN_ADD_PRODUCER(random1) {
+            return randomWithRatio(n, m, 1);
+        };
+
+        JNGEN_ADD_PRODUCER(cycle) {
+            (void)m;
+            return Graph::cycle(n);
+        };
+
+        JNGEN_ADD_PRODUCER(complete) {
+            int size = 1;
+            while (size <= n && size * (size - 1) / 2 +
+                    (conf_._allowLoops ? size : 0) <= m) {
+                ++size;
+            }
+            return apply(Graph::complete(size - 1));
+        };
+
+#undef JNGEN_PRODUCER_ARGS
+    }
+};
+
+} // namespace test_suites
+} // namespace jngen
+
+
+#include <cstdlib>
+
+namespace jngen {
+namespace suites {
+
+JNGEN_CHAINING_TRAITS(GeneralTreeSuiteTraits, _)
+
+class GeneralTreeSuite : public BaseTestSuite<Tree, GeneralTreeSuiteTraits, int> {
 public:
     GeneralTreeSuite() : BaseTestSuite("GeneralTreeSuite") {
 #define JNGEN_PRODUCER_ARGS int n
@@ -6830,6 +6998,7 @@ public:
 namespace jngen {
 
 struct TestSuites {
+    suites::GeneralGraphSuite graph;
     suites::GeneralTreeSuite tree;
 };
 

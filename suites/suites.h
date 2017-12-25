@@ -1,10 +1,12 @@
 #pragma once
 
+#include "graph.h"
 #include "tree.h"
 
 namespace jngen {
 
 struct TestSuites {
+    suites::GeneralGraphSuite graph;
     suites::GeneralTreeSuite tree;
 };
 

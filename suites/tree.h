@@ -8,7 +8,9 @@
 namespace jngen {
 namespace suites {
 
-class GeneralTreeSuite : public BaseTestSuite<Tree, int> {
+JNGEN_CHAINING_TRAITS(GeneralTreeSuiteTraits, _)
+
+class GeneralTreeSuite : public BaseTestSuite<Tree, GeneralTreeSuiteTraits, int> {
 public:
     GeneralTreeSuite() : BaseTestSuite("GeneralTreeSuite") {
 #define JNGEN_PRODUCER_ARGS int n

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../array.h"
+#include "../chaining_traits.h"
 #include "../common.h"
 #include "../hash.h"
 
@@ -26,12 +27,15 @@ namespace suites {
         }\
         names_.emplace_back(name);\
     }\
-    *std::back_inserter(producers_) = [] (JNGEN_PRODUCER_ARGS)
+    *std::back_inserter(producers_) = [this] (JNGEN_PRODUCER_ARGS) -> value_type
 
-template<typename T, typename ... Args>
+template<typename T, typename Traits, typename ... Args>
 class BaseTestSuite {
 public:
     explicit BaseTestSuite(const std::string& name) : name_(name) {  }
+
+    BaseTestSuite(const BaseTestSuite&) = delete;
+    BaseTestSuite& operator=(const BaseTestSuite&) = delete;
 
     size_t size() const {
         return producers_.size();
@@ -79,11 +83,16 @@ public:
         return result;
     }
 
+    Traits& conf() { return conf_; }
+
 protected:
     using Producer = std::function<T(Args...)>;
+    using value_type = T;
 
     std::vector<Producer> producers_;
     std::vector<std::string> names_;
+
+    Traits conf_;
 
 private:
     std::string name_;
