@@ -19,7 +19,7 @@ bool check(std::unordered_set<long long>& set, const Array64& data) {
 }
 
 BOOST_AUTO_TEST_CASE(antihashset) {
-#if __GNUC__ == 4
+#if __GNUC__ == 4 and !defined(__clang__)
     using Set = std::unordered_set<long long>;
     Set s1;
     BOOST_CHECK(check(s1, rnda.antiUnorderedSet(1000)));

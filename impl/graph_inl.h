@@ -74,9 +74,6 @@ public:
                         }
                     } else {
                         g.addEdge(i, j);
-                        if (t.allowMulti) {
-                            g.addEdge(j, i);
-                        }
                     }
                 }
             }
