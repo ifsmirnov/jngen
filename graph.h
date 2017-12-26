@@ -43,6 +43,8 @@ public:
     static BuilderProxy cycle(int n);
     static BuilderProxy randomStretched(
             int n, int m, int elongation, int spread);
+    static BuilderProxy randomBipartite(int n1, int n2, int m);
+    static BuilderProxy completeBipartite(int n1, int n2);
 };
 
 inline void Graph::setN(int n) {

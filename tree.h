@@ -41,6 +41,8 @@ public:
     static Tree binary(int size);
     static Tree kary(int size, int k);
 
+    static Tree fromPruferSequence(const Array& code);
+
     void doPrintParents(std::ostream& out, const OutputModifier& mod) const;
 };
 

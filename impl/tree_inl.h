@@ -132,36 +132,7 @@ Tree Tree::random(int size) {
     if (size == 1) {
         return Tree();
     }
-
-    Array code = Array::random(size - 2, size);
-    std::vector<int> degree(size, 1);
-    for (int v: code) {
-        ++degree[v];
-    }
-
-    std::set<int> leaves;
-    for (int v = 0; v < size; ++v) {
-        if (degree[v] == 1) {
-            leaves.insert(v);
-        }
-    }
-
-    Tree t;
-    for (int v: code) {
-        ENSURE(!leaves.empty());
-        int to = *leaves.begin();
-        leaves.erase(leaves.begin());
-        if (--degree[v] == 1) {
-            leaves.insert(v);
-        }
-
-        t.addEdge(v, to);
-    }
-
-    ENSURE(leaves.size() == 2u);
-    t.addEdge(*leaves.begin(), *leaves.rbegin());
-    t.normalizeEdges();
-    return t;
+    return fromPruferSequence(Array::random(size - 2, size));
 }
 
 Tree Tree::randomPrim(int size, int elongation) {
@@ -228,6 +199,38 @@ Tree Tree::kary(int size, int k) {
     }
     t.normalizeEdges();
     return t;
+}
+
+Tree Tree::fromPruferSequence(const Array& code) {
+    std::vector<int> degree(code.size() + 2, 1);
+    for (int v: code) {
+        ++degree[v];
+    }
+
+    std::set<int> leaves;
+    for (size_t v = 0; v != degree.size(); ++v) {
+        if (degree[v] == 1) {
+            leaves.insert(v);
+        }
+    }
+
+    Tree t;
+    for (int v: code) {
+        ENSURE(!leaves.empty());
+        int to = *leaves.begin();
+        leaves.erase(leaves.begin());
+        if (--degree[v] == 1) {
+            leaves.insert(v);
+        }
+
+        t.addEdge(v, to);
+    }
+
+    ENSURE(leaves.size() == 2u);
+    t.addEdge(*leaves.begin(), *leaves.rbegin());
+    t.normalizeEdges();
+    return t;
+
 }
 
 void Tree::doPrintParents(std::ostream& out, const OutputModifier& mod) const {

@@ -101,6 +101,25 @@ public:
             return apply(Graph::complete(size - 1));
         };
 
+        JNGEN_ADD_PRODUCER(bamboo) {
+            (void)m;
+            return Graph(Tree::bamboo(n));
+        };
+
+        JNGEN_ADD_PRODUCER(star) {
+            (void)m;
+            return Graph(Tree::star(n));
+        };
+
+        JNGEN_ADD_PRODUCER(wheel) {
+            Graph g = Tree::star(n);
+            int edges = m - (n - 1);
+            for (int i = 1; i < n && edges > 0; ++i) {
+                g.addEdge(i, i == n-1 ? 1 : i+1);
+            }
+            return g;
+        };
+
 #undef JNGEN_PRODUCER_ARGS
     }
 };

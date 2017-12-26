@@ -6027,6 +6027,8 @@ public:
     static Tree binary(int size);
     static Tree kary(int size, int k);
 
+    static Tree fromPruferSequence(const Array& code);
+
     void doPrintParents(std::ostream& out, const OutputModifier& mod) const;
 };
 
@@ -6188,36 +6190,7 @@ Tree Tree::random(int size) {
     if (size == 1) {
         return Tree();
     }
-
-    Array code = Array::random(size - 2, size);
-    std::vector<int> degree(size, 1);
-    for (int v: code) {
-        ++degree[v];
-    }
-
-    std::set<int> leaves;
-    for (int v = 0; v < size; ++v) {
-        if (degree[v] == 1) {
-            leaves.insert(v);
-        }
-    }
-
-    Tree t;
-    for (int v: code) {
-        ENSURE(!leaves.empty());
-        int to = *leaves.begin();
-        leaves.erase(leaves.begin());
-        if (--degree[v] == 1) {
-            leaves.insert(v);
-        }
-
-        t.addEdge(v, to);
-    }
-
-    ENSURE(leaves.size() == 2u);
-    t.addEdge(*leaves.begin(), *leaves.rbegin());
-    t.normalizeEdges();
-    return t;
+    return fromPruferSequence(Array::random(size - 2, size));
 }
 
 Tree Tree::randomPrim(int size, int elongation) {
@@ -6284,6 +6257,38 @@ Tree Tree::kary(int size, int k) {
     }
     t.normalizeEdges();
     return t;
+}
+
+Tree Tree::fromPruferSequence(const Array& code) {
+    std::vector<int> degree(code.size() + 2, 1);
+    for (int v: code) {
+        ++degree[v];
+    }
+
+    std::set<int> leaves;
+    for (size_t v = 0; v != degree.size(); ++v) {
+        if (degree[v] == 1) {
+            leaves.insert(v);
+        }
+    }
+
+    Tree t;
+    for (int v: code) {
+        ENSURE(!leaves.empty());
+        int to = *leaves.begin();
+        leaves.erase(leaves.begin());
+        if (--degree[v] == 1) {
+            leaves.insert(v);
+        }
+
+        t.addEdge(v, to);
+    }
+
+    ENSURE(leaves.size() == 2u);
+    t.addEdge(*leaves.begin(), *leaves.rbegin());
+    t.normalizeEdges();
+    return t;
+
 }
 
 void Tree::doPrintParents(std::ostream& out, const OutputModifier& mod) const {
@@ -6374,6 +6379,8 @@ public:
     static BuilderProxy cycle(int n);
     static BuilderProxy randomStretched(
             int n, int m, int elongation, int spread);
+    static BuilderProxy randomBipartite(int n1, int n2, int m);
+    static BuilderProxy completeBipartite(int n1, int n2);
 };
 
 inline void Graph::setN(int n) {
@@ -6554,6 +6561,40 @@ public:
         });
     }
 
+    static BuilderProxy randomBipartite(int n1, int n2, int m) {
+        ensure(
+            n1 >= 0 && n2 >= 0 && m >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
+        checkLargeParameter(n1 + n2);
+        checkLargeParameter(m);
+        return BuilderProxy(Traits(0, m), [n1, n2](Traits t) {
+                return doRandomBipartite(t, n1, n2);
+        });
+    }
+
+
+    static BuilderProxy completeBipartite(int n1, int n2) {
+        ensure(
+            n1 >= 0 && n2 >= 0,
+            "Number of vertices and edges in the graph must be nonnegative");
+        checkLargeParameter(n1 * n2);
+        return BuilderProxy(Traits(0, 0), [n1, n2](Traits t) {
+            ensure(!t.directed, "Directed bipartite graphs are not supported");
+
+            Arrayp edges;
+            edges.reserve(n1 * n2);
+            for (int u = 0; u < n1; ++u) {
+                for (int v = 0; v < n2; ++v) {
+                    edges.emplace_back(u, v + n1);
+                }
+            }
+
+            Graph g;
+            g.initWithEdges(n1 + n2, edges);
+            return g;
+        });
+    }
+
 private:
     static Graph doRandom(Traits t) {
         int n = t.n;
@@ -6682,6 +6723,59 @@ private:
         return graph;
     }
 
+    static Graph doRandomBipartite(Traits t, int n1, int n2) {
+        int m = t.m;
+
+        if (!t.allowMulti) {
+            ensure(m <= static_cast<long long>(n1) * n2,
+                    "Too many edges in the graph");
+        }
+
+        ensure(!t.directed, "Directed bipartite graphs are not supported");
+
+        std::unordered_set<std::pair<int, int>> usedEdges;
+
+        if (t.connected) {
+            ensure(m >= n1 + n2 - 1, "Not enough edges for a connected graph");
+            auto pruferCode = Array::random(n2 - 1, 0, n1 - 1) +
+                Array::random(n1 - 1, n1, n1 + n2 - 1);
+            pruferCode.shuffle();
+            auto treeEdges = Tree::fromPruferSequence(pruferCode).edges();
+            usedEdges.insert(treeEdges.begin(), treeEdges.end());
+            ENSURE(usedEdges.size() == static_cast<size_t>(n1 + n2 - 1));
+        }
+
+        auto edgeIsGood = [&usedEdges, t](std::pair<int, int> edge) {
+            if (!t.allowMulti && usedEdges.count(edge)) {
+                return false;
+            }
+            if (t.directed && !t.allowAntiparallel &&
+                    usedEdges.count({edge.second, edge.first}))
+            {
+                return false;
+            }
+            return true;
+        };
+
+        Arrayp result(usedEdges.begin(), usedEdges.end());
+        result.reserve(m);
+
+        while (result.size() < static_cast<size_t>(m)) {
+            int u = rnd.next(0, n1 - 1);
+            int v = rnd.next(n1, n1 + n2 - 1);
+            std::pair<int, int> edge(u, v);
+            if (edgeIsGood(edge)) {
+                usedEdges.insert(edge);
+                result.push_back(edge);
+            }
+        }
+
+        Graph graph;
+
+        graph.initWithEdges(n1 + n2, result);
+        return graph;
+    }
+
     static std::pair<int, int> randomEdge(int n, const Traits& t) {
         return rnd.nextp(n, RandomPairTraits{!t.directed, !t.allowLoops});
     }
@@ -6729,6 +6823,14 @@ Graph::BuilderProxy Graph::cycle(int n) {
 Graph::BuilderProxy Graph::randomStretched(
         int n, int m, int elongation, int spread) {
     return graph_detail::GraphRandom::randomStretched(n, m, elongation, spread);
+}
+
+Graph::BuilderProxy Graph::randomBipartite(int n1, int n2, int m) {
+    return graph_detail::GraphRandom::randomBipartite(n1, n2, m);
+}
+
+Graph::BuilderProxy Graph::completeBipartite( int n1, int n2) {
+    return graph_detail::GraphRandom::completeBipartite(n1, n2);
 }
 
 } // namespace jngen
@@ -6832,6 +6934,25 @@ public:
                 ++size;
             }
             return apply(Graph::complete(size - 1));
+        };
+
+        JNGEN_ADD_PRODUCER(bamboo) {
+            (void)m;
+            return Graph(Tree::bamboo(n));
+        };
+
+        JNGEN_ADD_PRODUCER(star) {
+            (void)m;
+            return Graph(Tree::star(n));
+        };
+
+        JNGEN_ADD_PRODUCER(wheel) {
+            Graph g = Tree::star(n);
+            int edges = m - (n - 1);
+            for (int i = 1; i < n && edges > 0; ++i) {
+                g.addEdge(i, i == n-1 ? 1 : i+1);
+            }
+            return g;
         };
 
 #undef JNGEN_PRODUCER_ARGS
