@@ -14,8 +14,12 @@ public:
     Tree() {
         extend(1);
     }
+
     Tree(const GenericGraph& gg) : GenericGraph(gg) {
         extend(1);
+        ensure(
+                dsu_.numComponents() == n() - m(),
+                "Cannot create a tree from a graph with cycles");
     }
 
     void addEdge(int u, int v, const Weight& w = Weight{}) override;

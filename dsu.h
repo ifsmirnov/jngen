@@ -13,6 +13,8 @@ public:
 
     bool isConnected() const { return components <= 1; }
 
+    int numComponents() const { return components; }
+
     void extend(size_t size);
 
 private:
