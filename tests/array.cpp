@@ -170,4 +170,14 @@ BOOST_AUTO_TEST_CASE(print_matrix) {
     BOOST_TEST(out.str() == "0 0\n");
 }
 
+BOOST_AUTO_TEST_CASE(interleave) {
+    auto a = Array::id(3, 1);
+    auto b = Array::id(3, 11);
+    auto expected = Array{11, 1, 2, 12, 13, 3};
+
+    rnd.seed(10);
+
+    BOOST_TEST(jngen::interleave({a, b}) == expected);
+}
+
 BOOST_AUTO_TEST_SUITE_END()

@@ -121,6 +121,21 @@ public:
         return choice(container.begin(), container.end());
     }
 
+    template<typename Numeric>
+    size_t nextByDistribution(const std::vector<Numeric>& distribution) {
+        ensure(!distribution.empty(), "Cannot sample by empty distribution");
+        Numeric sum = std::accumulate(
+                distribution.begin(), distribution.end(), Numeric(0));
+        auto x = next(sum);
+        for (size_t i = 0; i < distribution.size(); ++i) {
+            if (x < distribution[i]) {
+                return i;
+            }
+            x -= distribution[i];
+        }
+        return distribution.size() - 1;
+    }
+
 private:
     template<typename T, typename ...Args>
     T smallWnext(int w, Args... args) {
