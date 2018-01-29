@@ -1,6 +1,3 @@
-#ifdef LOCAL
-// #define JNGEN_DECLARE_ONLY
-#endif
 #include "jngen.h"
 #include <bits/stdc++.h>
 using namespace std;
@@ -10,7 +7,7 @@ using namespace std;
 #define fi first
 
 Graph connectedBipartite(int n, int m) {
-    Tree t = Tree::randomPrufer(n);
+    Tree t = Tree::random(n);
     vector<int> q{0};
     vector<int> col(n, -1);
     col[0] = 0;
@@ -52,7 +49,7 @@ Graph makeTreeOfGraphs(const std::vector<Graph>& graphs, bool line = false) {
     jngen::Dsu dsu;
     dsu.getRoot(s - 1);
 
-    auto t = line ? Tree::bamboo(n) : Tree::randomPrufer(n);
+    auto t = line ? Tree::bamboo(n) : Tree::random(n);
     for (auto e: t.edges()) {
         int v1 = rnd.next(shifts[e.fi], shifts[e.fi] + graphs[e.fi].n() - 1);
         int v2 = rnd.next(shifts[e.se], shifts[e.se] + graphs[e.se].n() - 1);
@@ -89,7 +86,7 @@ int main(int argc, char *argv[]) {
 
     setMod().printN().printM().add1();
 
-    string type = getOptOr("type", "random");
+    string type = getOpt("type", "random");
 
     if (type == "random") {
         int n, m;
@@ -103,15 +100,15 @@ int main(int argc, char *argv[]) {
     } else if (type == "bipartite-tree") {
         int n, m;
         ensure(getPositional(n, m) == 2);
-        int n_comps = getOptOr("n_comps", 5);
-        int n_bad = getOptOr("n_bad", 0);
-        Array vnums = rndm.partitionNonEmpty(n, n_comps);
+        int n_comps = getOpt("n_comps", 5);
+        int n_bad = getOpt("n_bad", 0);
+        Array vnums = rndm.partition(n, n_comps, /* min_size = */ 1);
         Array enums = vnums;
         for (int& x: enums) {
             --x;
             m -= x;
         }
-        auto ePartition = rndm.partitionNonEmpty(m, n_comps);
+        auto ePartition = rndm.partition(m, n_comps, /* min_size = */ 1);
         forn(i, n_comps) enums[i] += ePartition[i];
         TArray<Graph> parts;
         forn(i, n_comps) {
@@ -129,9 +126,8 @@ int main(int argc, char *argv[]) {
 //         cout << g.printN(false).printM(false) << endl;
         cout << g.shuffled() << endl;
     } else if (type == "manual") {
-        int n, id;
-        ensure(getOpt(0, n));
-        ensure(getOpt("id", id));
+        int n = getOpt(0);
+        int id = getOpt("id");
         if (id == 1) {
             const int k = 100;
             vector<Graph> graphs;

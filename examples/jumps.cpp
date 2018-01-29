@@ -1,6 +1,3 @@
-#ifdef LOCAL
-#define JNGEN_DECLARE_ONLY
-#endif
 #include "jngen.h"
 #include <bits/stdc++.h>
 using namespace std;
@@ -14,7 +11,7 @@ int main(int argc, char *argv[]) {
     int n;
     ensure(getOpt(0, n));
 
-    string type = getOptOr("type", "random");
+    string type = getOpt("type", "random");
 
     if (type == "random") {
         int min = 1, max = n-1;
@@ -54,7 +51,7 @@ int main(int argc, char *argv[]) {
         int cnt = 1, size = n, min = 1, max = n-1;
         getNamed(cnt, size, min, max);
         ensure(cnt * (size + 1) - 1 <= n);
-        auto landSizes = rndm.partitionNonEmpty(n - cnt*size, cnt+1);
+        auto landSizes = rndm.partition(n - cnt*size, cnt+1, /* minSize = */ 1);
         Array a;
         forn(i, cnt) {
             a += Array(landSizes[i], n-1);

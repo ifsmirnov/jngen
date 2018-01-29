@@ -8,12 +8,12 @@ int main(int argc, char *argv[]) {
     registerGen(argc, argv);
     parseArgs(argc, argv);
 
-    int n, q, elong = 0;
-    getPositional(n, q);
-    getNamed(elong);
+    int n = getOpt(0);
+    int q = getOpt(1);
+    int elong = getOpt("elong", 0);
 
     cout << n << " " << q << "\n";
-    auto t = Tree::random(n, elong).shuffled();
+    auto t = Tree::randomPrim(n, elong).shuffled();
     t.setEdgeWeights(TArray<char>::random(n - 1, 'a', 'z'));
     cout << t.add1() << "\n";
     cout << Arrayp::random(q, 1, n, dpair) << "\n";
