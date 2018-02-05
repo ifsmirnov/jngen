@@ -5902,24 +5902,41 @@ void GenericGraph::addEdge(int u, int v, const Weight& w) {
 void GenericGraph::doPrintEdges(
     std::ostream& out, const OutputModifier& mod) const
 {
+    bool pendingEndline = false;
     if (mod.printN) {
         out << n();
         if (mod.printM) {
             out << " " << m();
         }
-        out << "\n";
+        pendingEndline = true;
     } else if (mod.printM) {
-        out << m() << "\n";
+        out << m();
+        pendingEndline = true;
+    }
+
+    if (n() == 0) {
+        return;
     }
 
     if (vertexWeights_.hasNonEmpty()) {
         auto vertexWeights = prepareWeightArray(vertexWeights_, n());
+        if (pendingEndline) {
+            out << "\n";
+        }
         for (int i = 0; i < n(); ++i) {
             if (i > 0) {
                 out << " ";
             }
             JNGEN_PRINT_NO_MOD(vertexWeights[vertexByLabel(i)]);
         }
+        pendingEndline = true;
+    }
+
+    if (m() == 0) {
+        return;
+    }
+
+    if (pendingEndline) {
         out << "\n";
     }
 

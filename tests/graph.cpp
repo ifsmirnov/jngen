@@ -117,4 +117,37 @@ BOOST_AUTO_TEST_CASE(various_traits) {
     }
 }
 
+BOOST_AUTO_TEST_CASE(empty_output) {
+    setMod().reset();
+
+    std::stringstream ss;
+
+    ss << Graph::random(10, 0).g().printN().printM().add1() << std::endl;
+    BOOST_TEST(ss.str() == "10 0\n");
+    ss.str("");
+
+    ss << Graph::random(10, 0).g().printN().add1() << std::endl;
+    BOOST_TEST(ss.str() == "10\n");
+    ss.str("");
+
+    Graph g = Graph::random(10, 0);
+    g.setVertexWeights(Array::random(g.n(), 10, 20));
+    ss << g.printN().printM() << std::endl;
+    auto s = ss.str();
+    s.pop_back();
+    BOOST_TEST(s != "\n");
+    ss.str("");
+
+    g = Graph::empty(5);
+    g.setVertexWeights(Array::id(5));
+    ss << g << std::endl;
+    BOOST_TEST(ss.str() == "0 1 2 3 4\n");
+    ss.str("");
+
+    g = Graph::empty(0);
+    ss << g.printN().printM() << std::endl;
+    BOOST_TEST(ss.str() == "0 0\n");
+    ss.str("");
+}
+
 BOOST_AUTO_TEST_SUITE_END()
