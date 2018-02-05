@@ -52,12 +52,12 @@ void check(
     getNamed(a, b, c);
 
 
-    BOOST_CHECK_EQUAL(x0, v0);
-    BOOST_CHECK_EQUAL(x1, v1);
-    BOOST_CHECK_EQUAL(x2, v2);
-    BOOST_CHECK_EQUAL( a, va);
-    BOOST_CHECK_EQUAL( b, vb);
-    BOOST_CHECK_EQUAL( c, vc);
+    BOOST_TEST(x0 == v0);
+    BOOST_TEST(x1 == v1);
+    BOOST_TEST(x2 == v2);
+    BOOST_TEST( a == va);
+    BOOST_TEST( b == vb);
+    BOOST_TEST( c == vc);
 }
 
 BOOST_AUTO_TEST_CASE(variable_map) {

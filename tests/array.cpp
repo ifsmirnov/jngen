@@ -12,54 +12,54 @@ BOOST_AUTO_TEST_CASE(basics) {
 
     a = Array::id(5);
     b = {0, 1, 2, 3, 4};
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
 
     a = Array::id(5, 1);
     b = {1, 2, 3, 4, 5};
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
 
     a.reverse();
     b = {5, 4, 3, 2, 1};
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
 
     a = b.reversed();
     b.reverse();
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
 
     a = {4, 2, 3, 1, 5};
     b = a.sorted();
-    BOOST_CHECK(a != b);
+    BOOST_TEST(a != b);
     a.sort();
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
 
     auto comp = [](int x, int y) { return x > y; };
     a = {4, 2, 3, 1, 5};
     b = a.sorted(comp);
-    BOOST_CHECK(a != b);
+    BOOST_TEST(a != b);
     a.sort(comp);
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
     b = {5, 4, 3, 2, 1};
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
 
     a = {1, 3, 4, 0, 2};
     b = {3, 0, 4, 1, 2};
-    BOOST_CHECK_EQUAL(a.inverse(), b);
-    BOOST_CHECK_EQUAL(a, b.inverse());
+    BOOST_TEST(a.inverse() == b);
+    BOOST_TEST(a == b.inverse());
 
     a = {1, 2, 3, 3, 2, 1};
     b = a.sorted().uniqued();
-    BOOST_CHECK(a != b);
+    BOOST_TEST(a != b);
     a.sort().unique();
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
     b = {1, 2, 3};
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
 
     a = Array::id(10, 1);
     b = {3, 5, 7};
     auto c = a.subseq({2, 4, 6});
-    BOOST_CHECK_EQUAL(b, c);
+    BOOST_TEST(b == c);
     c = a.subseq(std::vector<int>{2, 4, 6});
-    BOOST_CHECK_EQUAL(b, c);
+    BOOST_TEST(b == c);
 }
 
 BOOST_AUTO_TEST_CASE(operators) {
@@ -67,13 +67,13 @@ BOOST_AUTO_TEST_CASE(operators) {
     a += Array{2};
     a = a + Array::id(3, 10);
     Array b{1, 2, 3, 2, 10, 11, 12};
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
 
     b += b;
     b += b;
     a = a * 2;
     a *= 2;
-    BOOST_CHECK_EQUAL(a, b);
+    BOOST_TEST(a == b);
 }
 
 BOOST_AUTO_TEST_CASE(random_selection) {
@@ -107,21 +107,21 @@ BOOST_AUTO_TEST_CASE(random_generation) {
     rnd.seed(456);
 
     auto a = Array::random(100, 10);
-    BOOST_CHECK_EQUAL(a.sorted().uniqued(), Array::id(10));
+    BOOST_TEST(a.sorted().uniqued() == Array::id(10));
 
     a = Array::random(100, 10, 20);
-    BOOST_CHECK_EQUAL(a.sorted().uniqued(), Array::id(11, 10));
+    BOOST_TEST(a.sorted().uniqued() == Array::id(11, 10));
 
     a = Array::randomUnique(11, 10, 20);
-    BOOST_CHECK_EQUAL(a.sorted().uniqued(), Array::id(11, 10));
+    BOOST_TEST(a.sorted().uniqued() == Array::id(11, 10));
 
     auto b = Arrayp::random(100, 10, opair);
     for (const auto& kv: b) {
-        BOOST_CHECK(kv.first <= kv.second);
+        BOOST_TEST(kv.first <= kv.second);
     }
 
     b = Arrayp::randomUnique(100, 10);
-    BOOST_CHECK_EQUAL(b.size(), 100);
+    BOOST_TEST(b.size() == 100);
 
     b = Arrayp::randomUnique(55, 1, 10, opair);
 
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(random_generation) {
         return std::make_pair(std::min(x, y), std::max(x, y));
     });
 
-    BOOST_CHECK_EQUAL(b.sorted(), c.sorted());
+    BOOST_TEST(b.sorted() == c.sorted());
 
     c = Arrayp::randomf(1000, []() {
         int x = rnd.next(1, 10);
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(random_generation) {
         return std::make_pair(std::min(x, y), std::max(x, y));
     });
 
-    BOOST_CHECK_EQUAL(b.sorted(), c.sorted().uniqued());
+    BOOST_TEST(b.sorted() == c.sorted().uniqued());
 }
 
 BOOST_AUTO_TEST_CASE(print_matrix) {

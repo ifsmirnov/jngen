@@ -10,9 +10,9 @@
 BOOST_AUTO_TEST_SUITE(tree)
 
 void checkEquals(const jngen::Tree& t1, const jngen::Tree& t2) {
-    BOOST_CHECK_EQUAL(t1.n(), t2.n());
+    BOOST_TEST(t1.n() == t2.n());
     for (int i = 0; i < t1.n(); ++i) {
-        BOOST_CHECK_EQUAL(t1.edges(i).sorted(), t2.edges(i).sorted());
+        BOOST_TEST(t1.edges(i).sorted() == t2.edges(i).sorted());
     }
 }
 
@@ -21,23 +21,23 @@ BOOST_AUTO_TEST_CASE(manual_construction) {
 
     Tree t;
 
-    BOOST_CHECK_EQUAL(t.n(), 1);
-    BOOST_CHECK_EQUAL(t.m(), 0);
-    BOOST_CHECK(t.isConnected());
+    BOOST_TEST(t.n() == 1);
+    BOOST_TEST(t.m() == 0);
+    BOOST_TEST(t.isConnected());
 
     t.addEdge(0, 1);
     t.addEdge(2, 3);
-    BOOST_CHECK(!t.isConnected());
+    BOOST_TEST(!t.isConnected());
 
     t.addEdge(1, 2);
 
-    BOOST_CHECK_EQUAL(t.n(), 4);
-    BOOST_CHECK_EQUAL(t.m(), 3);
+    BOOST_TEST(t.n() == 4);
+    BOOST_TEST(t.m() == 3);
 
     std::ostringstream ss;
     ss << t.printN().add1() << std::endl;
 
-    BOOST_CHECK_EQUAL(ss.str(), "4\n1 2\n3 4\n2 3\n");
+    BOOST_TEST(ss.str() == "4\n1 2\n3 4\n2 3\n");
 }
 
 void dfs(int v, int anc, const Tree& t, std::vector<int>& dist) {
@@ -110,9 +110,9 @@ BOOST_AUTO_TEST_CASE(generators) {
     std::vector<int> centers, dist;
 
     auto b = Tree::bamboo(10);
-    BOOST_CHECK_EQUAL(findDiameter(b, centers, dist), 9);
-    BOOST_CHECK_EQUAL(centers[0], 4);
-    BOOST_CHECK_EQUAL(centers[1], 5);
+    BOOST_TEST(findDiameter(b, centers, dist) == 9);
+    BOOST_TEST(centers[0] == 4);
+    BOOST_TEST(centers[1] == 5);
 
     std::ostringstream ss;
 
@@ -126,30 +126,35 @@ BOOST_AUTO_TEST_CASE(generators) {
     std::string second = ss.str();
     ss.clear();
 
-    BOOST_CHECK(first != second);
+    BOOST_TEST(first != second);
 
     auto s = Tree::star(10);
-    BOOST_CHECK_EQUAL(findDiameter(s, centers, dist), 2);
-    BOOST_CHECK_EQUAL(centers[0], 0);
+    BOOST_TEST(findDiameter(s, centers, dist) == 2);
+    BOOST_TEST(centers[0] == 0);
 
     // probability of failure < 1e-5
     auto c = Tree::caterpillar(100, 10);
-    BOOST_CHECK_EQUAL(findDiameter(c, centers, dist), 11);
+    BOOST_TEST(findDiameter(c, centers, dist) == 11);
 
     // probability of failure < 1e-3
     c = Tree::caterpillar(8004, 8000);
-    BOOST_CHECK_EQUAL(findDiameter(c, centers, dist), 7999);
+    BOOST_TEST(findDiameter(c, centers, dist) == 7999);
 
     // probability of failure unknown, but very low
     auto t = Tree::randomPrim(150, 15000);
-    BOOST_CHECK_EQUAL(t, Tree::bamboo(150));
+    BOOST_TEST(t == Tree::bamboo(150));
 }
 
 BOOST_AUTO_TEST_CASE(prufer_all_trees) {
     auto a = TArray<Tree>::randomfUnique(120, []() {
         return Tree::random(5);
     });
-    BOOST_CHECK_EQUAL(a.size(), 5*4*3*2*1);
+    BOOST_TEST(a.size() == 5*4*3*2*1);
+
+    auto b = TArray<Tree>::randomfAll([]() {
+        return Tree::random(5);
+    });
+    BOOST_TEST(b.size() == 5*5*5);
 }
 
 BOOST_AUTO_TEST_CASE(check_link) {
@@ -186,8 +191,8 @@ BOOST_AUTO_TEST_CASE(check_link) {
 
     Tree linked = t1.link(4, t2, 2);
 
-    BOOST_CHECK_EQUAL(t1.n() + t2.n(), linked.n());
-    BOOST_CHECK_EQUAL(t1.m() + t2.m() + 1, linked.m());
+    BOOST_TEST(t1.n() + t2.n() == linked.n());
+    BOOST_TEST(t1.m() + t2.m() + 1 == linked.m());
     checkEquals(linked, t);
 }
 
@@ -224,8 +229,8 @@ BOOST_AUTO_TEST_CASE(check_glue) {
 
     Tree glued = t1.glue(4, t2, 2);
 
-    BOOST_CHECK_EQUAL(t1.n() + t2.n() - 1, glued.n());
-    BOOST_CHECK_EQUAL(t1.m() + t2.m(), glued.m());
+    BOOST_TEST(t1.n() + t2.n() - 1 == glued.n());
+    BOOST_TEST(t1.m() + t2.m() == glued.m());
     checkEquals(glued, t);
 }
 

@@ -10,11 +10,11 @@ BOOST_AUTO_TEST_SUITE(rnds_suite)
 BOOST_AUTO_TEST_CASE(basics) {
     rnd.seed(123);
 
-    BOOST_CHECK_EQUAL(rnds.abacaba(10), "abacabadab");
-    BOOST_CHECK_EQUAL(rnds.abacaba(10, 'A'), "ABACABADAB");
+    BOOST_TEST(rnds.abacaba(10) == "abacabadab");
+    BOOST_TEST(rnds.abacaba(10, 'A') == "ABACABADAB");
 
-    BOOST_CHECK_EQUAL(rnds.thueMorse(10), "abbabaabba");
-    BOOST_CHECK_EQUAL(rnds.thueMorse(10, 'q', 'w'), "qwwqwqqwwq");
+    BOOST_TEST(rnds.thueMorse(10) == "abbabaabba");
+    BOOST_TEST(rnds.thueMorse(10, 'q', 'w') == "qwwqwqqwwq");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

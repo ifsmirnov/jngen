@@ -14,11 +14,12 @@ template<typename T>
 void checkOutput(const T& t, const std::string& s) {
     std::ostringstream ss;
     ss << t;
-    BOOST_CHECK_EQUAL(ss.str(), s);
+    BOOST_TEST(ss.str() == s);
 }
 
 BOOST_AUTO_TEST_CASE(vector_depth) {
     using jngen::detail::VectorDepth;
+    // TODO: Strange 'undefined reference' if using BOOST_TEST here
     BOOST_CHECK(VectorDepth<int>::value == 0);
     BOOST_CHECK(VectorDepth<std::vector<int>>::value == 1);
     BOOST_CHECK(VectorDepth<

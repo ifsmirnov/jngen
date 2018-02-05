@@ -11,28 +11,28 @@ BOOST_AUTO_TEST_SUITE(random_suite)
 BOOST_AUTO_TEST_CASE(basic_methods) {
     rnd.seed(123);
 
-    BOOST_CHECK_EQUAL(rnd.next(), 2991312382);
-    BOOST_CHECK_EQUAL(rnd.next64(), 13151704351418379646ull);
+    BOOST_TEST(rnd.next() == 2991312382);
+    BOOST_TEST(rnd.next64() == 13151704351418379646ull);
     BOOST_CHECK_CLOSE(rnd.nextf(), 0.42847092506, 1e-5);
-    BOOST_CHECK_EQUAL(rnd.next(123), 92);
-    BOOST_CHECK_EQUAL(rnd.next(1000000000000000000ll), 62439489592817382ll);
+    BOOST_TEST(rnd.next(123) == 92);
+    BOOST_TEST(rnd.next(1000000000000000000ll) == 62439489592817382ll);
     BOOST_CHECK_CLOSE(rnd.next(123.0), 88.455487997, 1e-5);
-    BOOST_CHECK_EQUAL(rnd.next(100, 500), 183);
-    BOOST_CHECK_EQUAL(rnd.next(10000ll, 50000ll), 33766);
+    BOOST_TEST(rnd.next(100, 500) == 183);
+    BOOST_TEST(rnd.next(10000ll, 50000ll) == 33766);
     BOOST_CHECK_CLOSE(rnd.next(0.1, 0.2), 0.14109243679, 1e-5);
 
     auto p = rnd.nextp(100);
-    BOOST_CHECK_EQUAL(p.first, 96);
-    BOOST_CHECK_EQUAL(p.second, 47);
+    BOOST_TEST(p.first == 96);
+    BOOST_TEST(p.second == 47);
 
-    BOOST_CHECK_EQUAL(rnd.next("[a-z]{1,20}"), "aoapztoeaq");
+    BOOST_TEST(rnd.next("[a-z]{1,20}") == "aoapztoeaq");
 }
 
 template<typename T>
 void checkEndpointsHit(const std::vector<T>& a, T min, T max) {
-    BOOST_CHECK(!a.empty());
-    BOOST_CHECK_EQUAL(*std::min_element(a.begin(), a.end()), min);
-    BOOST_CHECK_EQUAL(*std::max_element(a.begin(), a.end()), max);
+    BOOST_TEST(!a.empty());
+    BOOST_TEST(*std::min_element(a.begin(), a.end()) == min);
+    BOOST_TEST(*std::max_element(a.begin(), a.end()) == max);
 }
 
 BOOST_AUTO_TEST_CASE(range_endpoints) {
@@ -58,13 +58,13 @@ BOOST_AUTO_TEST_CASE(range_endpoints) {
 
 BOOST_AUTO_TEST_CASE(mask_for_bound) {
     using jngen::maskForBound;
-    BOOST_CHECK_EQUAL(maskForBound(1), 1);
-    BOOST_CHECK_EQUAL(maskForBound(2), 1);
-    BOOST_CHECK_EQUAL(maskForBound(10), 15);
-    BOOST_CHECK_EQUAL(maskForBound(900), 1023);
-    BOOST_CHECK_EQUAL(maskForBound(1023), 1023);
-    BOOST_CHECK_EQUAL(maskForBound(1024), 1023);
-    BOOST_CHECK_EQUAL(maskForBound(1025), 2047);
+    BOOST_TEST(maskForBound(1) == 1);
+    BOOST_TEST(maskForBound(2) == 1);
+    BOOST_TEST(maskForBound(10) == 15);
+    BOOST_TEST(maskForBound(900) == 1023);
+    BOOST_TEST(maskForBound(1023) == 1023);
+    BOOST_TEST(maskForBound(1024) == 1023);
+    BOOST_TEST(maskForBound(1025) == 2047);
 }
 
 // TODO: add tests for incorrect patterns
@@ -101,10 +101,10 @@ BOOST_AUTO_TEST_CASE(several_engines) {
 
     Random r1;
     r1.seed(123);
-    BOOST_CHECK(etalon == generate(r1));
+    BOOST_TEST(etalon == generate(r1));
 
     r1.seed(123);
-    BOOST_CHECK(etalon == generate(r1));
+    BOOST_TEST(etalon == generate(r1));
 
     etalon = generate(rnd);
 
@@ -112,8 +112,8 @@ BOOST_AUTO_TEST_CASE(several_engines) {
     r2.seed(123);
     generate(r2);
 
-    BOOST_CHECK(etalon == generate(r2));
-    BOOST_CHECK(etalon == generate(r1));
+    BOOST_TEST(etalon == generate(r2));
+    BOOST_TEST(etalon == generate(r1));
 }
 
 BOOST_AUTO_TEST_CASE(test_choice) {

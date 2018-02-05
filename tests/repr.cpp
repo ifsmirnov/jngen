@@ -12,7 +12,7 @@ template<typename T>
 void checkOutput(const T& t, const std::string& s) {
     std::ostringstream ss;
     ss << t;
-    BOOST_CHECK_EQUAL(ss.str(), s);
+    BOOST_TEST(ss.str() == s);
 }
 
 BOOST_AUTO_TEST_CASE(output_mod_array) {
