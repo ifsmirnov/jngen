@@ -5,6 +5,8 @@
 BOOST_AUTO_TEST_SUITE(graph)
 
 BOOST_AUTO_TEST_CASE(output) {
+    setMod().reset();
+
     Graph g;
     g.addEdge(0, 2);
     g.addEdge(1, 3);
@@ -20,6 +22,8 @@ BOOST_AUTO_TEST_CASE(output) {
 }
 
 BOOST_AUTO_TEST_CASE(weights_and_labelling) {
+    setMod().reset();
+
     rnd.seed(123);
 
     Graph g = Graph::random(10, 20);

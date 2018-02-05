@@ -17,6 +17,8 @@ void checkEquals(const jngen::Tree& t1, const jngen::Tree& t2) {
 }
 
 BOOST_AUTO_TEST_CASE(manual_construction) {
+    setMod().reset();
+
     Tree t;
 
     BOOST_CHECK_EQUAL(t.n(), 1);
@@ -102,6 +104,9 @@ int findDiameter(
  * of the resulting trees such as diameter.
  */
 BOOST_AUTO_TEST_CASE(generators) {
+    setMod().reset();
+    rnd.seed(12345);
+
     std::vector<int> centers, dist;
 
     auto b = Tree::bamboo(10);
@@ -127,13 +132,16 @@ BOOST_AUTO_TEST_CASE(generators) {
     BOOST_CHECK_EQUAL(findDiameter(s, centers, dist), 2);
     BOOST_CHECK_EQUAL(centers[0], 0);
 
+    // probability of failure < 1e-5
     auto c = Tree::caterpillar(100, 10);
     BOOST_CHECK_EQUAL(findDiameter(c, centers, dist), 11);
 
-    c = Tree::caterpillar(1005, 1000);
-    BOOST_CHECK_EQUAL(findDiameter(c, centers, dist), 999);
+    // probability of failure < 1e-3
+    c = Tree::caterpillar(8004, 8000);
+    BOOST_CHECK_EQUAL(findDiameter(c, centers, dist), 7999);
 
-    auto t = Tree::randomPrim(150, 1000);
+    // probability of failure unknown, but very low
+    auto t = Tree::randomPrim(150, 15000);
     BOOST_CHECK_EQUAL(t, Tree::bamboo(150));
 }
 
@@ -223,6 +231,7 @@ BOOST_AUTO_TEST_CASE(check_glue) {
 
 BOOST_AUTO_TEST_CASE(print_parents) {
     rnd.seed(123);
+    setMod().reset();
 
     std::ostringstream ss;
 

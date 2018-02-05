@@ -9,7 +9,7 @@ CXX = g++-5
 .PHONY: clean run
 
 run: main
-	./main
+	./main --random=1
 
 lib.o: ../jngen.h ../lib.cpp
 	$(CXX) $(CXXFLAGS) -UJNGEN_DECLARE_ONLY ../lib.cpp -c -o lib.o
