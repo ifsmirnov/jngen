@@ -13,19 +13,19 @@ namespace variant_detail {
 
 constexpr static int NO_TYPE = -1;
 
-template<size_t Size, typename ... Args>
+template<size_t Size, size_t Align, typename ... Args>
 class VariantImpl;
 
-template<size_t Size>
-class VariantImpl<Size> {
+template<size_t Size, size_t Align>
+class VariantImpl<Size, Align> {
 public:
     VariantImpl() {
         type_ = NO_TYPE;
     }
 
 private:
+    alignas(Align) char data_[Size];
     int type_;
-    char data_[Size];
 
 protected:
     int& type() { return type_; }
@@ -63,13 +63,18 @@ protected:
     void assign() {}
 };
 
-template<size_t Size, typename T, typename ... Args>
-class VariantImpl<Size, T, Args...> : public VariantImpl<
+template<size_t Size, size_t Align, typename T, typename ... Args>
+class VariantImpl<Size, Align, T, Args...> : public VariantImpl<
         (sizeof(T) > Size ? sizeof(T) : Size),
+        (alignof(T) > Align ? alignof(T) : Align),
         Args...
     >
 {
-    using Base = VariantImpl<(sizeof(T) > Size ? sizeof(T) : Size), Args...>;
+    using Base = VariantImpl<
+        (sizeof(T) > Size ? sizeof(T) : Size),
+        (alignof(T) > Align ? alignof(T) : Align),
+        Args...
+    >;
 
     constexpr static int MY_ID = sizeof...(Args);
 
@@ -151,8 +156,8 @@ public:
 };
 
 template<typename ... Args>
-class Variant : public VariantImpl<0, Args...> {
-    using Base = VariantImpl<0, Args...>;
+class Variant : public VariantImpl<0, 1, Args...> {
+    using Base = VariantImpl<0, 1, Args...>;
 
 public:
     Variant() { }
