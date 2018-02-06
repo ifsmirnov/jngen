@@ -38,6 +38,9 @@ Note that all generators return trees with sorted edges to make tests more human
 * Returns: a complete *k*-ary tree with *size* vertices.
 * Numeration: parent of vertex *i* is *(i-1)/k*, *0* is root.
 
+#### Tree fromPruferSequence(const Array& code)
+* Returns: a tree with given [Prüfer sequence](https://en.wikipedia.org/wiki/Pr%C3%BCfer_sequence). The tree contains *code.size() + 2* vertices.
+
 ### Tree methods
 
 #### Tree& shuffle()

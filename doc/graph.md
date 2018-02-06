@@ -46,6 +46,14 @@ All graph generators return graph with sorted edges to make tests more human-rea
 * Description: first a random tree on *n* vertices with given *elongation* (see [tree docs](/tree.md)) is generated. Then remaining *m*-*n*+*1* edges are added. One endpoint of an edge is selected at random. The second is a result of jumping to a tree parent of the first endoint a random number of times, from 0 to *spread*, inclusive.
 * If the graph is directed, the direction of each edge is selected at random, unless it is acyclic: in this case the direction of all edges is down the tree.
 
+#### randomBipartite(int n1, int n2, int m)
+* Returns: a random bipartite graph with *n1* vertices in one part, *n2* vertices in another part and *m* edges. Vertices from *1* to *n1* belong to the first part.
+* Available modifiers: *connected*, *allowMulti*.
+
+#### completeBipartite(int n1, int n2)
+* Returns: a complet bipartite graph with *n1* vertices in one part and *n2* vertices in another part. Vertices from *1* to *n1* belong to the first part.
+* Available modifiers: none.
+
 ### Modifiers
 All options are unset by default. If the generator contradicts some option (like *randomStretched*, which always produces a connected graph), it is ignored.
 #### connected(bool value = true)

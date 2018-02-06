@@ -30,7 +30,7 @@ Default initialized *Random* is seeded with some hardware-generated random value
     * pattern followed by *{n}* is the same as the pattern repeated *n* times;
     * pattern followed by *{l,r}* is the same as the pattern repeated random number of times from *l* to *r*, inclusive;
     * "|" character yields either a pattern to its left or the pattern to its right equiprobably;
-    * several "|" characters between patterns yield any pattern between them equiprobably, e.g. *(a|b|c){100}* yields a string of length 100 with almost equal number of *a*'s, *b*'s and *c*'s;
+    * several "|" characters between patterns yield any pattern between them equiprobably, e.g. *(a|b|c|z){100}* yields a string of length 100 with almost equal number of *a*'s, *b*'s, *c*'s and *z*'s;
     * parentheses "()" are used for grouping.
 * examples:
     * `rnd.next("[1-9][0-9]{1,2}")`:  random 2- or 3-digit number (note that the distribution on numbers is not uniform);
@@ -53,6 +53,10 @@ Default initialized *Random* is seeded with some hardware-generated random value
 #### template&lt;typename Container> <br> Container::value_type choice(const Container& container)
 * Returns: random element of a range or of a container, respectively.
 * Note: *Container* may be *any* STL container, including *std::set*. In general case the runtime of this function is *O(container.size())*. However, if *Iterator* is a random-access iterator, the runtime is constant.
+
+#### template<typename N> size_t nextByDistribution(const std::vector<N>& distribution)
+* Returns: a random integer from *0* to *distribution.size() - 1*, where probability of *i* is proportional to *distribution[i].
+* Example: *rnd.nextByDistribution({1, 1, 100})* will likely return 2, but roughly each 50-th iteration will return 0 or 1.
 
 ### Seeding
 #### void seed(uint32_t seed)

@@ -40,9 +40,9 @@ yields edges of a random graph with 10 vertices and 20 edges, possibly containin
 * Example:
 ```cpp
 TArray<std::string>::randomf(
-	10,
-	[](const char* pattern) { return rnd.next(pattern); },
-	"[a-z]{5}")
+    10,
+    [](const char* pattern) { return rnd.next(pattern); },
+    "[a-z]{5}")
 ```
 yields an array of 10 strings of 5 letters each.
 
