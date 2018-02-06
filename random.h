@@ -57,7 +57,14 @@ public:
     Random() {
         assertRandomEngineConsistency();
         assertIntegerSizes();
-        seed(std::random_device{}());
+        std::vector<uint32_t> seedSeq;
+        // 4 random_device calls is enough for everyone
+        std::random_device rd;
+        for (size_t i = 0; i < 4; ++i) {
+            seedSeq.push_back(rd());
+        }
+        seed(seedSeq);
+
     }
 
     void seed(uint32_t val);

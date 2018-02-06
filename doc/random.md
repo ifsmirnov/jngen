@@ -1,6 +1,6 @@
 ## Random numbers generation
 
-Jngen provides a class *Random* whose behavior is similar to *rnd* from testlib.h. E.g. you may write *rnd.next(100)*, *rnd.next("[a-z]{%d}, n)*, and so on.  Most of interaction with *Random* happens via its global instance of *Random* called *rnd*.
+Jngen provides a class *Random* whose behavior is similar to *rnd* from testlib.h. E.g. you may write *rnd.next(100)*, *rnd.next("[a-z]{%d}", n)*, and so on.  Most of interaction with *Random* happens via its global instance of *Random* called *rnd*.
 
 Default initialized *Random* is seeded with some hardware-generated random value, so subsequent executions of the program will produce different tests. This may be useful for local stress-testing, for example. If you want to fix the seed, use *registerGen(argc, argv)* at the beginning of your *main*.
 
@@ -17,7 +17,7 @@ Default initialized *Random* is seeded with some hardware-generated random value
 #### int next(int l, int r) // also for long long, size\_t, double
 * Returns: random integer in range [l, r].
 #### int wnext(int n, int w) // also for long long, size\_t, double
-* If w > 0, returns max(next(n), ..., next(n)) (w times). If w < 0, returns min(next(n), ..., next(n)) (-w times). If w = 0, same as next(n).
+* If w > 0, returns max(next(n), ..., next(n)) (w times). If w &lt; 0, returns min(next(n), ..., next(n)) (-w times). If w = 0, same as next(n).
 #### int wnext(int l, int r, int w) // also for long long, size\_t, double
 * Same as wnext(n, w), but the range is [l, r].
 #### std::string next(const std::string& pattern)
