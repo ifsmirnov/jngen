@@ -45,7 +45,7 @@ Default initialized *Random* is seeded with some hardware-generated random value
 #### std::pair&lt;int, int> nextp(int l, int r, [RandomPairTraits])
 * Returns: random pair of integers, where both of them are in range [0, *n*) or [*l*, *r*] respectively. 
 * RandomPairTraits denotes if the pair should be ordered (first element is less than or equal to second one) and if its two elements should be distinct. Several global constants are defined:
-    * *opair*: ordered pair (first <= second)
+    * *opair*: ordered pair (first &lt;= second)
     * *dpair*: distinct pair (first != second)
     * *odpair*, *dopair*: ordered distinct pair
 * Example of usage:  *rnd.nextp(1, 10, odpair)* yields a pair of random integers from 1 to 10 where first is strictly less than second. *rnd.nextp(1, 10)* returns any pair of integers from 1 to 10 (note that the *RandomPairTraits* argument is optional).
@@ -54,7 +54,7 @@ Default initialized *Random* is seeded with some hardware-generated random value
 * Returns: random element of a range or of a container, respectively.
 * Note: *Container* may be *any* STL container, including *std::set*. In general case the runtime of this function is *O(container.size())*. However, if *Iterator* is a random-access iterator, the runtime is constant.
 
-#### template<typename N> size_t nextByDistribution(const std::vector<N>& distribution)
+#### template&lt;typename N> <br> size_t nextByDistribution(const std::vector&lt;N>& distribution)
 * Returns: a random integer from *0* to *distribution.size() - 1*, where probability of *i* is proportional to *distribution[i].
 * Example: *rnd.nextByDistribution({1, 1, 100})* will likely return 2, but roughly each 50-th iteration will return 0 or 1.
 
