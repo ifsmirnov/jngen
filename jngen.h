@@ -1725,6 +1725,11 @@ public:
         return choice(container.begin(), container.end());
     }
 
+    template<typename T>
+    T choice(const std::initializer_list<T>& ilist) {
+        return choice(ilist.begin(), ilist.end());
+    }
+
     template<typename Numeric>
     size_t nextByDistribution(const std::vector<Numeric>& distribution) {
         ensure(!distribution.empty(), "Cannot sample by empty distribution");
@@ -1738,6 +1743,12 @@ public:
             x -= distribution[i];
         }
         return distribution.size() - 1;
+    }
+
+    template<typename Numeric>
+    size_t nextByDistribution(const std::initializer_list<Numeric>& ilist) {
+        // TODO: looks suboptimal
+        return nextByDistribution(std::vector<Numeric>(ilist));
     }
 
 private:
@@ -6200,12 +6211,12 @@ Tree Tree::shuffled() const {
     return t.shuffle();
 }
 
-inline Tree& Tree::shuffleAllBut(const Array& except) {
+Tree& Tree::shuffleAllBut(const Array& except) {
     doShuffleAllBut(except);
     return *this;
 }
 
-inline Tree Tree::shuffledAllBut(const Array& except) const {
+Tree Tree::shuffledAllBut(const Array& except) const {
     Tree g(*this);
     return g.shuffleAllBut(except);
 }
@@ -6768,7 +6779,15 @@ private:
             return true;
         };
 
+        constexpr size_t MAX_ATTEMPTS = 1000;
+        size_t attemptsToFail = MAX_ATTEMPTS;
+
         while (static_cast<int>(edges.size()) != t.m) {
+            if (--attemptsToFail == 0) {
+                ensure(false, format("Cannot generate random stretched graph "
+                    "with parameters %d, %d, %d, %d",
+                    t.n, t.m, elongation, spread));
+            }
             int u = rnd.next(t.n);
             int up = rnd.next(0, spread);
             int v = u;
@@ -6791,6 +6810,7 @@ private:
             }
 
             edges.emplace_back(v, u);
+            attemptsToFail = MAX_ATTEMPTS;
         }
 
         Graph graph;

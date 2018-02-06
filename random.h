@@ -121,6 +121,11 @@ public:
         return choice(container.begin(), container.end());
     }
 
+    template<typename T>
+    T choice(const std::initializer_list<T>& ilist) {
+        return choice(ilist.begin(), ilist.end());
+    }
+
     template<typename Numeric>
     size_t nextByDistribution(const std::vector<Numeric>& distribution) {
         ensure(!distribution.empty(), "Cannot sample by empty distribution");
@@ -134,6 +139,12 @@ public:
             x -= distribution[i];
         }
         return distribution.size() - 1;
+    }
+
+    template<typename Numeric>
+    size_t nextByDistribution(const std::initializer_list<Numeric>& ilist) {
+        // TODO: looks suboptimal
+        return nextByDistribution(std::vector<Numeric>(ilist));
     }
 
 private:

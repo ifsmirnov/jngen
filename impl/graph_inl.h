@@ -260,7 +260,15 @@ private:
             return true;
         };
 
+        constexpr size_t MAX_ATTEMPTS = 1000;
+        size_t attemptsToFail = MAX_ATTEMPTS;
+
         while (static_cast<int>(edges.size()) != t.m) {
+            if (--attemptsToFail == 0) {
+                ensure(false, format("Cannot generate random stretched graph "
+                    "with parameters %d, %d, %d, %d",
+                    t.n, t.m, elongation, spread));
+            }
             int u = rnd.next(t.n);
             int up = rnd.next(0, spread);
             int v = u;
@@ -283,6 +291,7 @@ private:
             }
 
             edges.emplace_back(v, u);
+            attemptsToFail = MAX_ATTEMPTS;
         }
 
         Graph graph;

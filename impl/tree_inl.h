@@ -63,12 +63,12 @@ Tree Tree::shuffled() const {
     return t.shuffle();
 }
 
-inline Tree& Tree::shuffleAllBut(const Array& except) {
+Tree& Tree::shuffleAllBut(const Array& except) {
     doShuffleAllBut(except);
     return *this;
 }
 
-inline Tree Tree::shuffledAllBut(const Array& except) const {
+Tree Tree::shuffledAllBut(const Array& except) const {
     Tree g(*this);
     return g.shuffleAllBut(except);
 }
