@@ -56,7 +56,7 @@ protected:
     }
 
     template<typename V>
-    void applyVisitor(V&&) const {
+    typename V::return_type applyVisitor(V&&) const {
         throw;
     }
 
@@ -123,11 +123,11 @@ protected:
     }
 
     template<typename V>
-    void applyVisitor(V&& v) const {
+    typename V::return_type applyVisitor(V&& v) const {
         if (this->type() == MY_ID) {
-            v(*reinterpret_cast<const T*>(this->data()));
+            return v(*reinterpret_cast<const T*>(this->data()));
         } else {
-            Base::applyVisitor(v);
+            return Base::applyVisitor(std::forward<V>(v));
         }
     }
 
@@ -223,7 +223,7 @@ public:
     }
 
     template<typename T>
-    const T& cref() {
+    const T& cref() const {
         auto ptr = cptr<T>();
         if (ptr == 0) {
             throw std::logic_error("jngen::Variant: taking a reference for"
@@ -232,9 +232,16 @@ public:
         return *ptr;
     }
 
+    bool operator==(const Variant& v) const { return compareTo(v) == 0; }
+    bool operator!=(const Variant& v) const { return compareTo(v) != 0; }
+    bool operator< (const Variant& v) const { return compareTo(v) <  0; }
+    bool operator> (const Variant& v) const { return compareTo(v) >  0; }
+    bool operator<=(const Variant& v) const { return compareTo(v) <= 0; }
+    bool operator>=(const Variant& v) const { return compareTo(v) >= 0; }
+
     template<typename V>
-    void applyVisitor(V&& v) const {
-        Base::applyVisitor(v);
+    typename V::return_type applyVisitor(V&& v) const {
+        return Base::applyVisitor(std::forward<V>(v));
     }
 
     int type() const { return Base::type(); }
@@ -275,7 +282,7 @@ private:
     }
 
     template<typename T_>
-    decay_t<T_>* cptr() const {
+    const decay_t<T_>* cptr() const {
         using T = decay_t<T_>;
         if (type() != this->template typeId<T>()) {
             return nullptr;
@@ -286,9 +293,13 @@ private:
     int& unsafeType() {
         return Base::type();
     }
+
+    int compareTo(const Variant& other) const;
 };
 
 struct OstreamVisitor {
+    using return_type = void;
+
     template<typename T>
     void operator()(const T& t) {
         JNGEN_PRINT(t);
@@ -296,6 +307,37 @@ struct OstreamVisitor {
     std::ostream& out;
     const OutputModifier& mod;
 };
+
+template<typename V>
+struct CompareToVisitor {
+    using return_type = int;
+
+    template<typename T>
+    int operator()(const T& t) {
+        if (t == variant.template cref<T>()) {
+            return 0;
+        }
+        return t < variant.template cref<T>() ? -1 : 1;
+    }
+
+    const V& variant;
+};
+
+template<typename ... Args>
+int Variant<Args...>::compareTo(const Variant& other) const {
+    if (empty()) {
+        return other.empty() ? 0 : -1;
+    }
+    if (other.empty()) {
+        return 1;
+    }
+
+    if (type() != other.type()) {
+        return type() > other.type() ? -1 : 1;
+    }
+    return applyVisitor(CompareToVisitor<Variant>{other});
+
+}
 
 } // namespace variant_detail
 
