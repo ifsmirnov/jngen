@@ -43,7 +43,7 @@ All graph generators return graph with sorted edges to make tests more human-rea
 #### randomStretched(int n, int m, int elongation, int spread)
 * Returns: a connected stretched graph with *n* vertices and *m* vertices.
 * Available modifiers: *allowLoops*, *allowMulti*, *directed*, *allowAntiparallel*, *acyclic*.
-* Description: first a random tree on *n* vertices with given *elongation* (see [tree docs](/tree.md)) is generated. Then remaining *m*-*n*+*1* edges are added. One endpoint of an edge is selected at random. The second is a result of jumping to a tree parent of the first endoint a random number of times, from 0 to *spread*, inclusive.
+* Description: first a random tree on *n* vertices with given *elongation* (see [tree docs](/doc/tree.md)) is generated. Then remaining *m*-*n*+*1* edges are added. One endpoint of an edge is selected at random. The second is a result of jumping to a tree parent of the first endoint a random number of times, from 0 to *spread*, inclusive.
 * If the graph is directed, the direction of each edge is selected at random, unless it is acyclic: in this case the direction of all edges is down the tree.
 
 #### randomBipartite(int n1, int n2, int m)
