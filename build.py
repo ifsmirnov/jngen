@@ -81,6 +81,8 @@ headers = set()
 for h in LIBRARY_HEADERS:
     headers.update(extract_deps(h))
 headers = ['header.h'] + sorted(headers)
+deps['footer.h'] = set(headers + ['footer.h'])
+headers += ['footer.h']
 deps['header.h'] = set(('header.h',))
 
 headers_in_order = []

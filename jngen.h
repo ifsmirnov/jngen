@@ -29,6 +29,16 @@
 
 #define JNGEN_VERSION 0.1
 
+// https://github.com/ifsmirnov/jngen/issues/5
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+
+// this warning is buggy in clang >= 5
+#if __clang_major__ >= 5
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-lambda-capture"
+#endif
+
 #define JNGEN_DEFINE_CHAINING_TRAITS_FIELD(Class, name) \
 int _ ## name = 0; \
 Class& name(int val = 1) { _ ## name = val; return *this; }
@@ -7276,3 +7286,7 @@ JNGEN_EXTERN TestSuites testSuites;
 } // namespace jngen
 
 using jngen::testSuites;
+#pragma GCC diagnostic pop // -Wconversion
+#if __clang__major >= 5
+#pragma GCC diagnostic pop // -Wunused-lambda-capture
+#endif

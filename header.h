@@ -29,3 +29,13 @@
 */
 
 #define JNGEN_VERSION 0.1
+
+// https://github.com/ifsmirnov/jngen/issues/5
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+
+// this warning is buggy in clang >= 5
+#if __clang_major__ >= 5
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-lambda-capture"
+#endif
