@@ -6869,6 +6869,7 @@ private:
             }
 
             edges.emplace_back(v, u);
+            usedEdges.insert({v, u});
             attemptsToFail = MAX_ATTEMPTS;
         }
 
