@@ -6869,7 +6869,7 @@ private:
             }
 
             edges.emplace_back(v, u);
-            usedEdges.insert({v, u});
+            usedEdges.emplace(v, u);
             attemptsToFail = MAX_ATTEMPTS;
         }
 
